@@ -39,6 +39,10 @@ dependencies:
   http: ^1.6.0
   email_otp: ^3.1.0
   fluttertoast: ^9.0.0
+  firebase_core: ^4.9.0
+  firebase_auth: ^6.5.1
+  cloud_firestore: ^6.4.1
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -54,11 +58,8 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
   cupertino_icons: ^1.0.9
-  shared_preferences: ^2.5.5
-  fluttertoast: ^9.0.0
-  firebase_core: ^4.9.0
-  firebase_auth: ^6.5.1
-  cloud_firestore: ^6.4.1
+
+
 
 # The following section is specific to Flutter packages.
 flutter:
