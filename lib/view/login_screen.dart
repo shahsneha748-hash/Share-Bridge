@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:sharebridge/forgot_password_screen.dart';
-import 'package:sharebridge/signup_screen.dart';
+import 'package:sharebridge/view/forgot_password_screen.dart';
+import 'package:sharebridge/view/signup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:sharebridge/login_screen.dart';
+import 'package:sharebridge/view/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+// import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 
 // Function to hash

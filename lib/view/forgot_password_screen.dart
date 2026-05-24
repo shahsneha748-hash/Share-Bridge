@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bcrypt/bcrypt.dart';
-import 'package:sharebridge/login_screen.dart';
+// import 'package:sharebridge/view/login_screen.dart';
 
 Future<void> requestOtp(String email) async {
   final response = await http.post(
