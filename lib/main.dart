@@ -24,7 +24,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
         title: "sharebridge",
         debugShowCheckedModeBanner: false,
-        home: RatingReviewPage()
+        home: UserProfileScreen()
 
 
     );

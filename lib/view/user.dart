@@ -11,7 +11,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   // ── Brand Colors ──────────────────────────────────────────────
   static const Color kPrimary = Color(0xFF2D5A27);
   static const Color kDark = Color(0xFF1A2F18);
-  static const Color kLightGreen = Color(0xFFDDE8CF);
   static const Color kBackground = Color(0xFFF8F7F3);
   static const Color kCard = Colors.white;
   static const Color kTextGrey = Color(0xFF6B7280);
@@ -30,14 +29,28 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             pinned: true,
             backgroundColor: kPrimary,
             elevation: 0,
+            // ✅ Username shown when collapsed / scrolled down
+            title: const Text(
+              'Emma Watson',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            centerTitle: false,
             flexibleSpace: FlexibleSpaceBar(
+              // collapseMode keeps the background from sliding oddly
+              collapseMode: CollapseMode.parallax,
               background: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // ── Cover Photo ───────────────────────────────────
                   Image.network(
                     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1200',
                     fit: BoxFit.cover,
                   ),
+                  // ── Gradient overlay ─────────────────────────────
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -50,6 +63,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                     ),
                   ),
+                  // ── Avatar + Name (visible when expanded) ────────
                   Padding(
                     padding: const EdgeInsets.only(left: 20, bottom: 30),
                     child: Align(
@@ -105,15 +119,70 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
             ),
             leading: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+              ),
             ),
+            // ✅ Three dots wired up as a real options menu
             actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.more_vert),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'share':
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Share profile tapped')),
+                      );
+                      break;
+                    case 'block':
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Block user tapped')),
+                      );
+                      break;
+                    case 'report':
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Report tapped')),
+                      );
+                      break;
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'share',
+                    child: Row(
+                      children: [
+                        Icon(Icons.share_outlined, size: 20),
+                        SizedBox(width: 10),
+                        Text('Share profile'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'block',
+                    child: Row(
+                      children: [
+                        Icon(Icons.block_outlined, size: 20),
+                        SizedBox(width: 10),
+                        Text('Block user'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'report',
+                    child: Row(
+                      children: [
+                        Icon(Icons.flag_outlined, size: 20, color: Colors.red),
+                        SizedBox(width: 10),
+                        Text('Report', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -144,13 +213,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 22),
 
                   // ── STATS ────────────────────────────────────────
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       _StatCard(
                         title: 'Rating',
                         value: '4.9',
@@ -163,7 +231,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 28),
 
                   // ── ABOUT SECTION ────────────────────────────────
@@ -192,14 +259,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 28),
 
                   // ── DONATED ITEMS HEADER ─────────────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Recent Donations',
                         style: TextStyle(
                           fontSize: 20,
@@ -207,16 +273,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           color: kDark,
                         ),
                       ),
-                      Text(
-                        'See All',
-                        style: TextStyle(
-                          color: kPrimary,
-                          fontWeight: FontWeight.w600,
+                      GestureDetector(
+                        onTap: () {},
+                        child: const Text(
+                          'See All',
+                          style: TextStyle(
+                            color: kPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
 
                   // ── DONATION CARDS ───────────────────────────────
@@ -227,9 +295,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     location: 'Kathmandu',
                     status: 'Available',
                   ),
-
                   const SizedBox(height: 16),
-
                   const _DonationCard(
                     image:
                     'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1000',
@@ -237,9 +303,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     location: 'Lalitpur',
                     status: 'Donated',
                   ),
-
                   const SizedBox(height: 16),
-
                   const _DonationCard(
                     image:
                     'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?q=80&w=1000',
@@ -247,7 +311,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     location: 'Bhaktapur',
                     status: 'Reserved',
                   ),
-
                   const SizedBox(height: 30),
                 ],
               ),
@@ -262,7 +325,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 // ────────────────────────────────────────────────────────────────
 // ── STAT CARD ───────────────────────────────────────────────────
 // ────────────────────────────────────────────────────────────────
-
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -321,7 +383,6 @@ class _StatCard extends StatelessWidget {
 // ────────────────────────────────────────────────────────────────
 // ── DONATION CARD ───────────────────────────────────────────────
 // ────────────────────────────────────────────────────────────────
-
 class _DonationCard extends StatelessWidget {
   final String image;
   final String title;
@@ -335,16 +396,47 @@ class _DonationCard extends StatelessWidget {
     required this.status,
   });
 
+  // ── Status badge color ────────────────────────────────────────
+  Color get _statusBgColor {
+    switch (status) {
+      case 'Donated':
+        return const Color(0xFFE0F2FE);
+      case 'Reserved':
+        return const Color(0xFFFEF3C7);
+      default:
+        return const Color(0xFFDDE8CF); // Available
+    }
+  }
+
+  Color get _statusTextColor {
+    switch (status) {
+      case 'Donated':
+        return const Color(0xFF0369A1);
+      case 'Reserved':
+        return const Color(0xFF92400E);
+      default:
+        return const Color(0xFF2D5A27); // Available
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Image ──────────────────────────────────────────────
           ClipRRect(
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
@@ -371,19 +463,20 @@ class _DonationCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    // ── Status Badge ──────────────────────────────
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDDE8CF),
+                        color: _statusBgColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         status,
-                        style: const TextStyle(
-                          color: Color(0xFF2D5A27),
+                        style: TextStyle(
+                          color: _statusTextColor,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),

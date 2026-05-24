@@ -1,502 +1,645 @@
 import 'package:flutter/material.dart';
 
-class RatingReviewPage extends StatefulWidget {
-  const RatingReviewPage({super.key});
+class RatingsReviewsPage extends StatefulWidget {
+  const RatingsReviewsPage({super.key});
 
   @override
-  State<RatingReviewPage> createState() => _RatingReviewPageState();
+  State<RatingsReviewsPage> createState() => _RatingsReviewsPageState();
 }
 
-class _RatingReviewPageState extends State<RatingReviewPage> {
-  static const Color kPrimary   = Color(0xFF2D5A27);
-  static const Color kBeige     = Color(0xFFF7F4EF);
-  static const Color kBeigeDeep = Color(0xFFEEE8DE);
-  static const Color kCard      = Color(0xFFFFFFFF);
-  static const Color kTextDark  = Color(0xFF1C2B1A);
-  static const Color kTextGrey  = Color(0xFF7A8A78);
-  static const Color kDivider   = Color(0xFFE4DDD3);
-  static const Color kStar      = Color(0xFFF5C842);
+class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
+  int selectedFilter = 0;
+  int selectedRating = 0;
 
-  double selectedRating = 0;
   final TextEditingController reviewController = TextEditingController();
 
-  final List<Map<String, dynamic>> reviews = [
-    {"name": "Sneha", "rating": 5, "review": "Amazing experience! The item was exactly as described and in perfect condition.", "date": "2 days ago"},
-    {"name": "Alex",  "rating": 4, "review": "Really good and respectful handover. Would highly recommend this donor.",       "date": "5 days ago"},
-    {"name": "Sam",   "rating": 3, "review": "Good overall. Item was decent but packaging could be better next time.",         "date": "1 week ago"},
-    {"name": "Priya", "rating": 2, "review": "Item condition was not as described. Expected better quality.",                  "date": "2 weeks ago"},
-    {"name": "Tom",   "rating": 1, "review": "Very disappointed. Item was damaged and unusable when I received it.",           "date": "3 weeks ago"},
+  List<Map<String, dynamic>> reviews = [
+    {
+      "name": "Shena",
+      "initials": "BN",
+      "rating": 5,
+      "time": "2 days ago",
+      "date": "May 22, 2026",
+      "likes": 14,
+      "liked": false,
+      "review":
+      "Amazing experience! The item was exactly as described and in perfect condition. Very grateful!"
+    },
+    {
+      "name": "Alex",
+      "initials": "AL",
+      "rating": 4,
+      "time": "3 days ago",
+      "date": "May 20, 2026",
+      "likes": 9,
+      "liked": false,
+      "review":
+      "Really good and respectful handover. The donor was communicative and kind. Would highly recommend."
+    },
+    {
+      "name": "Sam",
+      "initials": "BA",
+      "rating": 3,
+      "time": "1 week ago",
+      "date": "May 15, 2026",
+      "likes": 5,
+      "liked": false,
+      "review":
+      "Good overall. Item was decent but packaging could be better next time."
+    },
+    {
+      "name": "Priya",
+      "initials": "PR",
+      "rating": 2,
+      "time": "2 weeks ago",
+      "date": "May 10, 2026",
+      "likes": 2,
+      "liked": false,
+      "review":
+      "Item condition was not as described. Expected better quality."
+    },
+    {
+      "name": "Tom",
+      "initials": "TO",
+      "rating": 1,
+      "time": "3 weeks ago",
+      "date": "May 02, 2026",
+      "likes": 1,
+      "liked": false,
+      "review":
+      "Very disappointed. Item was damaged and unusable when received."
+    },
   ];
 
+  List<Map<String, dynamic>> get filteredReviews {
+    if (selectedFilter == 0) return reviews;
+
+    return reviews
+        .where((review) => review['rating'] == selectedFilter)
+        .toList();
+  }
+
   void submitReview() {
-    if (selectedRating == 0 || reviewController.text.trim().isEmpty) {
+    if (selectedRating == 0 || reviewController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please give a rating and write a review")),
+        const SnackBar(
+          content: Text("Please add rating and review"),
+        ),
       );
       return;
     }
+
     setState(() {
       reviews.insert(0, {
         "name": "You",
-        "rating": selectedRating.toInt(),
-        "review": reviewController.text.trim(),
-        "date": "Just now",
+        "initials": "YU",
+        "rating": selectedRating,
+        "time": "Just now",
+        "date": "Today",
+        "likes": 0,
+        "liked": false,
+        "review": reviewController.text,
       });
+
       selectedRating = 0;
       reviewController.clear();
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Review submitted successfully!"), backgroundColor: kPrimary),
+      const SnackBar(
+        content: Text("Review submitted successfully"),
+      ),
     );
-  }
-
-  double get avgRating => reviews.isEmpty
-      ? 0
-      : reviews.map((r) => (r['rating'] as int).toDouble()).reduce((a, b) => a + b) / reviews.length;
-
-  int _countFor(int star) => reviews.where((r) => r['rating'] == star).length;
-
-  String _ratingLabel(int r) {
-    switch (r) {
-      case 1: return 'Poor';
-      case 2: return 'Fair';
-      case 3: return 'Good';
-      case 4: return 'Very Good';
-      case 5: return 'Excellent!';
-      default: return '';
-    }
-  }
-
-  Color _starColor(int star) {
-    switch (star) {
-      case 5: return const Color(0xFF4CAF50);
-      case 4: return const Color(0xFF8BC34A);
-      case 3: return const Color(0xFFFFC107);
-      case 2: return const Color(0xFFFF9800);
-      case 1: return const Color(0xFFF44336);
-      default: return kStar;
-    }
-  }
-
-  @override
-  void dispose() {
-    reviewController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBeige,
+      backgroundColor: const Color(0xfff1f4ee),
       appBar: AppBar(
-        backgroundColor: kPrimary,
+        backgroundColor: const Color(0xFF3A5C2E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         centerTitle: true,
-        foregroundColor: Colors.white,
-        title: const Text("Ratings & Reviews",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          "Ratings & Reviews",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ── Rating Summary ────────────────────────────────────────
+            // ITEM IMAGE + NAME CARD
             Container(
-              padding: const EdgeInsets.all(20),
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: kPrimary,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Score + stars
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        avgRating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 56,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: List.generate(5, (i) => Icon(
-                          i < avgRating.floor()
-                              ? Icons.star
-                              : (i < avgRating ? Icons.star_half : Icons.star_border),
-                          color: kStar,
-                          size: 17,
-                        )),
-                      ),
-                      const SizedBox(height: 5),
-                      Text('${reviews.length} reviews',
-                          style: const TextStyle(color: Colors.white60, fontSize: 12)),
-                    ],
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.green.shade100),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  const SizedBox(width: 24),
-                  // Bar breakdown
-                  Expanded(
-                    child: Column(
-                      children: [5, 4, 3, 2, 1].map((star) {
-                        final count = _countFor(star);
-                        final frac = reviews.isEmpty ? 0.0 : count / reviews.length;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Row(
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // CLOTH IMAGE
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
+                    child: Image.network(
+                      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1200",
+                      height: 220,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+
+                  // ITEM NAME
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('$star',
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Colors.white60)),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: LinearProgressIndicator(
-                                    value: frac,
-                                    backgroundColor: Colors.white24,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        _starColor(star)),
-                                    minHeight: 6,
-                                  ),
+                              Text(
+                                "Oversized Cotton T-Shirt",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade900,
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              SizedBox(
-                                width: 16,
-                                child: Text('$count',
-                                    style: const TextStyle(
-                                        fontSize: 10, color: Colors.white60),
-                                    textAlign: TextAlign.right),
+
+                              const SizedBox(height: 6),
+
+                              Text(
+                                "Clothing",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
                               ),
                             ],
                           ),
-                        );
-                      }).toList(),
+                        ),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "Available",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      ],
                     ),
                   ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            // TOP CARD
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xffE6D5B8),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "3.0",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: List.generate(
+                          5,
+                              (index) => const Icon(
+                            Icons.star,
+                            size: 16,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        "${reviews.length} reviews",
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 25),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        buildRatingBar(5, 0.9, Colors.green),
+                        buildRatingBar(4, 0.7, Colors.lightGreen),
+                        buildRatingBar(3, 0.5, Colors.orange),
+                        buildRatingBar(2, 0.3, Colors.deepOrange),
+                        buildRatingBar(1, 0.2, Colors.red),
+                      ],
+                    ),
+                  )
                 ],
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // ── Star breakdown tiles ──────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: kCard,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kDivider),
-              ),
-              child: Column(
-                children: [5, 4, 3, 2, 1].map((star) {
-                  final count = _countFor(star);
-                  final frac = reviews.isEmpty ? 0.0 : count / reviews.length;
-                  final pct = (frac * 100).round();
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        // Star label
-                        Row(
-                          children: [
-                            Icon(Icons.star, color: _starColor(star), size: 16),
-                            const SizedBox(width: 4),
-                            Text('$star',
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: kTextDark)),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        // Bar
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: LinearProgressIndicator(
-                              value: frac,
-                              backgroundColor: kBeigeDeep,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  _starColor(star)),
-                              minHeight: 8,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Count + pct
-                        SizedBox(
-                          width: 52,
-                          child: Text(
-                            '$count ($pct%)',
-                            style: const TextStyle(
-                                fontSize: 12, color: kTextGrey),
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            const SizedBox(height: 28),
-
-            // ── Write a Review ────────────────────────────────────────
-            const Text("Write a Review",
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: kTextDark)),
-
-            const SizedBox(height: 14),
-
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: kCard,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: kDivider),
-              ),
-              child: Column(
+            // FILTERS IN ONE ROW
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
                 children: [
-                  // Star picker
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: kBeige,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(5, (i) {
-                        final val = i + 1;
-                        return GestureDetector(
-                          onTap: () =>
-                              setState(() => selectedRating = val.toDouble()),
-                          child: Padding(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(
-                              val <= selectedRating
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              size: 36,
-                              color: val <= selectedRating
-                                  ? kStar
-                                  : kDivider,
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-
-                  if (selectedRating > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _ratingLabel(selectedRating.toInt()),
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: kPrimary,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: reviewController,
-                    maxLines: 4,
-                    style:
-                    const TextStyle(fontSize: 14, color: kTextDark),
-                    decoration: InputDecoration(
-                      hintText: "Share your experience...",
-                      hintStyle:
-                      const TextStyle(color: kTextGrey, fontSize: 14),
-                      filled: true,
-                      fillColor: kBeige,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide:
-                        const BorderSide(color: kPrimary, width: 1),
-                      ),
-                      contentPadding: const EdgeInsets.all(14),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: submitReview,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kPrimary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        textStyle: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold),
-                      ),
-                      child: const Text("Submit Review"),
-                    ),
-                  ),
+                  filterChip("All", 0),
+                  filterChip("+5", 5),
+                  filterChip("+4", 4),
+                  filterChip("+3", 3),
+                  filterChip("+2", 2),
+                  filterChip("+1", 1),
                 ],
               ),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
 
-            // ── User Reviews ──────────────────────────────────────────
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("User Reviews",
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: kTextDark)),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: kBeigeDeep,
-                    borderRadius: BorderRadius.circular(20),
+                const Text(
+                  "User Reviews",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
-                  child: Text('${reviews.length}',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: kPrimary)),
+                ),
+                Text(
+                  "${filteredReviews.length}",
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 15),
 
-            ListView.separated(
-              itemCount: reviews.length,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final r = reviews[index];
-                final star = r['rating'] as int;
-                return Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: kCard,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: kDivider),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 22,
-                            backgroundColor: kBeigeDeep,
-                            child: Text(
-                              (r['name'] as String)[0].toUpperCase(),
-                              style: const TextStyle(
-                                  color: kPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(r['name'] as String,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: kTextDark,
-                                        fontSize: 15)),
-                                const SizedBox(height: 2),
-                                Text(r['date'] as String,
-                                    style: const TextStyle(
-                                        color: kTextGrey, fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                          // Rating badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: _starColor(star).withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.star,
-                                    color: _starColor(star), size: 14),
-                                const SizedBox(width: 3),
-                                Text('$star',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: _starColor(star))),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Row(
-                        children: List.generate(5, (i) => Icon(
-                          i < star ? Icons.star : Icons.star_border,
-                          color: i < star ? _starColor(star) : kDivider,
-                          size: 16,
-                        )),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: kBeige,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          r['review'] as String,
-                          style: const TextStyle(
-                              color: kTextGrey, height: 1.6, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+            Column(
+              children: filteredReviews.map((review) {
+                return reviewCard(review);
+              }).toList(),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 25),
+
+            // WRITE REVIEW
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Write a Review",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Share your experience with this donor",
+                    style: TextStyle(
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // CLICKABLE STARS
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      5,
+                          (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedRating = index + 1;
+                            });
+                          },
+                          child: Padding(
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 5),
+                            child: Icon(
+                              Icons.star,
+                              size: 34,
+                              color: index < selectedRating
+                                  ? Colors.orange
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  TextField(
+                    controller: reviewController,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText:
+                      "Share your experience with this donor...",
+                      filled: true,
+                      fillColor: const Color(0xfff3f5f2),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // SUBMIT BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: submitReview,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Submit Review",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buildRatingBar(int star, double value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            "$star",
+            style: const TextStyle(color: Colors.white),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 6,
+                backgroundColor: Colors.white24,
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            "1",
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget filterChip(String text, int value) {
+    bool selected = selectedFilter == value;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedFilter = value;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? Colors.green : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: selected ? Colors.white : Colors.orange,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget reviewCard(Map<String, dynamic> review) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.green.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: Colors.green.shade100,
+                child: Text(
+                  review['initials'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review['name'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      review['time'],
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      review['date'],
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  "+${review['rating']}",
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(
+            children: List.generate(
+              5,
+                  (index) => Icon(
+                Icons.star,
+                size: 16,
+                color: index < review['rating']
+                    ? Colors.orange
+                    : Colors.grey.shade300,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xfff4f6f3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              review['review'],
+              style: const TextStyle(height: 1.5),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // CLICKABLE HEART
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                review['liked'] = !review['liked'];
+
+                if (review['liked']) {
+                  review['likes']++;
+                } else {
+                  review['likes']--;
+                }
+              });
+            },
+            child: Row(
+              children: [
+                Icon(
+                  review['liked']
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color:
+                  review['liked'] ? Colors.red : Colors.grey,
+                  size: 20,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "${review['likes']} people found this helpful",
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }
