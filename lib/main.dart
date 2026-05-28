@@ -1,19 +1,32 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:sharebridge/donation_chat_screen.dart';
+import 'package:sharebridge/view/review.dart';
+import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/view/user_profile.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'firebase_options.dart';
+
+
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(MyHomePage());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'ShareBridge',
-      home: DonationChatScreen(),
+    return MaterialApp(
+        title: "sharebridge",
+        debugShowCheckedModeBanner: false,
+        home: UserProfileScreen()
+
+
     );
   }
 }
