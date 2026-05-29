@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:sharebridge/view/notification_screen.dart';
 import 'firebase_options.dart';
 // import 'package:sharebridge/view/forgot_password_screen.dart';
 // import 'package:sharebridge/view/login_screen.dart';
@@ -28,7 +29,7 @@ class MyHomePage extends StatelessWidget {
 
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      home: NotificationScreen(),
     );
   }
 }
