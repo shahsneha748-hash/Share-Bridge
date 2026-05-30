@@ -1,6 +1,6 @@
-# project
+# sharebridge
 
-A new Flutter project.
+donation app for mobile application
 
 ## Getting Started
 

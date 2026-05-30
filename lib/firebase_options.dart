@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -53,10 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyApgzNNc0OEsYazdVP8TjLwroh7veisMbs',
-    appId: '1:915432512394:android:0ca81d14e3a3bd927fc673',
-    messagingSenderId: '915432512394',
-    projectId: 'project-3b0f3',
-    storageBucket: 'project-3b0f3.firebasestorage.app',
+    apiKey: 'AIzaSyAr2kOQMq5ytcvr9Oazh-uEN-FqHtozuzk',
+    appId: '1:856936215607:android:593ee049f01a4665f0fbb2',
+    messagingSenderId: '856936215607',
+    projectId: 'sharebridge-2668c',
+    storageBucket: 'sharebridge-2668c.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyA6ys2nNgFsKdq-AXL785FAphWRxfWfujo',
+    appId: '1:856936215607:ios:3c3bbfb63a656830f0fbb2',
+    messagingSenderId: '856936215607',
+    projectId: 'sharebridge-2668c',
+    storageBucket: 'sharebridge-2668c.firebasestorage.app',
+    iosBundleId: 'com.sharebridge.sharebridge',
   );
 }

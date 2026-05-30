@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "915432512394",
-    "project_id": "project-3b0f3",
-    "storage_bucket": "project-3b0f3.firebasestorage.app"
+    "project_number": "856936215607",
+    "project_id": "sharebridge-2668c",
+    "storage_bucket": "sharebridge-2668c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:915432512394:android:0ca81d14e3a3bd927fc673",
+        "mobilesdk_app_id": "1:856936215607:android:593ee049f01a4665f0fbb2",
         "android_client_info": {
-          "package_name": "com.example.project.project"
+          "package_name": "com.sharebridge.sharebridge"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyApgzNNc0OEsYazdVP8TjLwroh7veisMbs"
+          "current_key": "AIzaSyAr2kOQMq5ytcvr9Oazh-uEN-FqHtozuzk"
         }
       ],
       "services": {

@@ -116,14 +116,13 @@ class _BrowseScreenState extends State<BrowseScreen> {
   }
 
   void _toggleFavorite(String title) {
-    final wasFav = Favorites.isFavorite(title);
+    final wasSaved = Favorites.isFavorite(title);
     setState(() {
       Favorites.toggle(title);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-        Text(wasFav ? 'Removed from favorites' : 'Saved to favorites'),
+        content: Text(wasSaved ? 'Removed from saved' : 'Added to saved'),
         backgroundColor: const Color(0xFF3A5C2E),
         duration: const Duration(seconds: 1),
       ),
@@ -370,7 +369,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              // ===== HEADER (just title, like Home) =====
+              // ===== HEADER =====
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
@@ -411,7 +410,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     children: [
                       const SizedBox(height: 18),
 
-                      // SEARCH BAR (now in white area, like Home)
+                      // SEARCH BAR
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Container(
@@ -670,7 +669,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
   Widget _itemCard(Map<String, dynamic> item) {
     final bool available = item['available'] == true;
     final String title = item['title'].toString();
-    final bool isFav = Favorites.isFavorite(title);
+    final bool isSaved = Favorites.isFavorite(title);
 
     return GestureDetector(
       onTap: () => _openItemDetail(item),
@@ -683,6 +682,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Top row: Available/Taken badge + bookmark icon ──
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Row(
@@ -717,11 +717,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
                         child: child,
                       ),
                       child: Icon(
-                        isFav ? Icons.favorite : Icons.favorite_border,
-                        key: ValueKey(isFav),
-                        size: 20,
-                        color:
-                        isFav ? Colors.redAccent : const Color(0xFF3A5C2E),
+                        isSaved ? Icons.bookmark : Icons.bookmark_border,
+                        key: ValueKey(isSaved),
+                        size: 18,
+                        color: const Color(0xFF3A5C2E),
                       ),
                     ),
                   ),
@@ -729,6 +728,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
             const SizedBox(height: 6),
+
+            // ── Image ──
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -753,6 +754,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
             const SizedBox(height: 8),
+
+            // ── Bottom: title + distance ──
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
               child: Column(

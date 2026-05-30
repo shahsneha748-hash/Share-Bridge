@@ -1,25 +1,32 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'dashboard_screen.dart';
-import 'navigation_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:sharebridge/view/review.dart';
+import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/view/user_profile.dart';
+
 import 'firebase_options.dart';
 
-void main() async {
+
+void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+
+  runApp(MyHomePage());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: NavigationScreen(),
+    return MaterialApp(
+        title: "sharebridge",
+        debugShowCheckedModeBanner: false,
+        home: UserProfileScreen()
+
+
     );
   }
 }
