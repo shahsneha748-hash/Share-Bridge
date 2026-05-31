@@ -1,19 +1,34 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'create_donation_screen.dart';
 import 'confirmation_screen.dart';
 
+=======
+import 'package:sharebridge/view/review.dart';
+import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/view/user_profile.dart';
+>>>>>>> origin/develop
 
-void main() {
-  runApp(const MyApp());
+import 'firebase_options.dart';
+
+
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(MyHomePage());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+<<<<<<< HEAD
       title: 'Flutter Demo',
         debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -123,4 +138,13 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+=======
+        title: "sharebridge",
+        debugShowCheckedModeBanner: false,
+        home: UserProfileScreen()
+
+
+    );
+  }
+>>>>>>> origin/develop
 }
