@@ -17,10 +17,12 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
   final _descriptionController = TextEditingController();
   final _expiresController     = TextEditingController();
 
-  String     _condition = '';
-  String     _category  = '';
-  List<File> _photos    = [];
-  bool       _submitted = false;
+  String     _condition   = '';
+  String     _category    = '';
+  List<File> _photos      = [];
+  bool       _submitted   = false;
+  bool       _isDonated   = false;       // ← NEW: donation status
+  bool       _confirmDel  = false;       // ← NEW: double-tap delete guard
 
   // ── Colors ───────────────────────────────────────────────
   static const kHeader  = Color(0xFF3D5A3E);
@@ -31,6 +33,9 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
   static const kText    = Color(0xFF1A2A1A);
   static const kSub     = Color(0xFF5A7050);
   static const kWhite   = Colors.white;
+  static const kRed     = Color(0xFFE74C3C);
+  static const kRedBg   = Color(0xFFFFF0F0);
+  static const kRedBdr  = Color(0xFFFFB4B4);
 
   final _categories = [
     {'id': 'food',       'label': 'Food',       'icon': Icons.restaurant},
@@ -48,6 +53,18 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
     super.dispose();
   }
 
+  // ── Snackbar helper ──────────────────────────────────────
+  void _toast(String msg, {Color bg = const Color(0xFF222222)}) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: const TextStyle(color: kWhite, fontSize: 13)),
+      backgroundColor: bg,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      duration: const Duration(seconds: 2),
+    ));
+  }
+
   Future<void> _pickExpiry() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -63,7 +80,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
       ),
     );
     if (picked != null) {
-      final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       final day = picked.day.toString().padLeft(2, '0');
       setState(() => _expiresController.text = '${months[picked.month - 1]} $day, ${picked.year}');
     }
@@ -73,6 +90,25 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
     final picked = await ImagePicker().pickMultiImage(imageQuality: 85);
     if (picked.isNotEmpty) {
       setState(() => _photos = picked.take(5).map((x) => File(x.path)).toList());
+    }
+  }
+
+  // ── NEW: Edit action ─────────────────────────────────────
+  void _handleEdit() {
+    _toast('✎ Edit your fields and re-post');
+  }
+
+  // ── NEW: Delete action (double-tap confirm) ──────────────
+  void _handleDelete() {
+    if (!_confirmDel) {
+      setState(() => _confirmDel = true);
+      _toast('Tap 🗑 again to confirm delete', bg: const Color(0xFF8B0000));
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _confirmDel = false);
+      });
+    } else {
+      // Perform delete — pop or reset
+      Navigator.maybePop(context);
     }
   }
 
@@ -165,6 +201,143 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
     );
   }
 
+  // ── NEW: Donation Status card ────────────────────────────
+  Widget _donationStatusCard() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _label('Donation Status'),
+      GestureDetector(
+        onTap: () {
+          setState(() => _isDonated = !_isDonated);
+          _toast(_isDonated ? '✓ Marked as donated' : 'Marked as available');
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: _isDonated ? const Color(0xFFEDF5EF) : kInputBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _isDonated ? kHeader : kBorder,
+              width: 1.5,
+            ),
+          ),
+          child: Row(children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 10, height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _isDonated ? kHeader : kBorder,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  _isDonated ? 'Donated' : 'Available',
+                  style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600,
+                    color: _isDonated ? kHeader : kText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _isDonated ? 'This item has been donated' : 'Tap to mark as donated',
+                  style: const TextStyle(fontSize: 12, color: kSub),
+                ),
+              ]),
+            ),
+            // Toggle switch
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 46, height: 26,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(13),
+                color: _isDonated ? kHeader : kBorder,
+              ),
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 200),
+                alignment: _isDonated ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 20, height: 20,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: const BoxDecoration(
+                    color: kWhite,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
+                  ),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 18),
+    ],
+  );
+
+  // ── NEW: Manage Post row (Edit + Delete side by side) ────
+  Widget _managePostRow() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _label('Manage Post'),
+      Row(children: [
+        // Edit button
+        Expanded(
+          child: GestureDetector(
+            onTap: _handleEdit,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              decoration: BoxDecoration(
+                color: kInputBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kBorder, width: 1.5),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: const [
+                Icon(Icons.edit_outlined, size: 17, color: kHeader),
+                SizedBox(width: 7),
+                Text('Edit Post', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kHeader)),
+              ]),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Delete button
+        Expanded(
+          child: GestureDetector(
+            onTap: _handleDelete,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              decoration: BoxDecoration(
+                color: _confirmDel ? const Color(0xFFFFE0E0) : kRedBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _confirmDel ? kRed : kRedBdr,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.delete_outline_rounded, size: 17,
+                    color: _confirmDel ? kRed : const Color(0xFFE74C3C)),
+                const SizedBox(width: 7),
+                Text(
+                  _confirmDel ? 'Confirm?' : 'Delete Post',
+                  style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600,
+                    color: _confirmDel ? kRed : const Color(0xFFE74C3C),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ]),
+      const SizedBox(height: 18),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     if (_submitted) return _successScreen();
@@ -180,12 +353,13 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
       backgroundColor: kPageBg,
       body: Column(children: [
 
-        // ── Dark Green Header (full top like dashboard) ──
+        // ── Header with back + title + Edit icon + Delete icon ──
         Container(
           width: double.infinity,
           color: kHeader,
           padding: EdgeInsets.fromLTRB(16, topPadding + 14, 16, 18),
           child: Row(children: [
+            // Back
             GestureDetector(
               onTap: () => Navigator.maybePop(context),
               child: Container(
@@ -198,9 +372,44 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Create Donation',
-              style: TextStyle(color: kWhite, fontSize: 19, fontWeight: FontWeight.w700),
+            const Expanded(
+              child: Text(
+                'Create Donation',
+                style: TextStyle(color: kWhite, fontSize: 19, fontWeight: FontWeight.w700),
+              ),
+            ),
+            // Edit icon
+            GestureDetector(
+              onTap: _handleEdit,
+              child: Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(color: Colors.white38, width: 1.2),
+                ),
+                child: const Icon(Icons.edit_outlined, color: kWhite, size: 18),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Delete icon
+            GestureDetector(
+              onTap: _handleDelete,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: _confirmDel ? Colors.red.withValues(alpha: 0.3) : Colors.white24,
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color: _confirmDel ? Colors.redAccent : Colors.white38,
+                    width: 1.2,
+                  ),
+                ),
+                child: Icon(Icons.delete_outline_rounded,
+                    color: _confirmDel ? Colors.redAccent : const Color(0xFFFFB4B4),
+                    size: 18),
+              ),
             ),
           ]),
         ),
@@ -386,7 +595,13 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                     ]);
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
+
+                // ── NEW: Donation Status ──────────────────
+                _donationStatusCard(),
+
+                // ── NEW: Manage Post (Edit + Delete) ──────
+                _managePostRow(),
 
                 // Post Donation button
                 SizedBox(
@@ -397,7 +612,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: kHeader,
+                        color: _canSubmit ? kHeader : kBorder,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
@@ -408,6 +623,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
 
               ]),
             ),
@@ -443,7 +659,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
           const SizedBox(height: 28),
           GestureDetector(
             onTap: () => setState(() {
-              _submitted = false;
+              _submitted = false; _isDonated = false; _confirmDel = false;
               _firstNameController.clear(); _lastNameController.clear();
               _locationController.clear();  _itemNameController.clear();
               _descriptionController.clear(); _expiresController.clear();

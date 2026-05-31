@@ -49,7 +49,7 @@ class MyHomePage extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const ConfirmationScreen()
+      home: const CreateDonationScreen()
     );
   }
 }
