@@ -1,19 +1,16 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:sharebridge/view/review.dart';
-import 'package:sharebridge/view/user.dart';
-import 'package:sharebridge/view/user_profile.dart';
-
+import 'package:provider/provider.dart';
+import 'package:sharebridge/view/admin_dashboard_view.dart';
+import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
 import 'firebase_options.dart';
 
-
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  runApp(MyHomePage());
+  runApp(const MyHomePage());
 }
 
 class MyHomePage extends StatelessWidget {
@@ -21,12 +18,13 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ChangeNotifierProvider(
+      create: (_) => AdminDashboardViewModel(),
+      child: MaterialApp(
         title: "sharebridge",
         debugShowCheckedModeBanner: false,
-        home: UserProfileScreen()
-
-
+        home: const AdminDashboardScreen(),
+      ),
     );
   }
 }

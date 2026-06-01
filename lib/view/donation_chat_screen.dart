@@ -1,194 +1,45 @@
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../viewmodel/chat_viewmodel.dart';
+import '../model/message_model.dart';
+import '../components/quick_chip.dart';
 
-enum MessageStatus { sent, delivered, read }
-
-class Message {
-  final int id;
-  final String text;
-  final bool isSender;
-  final String timestamp;
-  final MessageStatus status;
-
-  Message({
-    required this.id,
-    required this.text,
-    required this.isSender,
-    required this.timestamp,
-    this.status = MessageStatus.read,
-  });
-}
-
-class DonationChatScreen extends StatefulWidget {
+class DonationChatScreen extends StatelessWidget {
   const DonationChatScreen({super.key});
 
-  @override
-  State<DonationChatScreen> createState() => _DonationChatScreenState();
-}
-
-class _DonationChatScreenState extends State<DonationChatScreen> {
-  final TextEditingController _inputController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  bool _isTyping = false;
-  int _idCounter = 5;
-
-  final List<String> _quickReplies = [
-    "I'm on my way",
-    "Thank you !",
-    "Can we reschedule?",
-    "Got it",
-  ];
-
-  final List<String> _botReplies = [
-    "Sure! See you then 😊",
-    "Great! I'll have everything ready.",
-    "Perfect, looking forward to it!",
-    "Sounds good! 👍",
-    "Okay, I'll be here waiting.",
-    "No problem at all! See you soon.",
-  ];
-
-  final List<Message> _messages = [
-    Message(
-      id: 0,
-      text: "Hi! I saw you requested my Grocery Essentials Bundle 😊",
-      isSender: false,
-      timestamp: "9:12 AM",
-    ),
-    Message(
-      id: 1,
-      text: "Are you still interested in picking it up?",
-      isSender: false,
-      timestamp: "9:12 AM",
-    ),
-    Message(
-      id: 2,
-      text: "Yes! I'm very interested. Thank you so much for donating 🙏",
-      isSender: true,
-      timestamp: "9:14 AM",
-    ),
-    Message(
-      id: 3,
-      text: "When and where can I come to collect it?",
-      isSender: true,
-      timestamp: "9:14 AM",
-    ),
-    Message(
-      id: 4,
-      text: "You can pick it up today before 6pm at Imadol 5, near ABC Tol gate. I'll be home all afternoon.",
-      isSender: false,
-      timestamp: "9:16 AM",
-    ),
-    Message(
-      id: 5,
-      text: "Perfect! I'll be there around 4pm. See you then! 😊",
-      isSender: true,
-      timestamp: "9:18 AM",
-    ),
-  ];
-
   static const Color _topBarColor = Color(0xFF2D5A14);
-  static const Color _bgColor     = Color(0xFFEDF0E8);
-  static const Color _sentBubble  = Color(0xFF4A7C26);
+  static const Color _bgColor = Color(0xFFEDF0E8);
+  static const Color _sentBubble = Color(0xFF4A7C26);
   static const Color _greenMedium = Color(0xFF4A7C26);
 
   @override
-  void dispose() {
-    _inputController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  String _currentTime() {
-    final now = DateTime.now();
-    final h = now.hour == 0
-        ? 12
-        : now.hour > 12
-        ? now.hour - 12
-        : now.hour;
-    final m    = now.minute.toString().padLeft(2, '0');
-    final amPm = now.hour < 12 ? 'AM' : 'PM';
-    return '$h:$m $amPm';
-  }
-
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-    setState(() {
-      _messages.add(Message(
-        id: ++_idCounter,
-        text: text.trim(),
-        isSender: true,
-        timestamp: _currentTime(),
-        status: MessageStatus.sent,
-      ));
-    });
-    _inputController.clear();
-    _scrollToBottom();
-    _simulateBotReply();
-  }
-
-  void _simulateBotReply() {
-    Timer(const Duration(milliseconds: 900), () {
-      if (!mounted) return;
-      setState(() => _isTyping = true);
-      _scrollToBottom();
-      Timer(const Duration(milliseconds: 1400), () {
-        if (!mounted) return;
-        setState(() {
-          _isTyping = false;
-          _messages.add(Message(
-            id: ++_idCounter,
-            text: _botReplies[Random().nextInt(_botReplies.length)],
-            isSender: false,
-            timestamp: _currentTime(),
-          ));
-        });
-        _scrollToBottom();
-      });
-    });
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  void _showSnackbar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bgColor,
-      body: Column(
-        children: [
-          _buildTopBar(),
-          _buildBanner(),
-          Expanded(child: _buildMessageList()),
-          _buildQuickReplies(),
-          _buildInputBar(),
-        ],
+    return ChangeNotifierProvider(
+      create: (_) => ChatViewModel(),
+      child: Scaffold(
+        backgroundColor: _bgColor,
+        body: Column(
+          children: [
+            _buildTopBar(context),
+            _buildBanner(context),
+            Expanded(
+              child: Consumer<ChatViewModel>(
+                builder: (context, vm, _) => _buildMessageList(vm),
+              ),
+            ),
+            Consumer<ChatViewModel>(
+              builder: (context, vm, _) => _buildQuickReplies(vm),
+            ),
+            Consumer<ChatViewModel>(
+              builder: (context, vm, _) => _buildInputBar(context, vm),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(BuildContext context) {
     return Container(
       color: _topBarColor,
       child: SafeArea(
@@ -251,12 +102,11 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.call, color: Colors.white),
-                onPressed: () =>
-                    _showSnackbar("Starting voice call with Ram Sah…"),
+                onPressed: () => _showSnackbar(context, "Starting voice call with Ram Sah…"),
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
-                onSelected: (value) => _showSnackbar(value),
+                onSelected: (value) => _showSnackbar(context, value),
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: "Opening Ram Sah's profile",
@@ -299,9 +149,9 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     );
   }
 
-  Widget _buildBanner() {
+  Widget _buildBanner(BuildContext context) {
     return GestureDetector(
-      onTap: _showDonationDetail,
+      onTap: () => _showDonationDetail(context),
       child: Container(
         color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -363,7 +213,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     );
   }
 
-  void _showDonationDetail() {
+  void _showDonationDetail(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -378,10 +228,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD7EDCA),
                     borderRadius: BorderRadius.circular(20),
@@ -414,8 +261,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
             _detailRow(
               "Description",
               "A bundle of essential grocery items including rice, lentils, "
-                  "cooking oil, and canned goods. Perfect for a family of 4 "
-                  "for about a week.",
+                  "cooking oil, and canned goods. Perfect for a family of 4 for about a week.",
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -461,18 +307,18 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     );
   }
 
-  Widget _buildMessageList() {
+  Widget _buildMessageList(ChatViewModel vm) {
     return ListView.builder(
-      controller: _scrollController,
+      controller: vm.scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _messages.length + 1 + (_isTyping ? 1 : 0),
+      itemCount: vm.messages.length + 1 + (vm.isTyping ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == 0) return _buildDateSeparator("Today");
         final msgIndex = index - 1;
-        if (_isTyping && msgIndex == _messages.length) {
+        if (vm.isTyping && msgIndex == vm.messages.length) {
           return _buildTypingBubble();
         }
-        return _buildMessageBubble(_messages[msgIndex]);
+        return _buildMessageBubble(vm.messages[msgIndex]);
       },
     );
   }
@@ -612,20 +458,20 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     );
   }
 
-  Widget _buildQuickReplies() {
+  Widget _buildQuickReplies(ChatViewModel vm) {
     return Container(
       color: const Color.fromRGBO(255, 255, 255, 0.6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
-          children: _quickReplies
+          children: vm.quickReplies
               .map(
                 (text) => Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: _QuickChip(
+              child: QuickChip(
                 text: text,
-                onTap: () => _sendMessage(text),
+                onTap: () => vm.sendMessage(text),
               ),
             ),
           )
@@ -635,7 +481,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     );
   }
 
-  Widget _buildInputBar() {
+  Widget _buildInputBar(BuildContext context, ChatViewModel vm) {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.only(
@@ -648,7 +494,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.attach_file, color: Colors.grey),
-            onPressed: _showAttachmentSheet,
+            onPressed: () => _showAttachmentSheet(context),
           ),
           Expanded(
             child: Container(
@@ -657,8 +503,8 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
                 borderRadius: BorderRadius.circular(24),
               ),
               child: TextField(
-                controller: _inputController,
-                onSubmitted: _sendMessage,
+                controller: vm.inputController,
+                onSubmitted: vm.sendMessage,
                 textCapitalization: TextCapitalization.sentences,
                 minLines: 1,
                 maxLines: 4,
@@ -676,13 +522,11 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
           ),
           const SizedBox(width: 8),
           ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _inputController,
+            valueListenable: vm.inputController,
             builder: (_, value, __) {
               final canSend = value.text.trim().isNotEmpty;
               return GestureDetector(
-                onTap: canSend
-                    ? () => _sendMessage(_inputController.text)
-                    : null,
+                onTap: canSend ? () => vm.sendMessage(vm.inputController.text) : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 44,
@@ -705,7 +549,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     );
   }
 
-  void _showAttachmentSheet() {
+  void _showAttachmentSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -741,7 +585,7 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
     return GestureDetector(
       onTap: () {
         Navigator.pop(ctx);
-        _showSnackbar("$label opened");
+        _showSnackbar(ctx, "$label opened");
       },
       child: Column(
         children: [
@@ -762,52 +606,13 @@ class _DonationChatScreenState extends State<DonationChatScreen> {
       ),
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// QUICK CHIP WIDGET
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _QuickChip extends StatefulWidget {
-  final String text;
-  final VoidCallback onTap;
-
-  const _QuickChip({required this.text, required this.onTap});
-
-  @override
-  State<_QuickChip> createState() => _QuickChipState();
-}
-
-class _QuickChipState extends State<_QuickChip> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFB8C8B0)),
-          ),
-          child: Text(
-            widget.text,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+  void _showSnackbar(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
