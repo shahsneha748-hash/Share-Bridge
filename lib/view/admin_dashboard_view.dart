@@ -95,7 +95,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _buildTopBar(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 80),
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 80),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -121,12 +121,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ── TOP BAR ─────────────────────────────────────────────────────────────────
+
   Widget _buildTopBar() {
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top,
-        left: 16, right: 16, bottom: 16,
+        left: 16, right: 16, bottom: 14,
       ),
       child: Row(
         children: [
@@ -175,9 +177,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ── SECTION LABEL ───────────────────────────────────────────────────────────
+
   Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      padding: const EdgeInsets.only(top: 12, bottom: 6),
       child: Text(text.toUpperCase(),
           style: const TextStyle(
             fontSize: 11,
@@ -188,6 +192,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ── STAT GRID ───────────────────────────────────────────────────────────────
+
   Widget _buildStatGrid(DashboardStats stats) {
     return GridView.count(
       crossAxisCount: 2,
@@ -196,6 +202,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
       childAspectRatio: 1.35,
+      padding: EdgeInsets.zero,
       children: [
         GestureDetector(
           onTap: () => _navigateTo('Donations'),
@@ -248,6 +255,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ],
     );
   }
+
+  // ── QUICK ACTIONS ───────────────────────────────────────────────────────────
 
   Widget _buildQuickActions() {
     final actions = [
@@ -325,6 +334,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ── FLAGGED POSTS ───────────────────────────────────────────────────────────
+
   Widget _buildFlaggedSection(AdminDashboardViewModel controller) {
     if (controller.flaggedPosts.isEmpty) {
       return Container(
@@ -359,6 +370,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
   }
+
+  // ── CATEGORY CHART ──────────────────────────────────────────────────────────
 
   Widget _buildCategoryChart(List<CategoryStat> categories) {
     final barColors = [
@@ -421,6 +434,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ── DONOR LEADERBOARD ───────────────────────────────────────────────────────
+
   Widget _buildDonorLeaderboard(List<TopDonor> donors) {
     const medals = ['🥇', '🥈', '🥉'];
 
@@ -470,6 +485,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ── ACTIVITY FEED ───────────────────────────────────────────────────────────
+
   Widget _buildActivityFeed(List<ActivityItem> items) {
     return Container(
       decoration: BoxDecoration(
@@ -483,6 +500,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
   }
+
+  // ── BOTTOM NAV ──────────────────────────────────────────────────────────────
 
   Widget _buildBottomNav() {
     final tabs = [
