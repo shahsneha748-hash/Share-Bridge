@@ -77,7 +77,7 @@ class UserRepoImpl implements UserRepo {
     return userId;                 // yesleh userId return garyo bhaneh login successful huncha
   }
 
-  // after login sabai data login ma bhako will store in this variable (.user) ma store gareko. Login bhaisakehpachi user ko sabai details (.user) bhanne variable bhita store bhako huncha. login bhaisakeh pachi user ko instance yo user bhanneh variable auncha. for now just logic ko lagi userid matrai chaheko so userid rakheko (user id bhaneko primary key so rakheko) login ko lagi userid chahincha so userid(uid) rakheko
+  // after login sabai data login ma bhako will store in this variable (.user) ma store gareko. Login bhaisakehpachi user ko sabai details (.user) bhanne variable bhitra store bhako huncha. login bhaisakeh pachi user ko instance yo user bhanneh variable auncha. for now just logic ko lagi userid matrai chaheko so userid rakheko (user id bhaneko primary key so rakheko) login ko lagi userid chahincha so userid(uid) rakheko
 
 
   @override

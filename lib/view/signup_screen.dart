@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
+import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/view/login_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-// import 'dart:convert';
+import 'package:sharebridge/viewmodel/user_view_model.dart';
+
 import 'package:bcrypt/bcrypt.dart';
 
 // Function to hash
@@ -30,9 +33,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController phoneController = TextEditingController();
 
   bool visibility = false;
+  bool visibility1 = false;
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<UserViewModel>();              // notify listeners leh listen gariraknu ko lagi watch rakheko (like error loading haru bhairakcha so) (we initialized it build bhitra)
     return Scaffold(
       backgroundColor: Color(0XFF435944),
       appBar: AppBar(
@@ -167,7 +172,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 10,  vertical: 10),
                         child: TextFormField(
                           controller: confirmPasswordController,
-                          obscureText: !visibility,
+                          obscureText: !visibility1,
                           decoration: InputDecoration(
                               prefixIcon: Padding(
                                 padding: const EdgeInsets.only(left: 15),
@@ -175,10 +180,10 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               suffixIcon: IconButton(onPressed: (){
                                 setState(() {
-                                  visibility = !visibility;
+                                  visibility1 = !visibility1;
                                 });
                               },
-                                  icon: Icon(!visibility == false? Icons.visibility_off: Icons.visibility_rounded
+                                  icon: Icon(!visibility1 == false? Icons.visibility_off: Icons.visibility_rounded
                                   )
                               ),
                               hint: Padding(
@@ -211,7 +216,6 @@ class _SignupScreenState extends State<SignupScreen> {
                               filled: true,
                               enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
                               focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
                           ),
                         ),
                       ),
@@ -227,45 +231,37 @@ class _SignupScreenState extends State<SignupScreen> {
                               foregroundColor: Colors.white,
                             ),
                             onPressed: () async{
-                              // Obtain shared preferences.
-                              final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-                              // Check if any field is empty
-                              if (nameController.text.isEmpty ||
-                                  addressController.text.isEmpty ||
-                                  emailController.text.isEmpty ||
-                                  passwordController.text.isEmpty ||
-                                  confirmPasswordController.text.isEmpty ||
-                                  phoneController.text.isEmpty) {
-                                // Show error message
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("⚠️ Please fill in all fields")),
+                              final userId = await viewModel.signup(emailController.text, passwordController.text);
+                              if (userId.isEmpty) {
+                                Fluttertoast.showToast(
+                                    msg: viewModel.error.toString());
+                              }else{
+                                final model = UserModel(
+                                    id: userId,
+                                    fullName: nameController.text,
+                                    email: emailController.text,
+                                    password: passwordController.text,
+                                    phone: phoneController.text,
+                                    address: addressController.text,
+                                    role: "user",
+                                    isVerified: false,
+                                    createdAt: DateTime.now(),
+                                    updatedAt: DateTime.now(),
+                                    rating: 0.0,
+                                    totalDonations: 0,
                                 );
-                                return; // stop execution here
+                                final success = await viewModel.addUser(model);
+                                if(success){
+                                  Fluttertoast.showToast(msg: "Registration successfully");
+                                }
+                                else{
+                                  Fluttertoast.showToast(msg: viewModel.error.toString());
+                                }
                               }
 
-                              // Hash both password and confirm password
-                              final hashedPassword = hashPassword(passwordController.text);
-                              final hashedConfirmPassword = hashPassword(confirmPasswordController.text);
-
-
-                              // Save other fields normally
-                              await prefs.setString("Full Name", nameController.text);
-                              await prefs.setString("Address", addressController.text);
-                              await prefs.setString("Email", emailController.text);
-                              // Save hashed values instead of plain text
-                              await prefs.setString("Password", hashedPassword);
-                              await prefs.setString("Confirm Password", hashedConfirmPassword);
-                              await prefs.setString("Phone", phoneController.text);
-
-                              // Navigator.pushReplacement(context, newRoute)
                               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-                              // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SignupScreen(),));
-
-
-
                             },
-                            child: Text("Create Account", style: TextStyle(fontSize: 20)),
+                            child: viewModel.loading ? CircularProgressIndicator() : Text("Create Account",style: TextStyle(fontSize: 20),),
                           ),
                         ),
                       ),

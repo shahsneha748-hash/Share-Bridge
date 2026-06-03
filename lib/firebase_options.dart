@@ -34,8 +34,8 @@ class DefaultFirebaseOptions {
         );
       case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for linux - '
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
@@ -65,4 +65,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'sharebridge-2668c.firebasestorage.app',
     iosBundleId: 'com.sharebridge.sharebridge',
   );
+
 }

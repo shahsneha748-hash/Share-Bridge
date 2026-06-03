@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
+import 'package:sharebridge/model/login_model.dart';
+import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
+//import 'package:sharebridge/view/dashboard_screen.dart';
+import 'package:sharebridge/viewmodel/user_view_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
@@ -20,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<UserViewModel>();
     return Scaffold(
       backgroundColor: Color(0XFF435944),
       appBar: AppBar(
@@ -143,60 +149,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     SizedBox(
                       width: 500, height: 57,
-                      child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Color(0XFF435944), foregroundColor: Colors.white),
-                          onPressed: () async {
-                            final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-                            // Get stored values
-                            final String? email = prefs.getString("Email") ;
-                            final String? password = prefs.getString("Password");
-
-                            // Compare email and password
-                            if (email == emailController.text &&
-                                password == passwordController.text) {
-                              Fluttertoast.showToast(msg: "Login successful", );
-
-                              // Navigator.pushReplacement(context, MaterialPageRoute(
-                              //     builder: (context) => DashboardScreen()),);
-                            } else {
-                              Fluttertoast.showToast(msg: "Invalid login");
-                            }
-
-                            // Check if any field is empty first
-                            if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("⚠️ Please fill in all fields")),
-                              );
-                              return; // stop execution here
-                            }
-
-                            final inputEmail = emailController.text;
-                            final inputPassword = passwordController.text;
-
-                            // Get stored values
-                            final storedEmail = prefs.getString("Email") ?? "";
-                            final storedHashedPassword = prefs.getString("Password") ?? "";
-
-                            // Compare email and password
-                            if (inputEmail == storedEmail &&
-                                checkPassword(inputPassword, storedHashedPassword)) {
-                              // ✅ Login success
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("✅ Login successful!")),
-                              );
-
-                              // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()),
-                              // );
-                            } else {
-                              // ❌ Wrong credentials
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("❌ Invalid email or password")),
-                              );
-                            }
-                          },
-                          child: Text("Login", style: TextStyle(fontSize: 20),)),
+                    //   child: ElevatedButton(
+                    //       style: ElevatedButton.styleFrom(backgroundColor: Color(0XFF435944), foregroundColor: Colors.white),
+                    //       onPressed: () async {
+                    //         final userId = await viewModel.login(emailController.text, passwordController.text);
+                    //         if (userId.isEmpty) {
+                    //           Fluttertoast.showToast(
+                    //             msg.viewModel.error.toString());
+                    //         } else {
+                    //           final model = LoginModel(
+                    //             id: userId,
+                    //             email: emailController.text,
+                    //             password: passwordController.text,
+                    //           );
+                    //           final success = await viewModel.login(model);
+                    //           if(success){
+                    //             Fluttertoast.showToast(msg: "Login successfully");
+                    //           }
+                    //           else{
+                    //             Fluttertoast.showToast(msg: viewModel.error.toString());
+                    //           }
+                    //         }
+                    //         // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()),);
+                    //       },
+                    //     child: viewModel.loading ? CircularProgressIndicator() : Text("Login",style: TextStyle(fontSize: 20),),
+                    // ),
                     ),
+
 
                     SizedBox(
                       height: 30,),

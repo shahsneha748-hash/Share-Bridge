@@ -3,7 +3,7 @@ import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 
   class UserViewModel extends ChangeNotifier {              // Yo ViewModel ko lagi we use StateManagement ani yo StateManagement ko lagi we use provider. State bhaneko data ho tyo jun bela pani change hunu sakcha. Ra tyo change bhako data lai manage garna we use provider        // ChangeNotifier material.dart bata import garneh first.       //DataManagement ko lagi we use provider.
-  final UserRepo _userRepo;                                 // userRepo use garna instance banakp
+  final UserRepo _userRepo;                                 // userRepo use garna instance banako kina ki hamro userViewModel communicates with userRepo as it actually stores and retrieves data from the database. (also kina ki after ViewModel repo auncha)
 
   UserViewModel({                            // userviewmodel ko constructor banako
   required UserRepo userRepo
@@ -52,8 +52,8 @@ import 'package:sharebridge/repo/user_repo.dart';
     }
   }
 
-  Future<String> register (String email, String password) async {              // jaba register button click garcha register leh 2 things call garcha authentication and firestore so that's y it returns string
-  final id = await _userRepo.login(email, password);
+  Future<String> signup (String email, String password) async {              // jaba register button click garcha register leh 2 things call garcha authentication and firestore so that's y it returns string
+  final id = await _userRepo.signup(email, password);
   return id;
   }
 

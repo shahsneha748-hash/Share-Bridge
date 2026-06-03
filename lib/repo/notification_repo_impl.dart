@@ -56,6 +56,7 @@ class NotificationRepoImpl implements NotificationRepo {
     return notification.docs.map((doc) => NotificationModel.fromMap(doc.data())).toList();
   }
 
+  //  Returns NotificationModel list with timestamps.
   @override
   Future<List<NotificationModel>> getNotificationsByUser(String userId) async{
     final notification = await firestore
