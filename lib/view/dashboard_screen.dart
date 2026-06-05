@@ -2,8 +2,10 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:project/item_data.dart';
-import 'package:project/item_detail_screen.dart';
+import 'package:sharebridge/view/item_data.dart';
+import 'package:sharebridge/view/item_detail_screen.dart';
+
+
 
 class DashboardScreen extends StatefulWidget {
   final void Function({String? category})? onGoToBrowse;

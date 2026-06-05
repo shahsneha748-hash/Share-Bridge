@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:project/item_data.dart';
-import 'package:project/item_detail_screen.dart';
+import 'package:sharebridge/view/item_data.dart';
+import 'package:sharebridge/view/item_detail_screen.dart';
 
 class BrowseScreen extends StatefulWidget {
   final String? initialCategory;

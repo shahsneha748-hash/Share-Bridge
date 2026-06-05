@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:project/create_donation_screen.dart';
-import 'package:project/dashboard_screen.dart';
-import 'package:project/my_item_screen.dart';
-import 'package:project/profile_screen.dart';
-import 'package:project/browse_screen.dart';
+import 'package:sharebridge/view/create_donation_screen.dart';
+import 'package:sharebridge/view/dashboard_screen.dart';
+import 'package:sharebridge/view/my_item_screen.dart';
+import 'package:sharebridge/view/profile_screen.dart';
+import 'package:sharebridge/view/browse_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
