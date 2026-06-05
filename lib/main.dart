@@ -33,7 +33,7 @@ class MyHomePage extends StatelessWidget {
       child: MaterialApp(               //we wrapped with multi provider becuase our app ma multiple view model huna sakcha so that's y we put it.
         title: "Share-Bridge",
         debugShowCheckedModeBanner: false,
-        home: SavedItemsScreen(),
+        home: SplashScreen(),
       ),
     );
   }

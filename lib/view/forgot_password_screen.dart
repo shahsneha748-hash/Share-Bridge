@@ -1,40 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:bcrypt/bcrypt.dart';
-// import 'package:sharebridge/view/login_screen.dart';
-
-Future<void> requestOtp(String email) async {
-  final response = await http.post(
-    Uri.parse("http://localhost:3000/request-otp"), // backend endpoint
-    body: {"email": email},
-  );
-
-  if (response.statusCode == 200) {
-    print("OTP sent to email!");
-  } else {
-    print("Failed to send OTP");
-  }
-}
-
-Future<void> resetPassword(String email, String otp, String newPassword) async {
-  final hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-
-  final response = await http.post(
-    Uri.parse("http://localhost:3000/reset-password"),
-    body: {"email": email, "otp": otp, "newPassword": hashedPassword},
-  );
-
-  if (response.statusCode == 200) {
-    // Update SharedPreferences locally
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("Password", hashedPassword);
-
-    print("Password reset successful!");
-  } else {
-    print("Invalid OTP or reset failed");
-  }
-}
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -44,12 +10,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController otpController = TextEditingController();
-  final TextEditingController newPasswordController = TextEditingController();
-
-  bool otpSent = false; // track state
 
   @override
   Widget build(BuildContext context) {
@@ -58,14 +19,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: AppBar(
           backgroundColor: Color(0XFF435944),
           centerTitle: true,
-          title: Text("Email OTP", style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.w500),)),
+          title: Text("Forgot Password", style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.w500),)),
       body: Padding(
         padding: const EdgeInsets.only(top:20, bottom: 100),
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 20, bottom: 25),
-              child: Image.asset("assets/images/lock.png", height: 65, width: 65),
+              child: Image.asset("assets/images/lock1.png", height: 65, width: 65),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -75,52 +36,42 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
             SizedBox(height: 30),
-            // Show OTP + new password fields only after OTP is sent
-            if (otpSent) ...[
-              TextFormField(
-                controller: otpController,
-                decoration: InputDecoration(labelText: "Enter OTP"),
-              ),
-              SizedBox(height: 20),
-              TextFormField(
-                controller: newPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: "Enter new password"),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  resetPassword(
-                    emailController.text,
-                    otpController.text,
-                    newPasswordController.text,
-                  );
-                },
-                child: Text("Reset Password"),
-              ),
-            ] else ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: SizedBox(
-                  width: 350, height: 57,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0XFF435944),
-                      foregroundColor: Colors.white,),
-                    onPressed: () async {
-                      await requestOtp(emailController.text);
-                      setState(() {
-                        otpSent = true; // show OTP fields
-                      });
-                    },
-                    child: Text("Send OTP"),
+      //
+            ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0XFF435944),
+                  foregroundColor: Colors.white,
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-              ),
-            ],
-          ],
+                onPressed: () async{
+                  // ✅ Step 1: Check if fields are empty
+                  if (emailController.text.trim().isEmpty) {
+                    Fluttertoast.showToast(msg: "Please enter your email");
+                    return; // stop execution here
+                  }
+                  final email = emailController.text.trim();
+
+                  if (email.isEmpty) {
+                    Fluttertoast.showToast(msg: "Please enter your email");
+                    return;
+                  }
+
+                  try {
+                    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                    Fluttertoast.showToast(msg: "Password reset email sent to $email");
+                  } catch (e) {
+                    Fluttertoast.showToast(
+                      msg: "Error: Too many request send to reset password",
+                    );
+                  }
+                },
+                child: Text("Reset Password", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),))
+             ],
         ),
-      ),
+    )
     );
   }
 }

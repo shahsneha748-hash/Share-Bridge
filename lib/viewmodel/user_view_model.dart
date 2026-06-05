@@ -38,18 +38,9 @@ import 'package:sharebridge/repo/user_repo.dart';
   notifyListeners();        // data change bhaye pachi garnu lai use gareko notifyListeners();       //here we notify the widgets (the view layer)
   }
 
-  Future<bool> login (String email, String password) async {
-    setLoading(true);
-    setError(null);
-    try{
-      await _userRepo.login(email, password);
-      return true;
-    } on Exception catch (e) {
-      setError(e.toString());
-      return false;
-    } finally {
-      setLoading(false);
-    }
+  Future<String> login (String email, String password) async {
+    final id = await _userRepo.login(email, password);
+    return id;
   }
 
   Future<String> signup (String email, String password) async {              // jaba register button click garcha register leh 2 things call garcha authentication and firestore so that's y it returns string

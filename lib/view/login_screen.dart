@@ -149,31 +149,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     SizedBox(
                       width: 500, height: 57,
-                    //   child: ElevatedButton(
-                    //       style: ElevatedButton.styleFrom(backgroundColor: Color(0XFF435944), foregroundColor: Colors.white),
-                    //       onPressed: () async {
-                    //         final userId = await viewModel.login(emailController.text, passwordController.text);
-                    //         if (userId.isEmpty) {
-                    //           Fluttertoast.showToast(
-                    //             msg.viewModel.error.toString());
-                    //         } else {
-                    //           final model = LoginModel(
-                    //             id: userId,
-                    //             email: emailController.text,
-                    //             password: passwordController.text,
-                    //           );
-                    //           final success = await viewModel.login(model);
-                    //           if(success){
-                    //             Fluttertoast.showToast(msg: "Login successfully");
-                    //           }
-                    //           else{
-                    //             Fluttertoast.showToast(msg: viewModel.error.toString());
-                    //           }
-                    //         }
-                    //         // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()),);
-                    //       },
-                    //     child: viewModel.loading ? CircularProgressIndicator() : Text("Login",style: TextStyle(fontSize: 20),),
-                    // ),
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Color(0XFF435944), foregroundColor: Colors.white),
+                        onPressed: () async {
+                          // ✅ Step 1: Check if fields are empty
+                          if (emailController.text.trim().isEmpty ||
+                              passwordController.text.trim().isEmpty) {
+                            Fluttertoast.showToast(msg: "All text must be filled");
+                            return; // stop execution here
+                          }
+
+                          // ✅ Step 2: Proceed with login if not empty
+                          final userId = await viewModel.login(
+                            emailController.text.trim(),
+                            passwordController.text.trim(),
+                          );
+
+                          if (userId.isNotEmpty) {
+                            Fluttertoast.showToast(msg: "Login successful");
+                            // Navigator.pushReplacement(
+                            //   context,
+                            //   MaterialPageRoute(builder: (_) => DashboardScreen()),
+                            // );
+                          } else {
+                            Fluttertoast.showToast(msg: "Login Failed");
+                          }
+                        },
+                        child: viewModel.loading ? CircularProgressIndicator() : Text("Login",style: TextStyle(fontSize: 20),),
+                      ),
                     ),
 
 

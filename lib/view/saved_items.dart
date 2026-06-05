@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sharebridge/components/saved_item_card.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
 //import 'package:sharebridge/view/donation_chat_screen.dart';
 
@@ -12,14 +13,44 @@ class SavedItemsScreen extends StatefulWidget {
 class _SavedItemsScreenState extends State<SavedItemsScreen> {
   int currentIndex = 0;
   final PageController pageController = PageController();
-  String selectedCategory = "All";   // <-- added
+  String selectedCategory = "All";
 
   final List<Map<String, String>> items = [
-    {"title": "Fruit Basket", "image": "assets/images/fruits.png", "category": "Food"},
-    {"title": "Books", "image": "assets/images/books.png", "category": "Books"},
-    {"title": "Bakery Items", "image": "assets/images/bakery_items.png", "category": "Food"},
-    {"title": "Grocery Items", "image": "assets/images/groceries.png", "category": "Food"},
-    {"title": "Sweater", "image": "assets/images/sweater.png", "category": "Clothes"},
+    {
+      "title": "Fruit Basket",
+      "image": "assets/images/fruits1.png",
+      "category": "Food",
+      "miles": "0.4 miles",
+      "added time": "Added 2h ago"
+    },
+    {
+      "title": "Books",
+      "image": "assets/images/books1.png",
+      "category": "Books",
+      "miles": "1.2 miles",
+      "added time": "Added 10h ago"
+    },
+    {
+      "title": "Bakery Items",
+      "image": "assets/images/bakery_items1.png",
+      "category": "Food",
+      "miles": "0.8 miles",
+      "added time": "Added 1 day ago"
+    },
+    {
+      "title": "Grocery Items",
+      "image": "assets/images/groceries1.png",
+      "category": "Food",
+      "miles": "0.5 miles",
+      "added time": "Added 2 days ago"
+    },
+    {
+      "title": "Sweater",
+      "image": "assets/images/sweater1.png",
+      "category": "Clothes",
+      "miles": "2.1 miles",
+      "added time": "Added 20h ago"
+    },
   ];
 
   @override
@@ -70,15 +101,19 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
                   ],
                 ),
 
-                SizedBox(height: 15),
+                SizedBox(height: 10),
 
-                // Use filteredItems here
+                // Render saved cards
                 ...filteredItems.map((item) => Padding(
-                  padding: EdgeInsets.only(bottom: 15),
-                  child: buildItemCard(
-                      0, item["title"]!, item["image"]!),
+                  padding: const EdgeInsets.only(bottom: 15),
+                  child: SavedItemCard(
+                    title: item["title"]!,
+                    imagePath: item["image"]!,
+                    miles: item["miles"]!,
+                    addedTime: item["added time"]!,
+                  ),
                 )),
-              ],
+               ],
             ),
           ),
         ],
@@ -110,56 +145,5 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
     );
   }
 
-  Widget buildItemCard(int index, String title, String imagePath) {
-    return SizedBox(
-      height: 130,
-      child: Card(
-        color: Color(0XFFecf6e5),
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: Color(0XFF6a965b)),
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(left: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Image.asset(imagePath, height: 100, width: 100),
-              SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontSize: 20,
-                          color: Color(0XFF435944),
-                          fontWeight: FontWeight.w700)),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0XFF435944),
-                        foregroundColor: Colors.white,
-                        elevation: 5,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: Text("Message Donor")),
-                ],
-              ),
-              Spacer(),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.bookmark,
-                    color: Color(0XFF757575), size: 25),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 

@@ -2,7 +2,6 @@ class UserModel {               // UserModel is the blueprint of what gets store
   final String id;              // unique identifier (UUID or Firebase UID)
   final String fullName;        // user's name
   final String email;           // login credential
-  final String password;        // stored securely (hashed)
   final String phone;           // contact number
   final String address;         // optional profile info
   final String role;            // "user", "donor", "receiver", "volunteer", "admin".          Note: A single user can act as both donor and receiver depending on context.
@@ -18,7 +17,6 @@ class UserModel {               // UserModel is the blueprint of what gets store
     required this.id,
     required this.fullName,
     required this.email,
-    required this.password,
     required this.phone,
     required this.address,
     required this.role,
@@ -36,7 +34,6 @@ class UserModel {               // UserModel is the blueprint of what gets store
       'id': this.id,
       'fullName': this.fullName,
       'email': this.email,
-      'password': this.password,
       'phone': this.phone,
       'address': this.address,
       'role': this.role,
@@ -54,7 +51,6 @@ class UserModel {               // UserModel is the blueprint of what gets store
       id: map['id'] as String,
       fullName: map['fullName'] as String,
       email: map['email'] as String,
-      password: map['password'] as String,
       phone: map['phone'] as String,
       address: map['address'] as String,
       role: map['role'] as String,

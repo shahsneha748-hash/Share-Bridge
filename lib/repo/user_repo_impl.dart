@@ -68,14 +68,22 @@ class UserRepoImpl implements UserRepo {
   // Login ko backend code ho yo
   @override
   Future<String> login(String email, String password) async {    // yesma parameter email ra password huncha after writing auth.signInWithEmailAndPassword ehich is we are using authentication ko signInWithEmailAndPassword function
+    // 1. Authenticate with FirebaseAuth using email + password
     final user = await auth.signInWithEmailAndPassword(          // final user = await auth.signInWithEmailAndPassword, yo firebaseauth ko function automatically auncha                   // auth is authentication ko instance ho                                        // signInWithEmailAndPassword yo firebaseauth ko function automatically auncha
         email: email, password: password);    // email ma parameter bata ako email pass garneh
+
+    // 2. Get the UID (unique user ID) from the authenticated user
     final userId = user.user?.uid;            // after login .user variable ma sabai login ko data is stored inside it.       //(user ko pichadi "?" symbol rakheko so it becomes nullable. userid ma value aunu pani sakcha naaunu pani sakcha)        Note: before we didn't add "?" symbol garyp bhaneh error auncha yo userid lai nullable bana bhanera so we added "?" symbol
+
+    // 3. If UID is null → login failed
     if (userId == null) {                // id userid ma value ayena bhane throw login failed else if userid ma value cha bhaneh login successful huncha
       throw Exception("Login failed");
     }
+
+    // 4. Otherwise return the UID string → login successful
     return userId;                 // yesleh userId return garyo bhaneh login successful huncha
   }
+
 
   // after login sabai data login ma bhako will store in this variable (.user) ma store gareko. Login bhaisakehpachi user ko sabai details (.user) bhanne variable bhitra store bhako huncha. login bhaisakeh pachi user ko instance yo user bhanneh variable auncha. for now just logic ko lagi userid matrai chaheko so userid rakheko (user id bhaneko primary key so rakheko) login ko lagi userid chahincha so userid(uid) rakheko
 

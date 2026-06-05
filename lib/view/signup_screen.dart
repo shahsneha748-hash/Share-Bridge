@@ -5,17 +5,6 @@ import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
 
-import 'package:bcrypt/bcrypt.dart';
-
-// Function to hash
-String hashPassword(String password) {
-  return BCrypt.hashpw(password, BCrypt.gensalt());
-}
-
-bool checkPassword(String password, String hashed) {
-  return BCrypt.checkpw(password, hashed);
-}
-
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -95,7 +84,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ),
 
-
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         child: TextFormField(
@@ -113,7 +101,6 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -231,16 +218,29 @@ class _SignupScreenState extends State<SignupScreen> {
                               foregroundColor: Colors.white,
                             ),
                             onPressed: () async{
-                              final userId = await viewModel.signup(emailController.text, passwordController.text);
-                              if (userId.isEmpty) {
-                                Fluttertoast.showToast(
-                                    msg: viewModel.error.toString());
+                              // ✅ Step 1: Check if fields are empty
+                              if (emailController.text.trim().isEmpty ||
+                                  passwordController.text.trim().isEmpty ||
+                                  confirmPasswordController.text.trim().isEmpty ||
+                                  nameController.text.trim().isEmpty ||
+                                  addressController.text.trim().isEmpty ||
+                                  phoneController.text.trim().isEmpty
+                              ) {
+                                Fluttertoast.showToast(msg: "All text must be filled");
+                                return; // stop execution here
+                              }
+                              final userId = await viewModel.signup(emailController.text, passwordController.text);                           // Calls your UserViewModel.signup method. Inside that method, it likely: i) Creates a FirebaseAuth account with email + password. ii) Returns the uid if account created successfully, or an empty string if failed.
+
+                              // Check signup result
+                              if (userId.isEmpty) {                                  // If signup failed, show the error.If signup succeeded, continue.
+                                Fluttertoast.showToast(msg: viewModel.error.toString());
                               }else{
-                                final model = UserModel(
+
+                                // Create a UserModel object
+                                final model = UserModel(                             // Builds a UserModel with all the signup form data.This is your app’s own user profile structure (not just FirebaseAuth).
                                     id: userId,
                                     fullName: nameController.text,
                                     email: emailController.text,
-                                    password: passwordController.text,
                                     phone: phoneController.text,
                                     address: addressController.text,
                                     role: "user",
@@ -250,16 +250,19 @@ class _SignupScreenState extends State<SignupScreen> {
                                     rating: 0.0,
                                     totalDonations: 0,
                                 );
-                                final success = await viewModel.addUser(model);
+
+                                // Save user profile in Firestore
+                                final success = await viewModel.addUser(model);                                                     // Calls addUser in your ViewModel, which writes the UserModel into Firestore. This ensures you have a full profile stored (name, phone, address, etc.), not just the FirebaseAuth account.
                                 if(success){
                                   Fluttertoast.showToast(msg: "Registration successfully");
                                 }
                                 else{
-                                  Fluttertoast.showToast(msg: viewModel.error.toString());
+                                  Fluttertoast.showToast(msg: "Signup Failed");
                                 }
                               }
 
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+                              // Navigate to LoginScreen
+                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));                        // After signup, it redirects the user to the login screen.
                             },
                             child: viewModel.loading ? CircularProgressIndicator() : Text("Create Account",style: TextStyle(fontSize: 20),),
                           ),
@@ -276,4 +279,17 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
+
+
+
+// ⚡ In short (summary of the "Create Account button clicked logic" code above):
+// Validate inputs → show toast if empty.
+//
+// Signup with FirebaseAuth → get uid.
+//
+// Create UserModel → store extra info.
+//
+// Save to Firestore → persist profile.
+//
+// Show toast + navigate → feedback + redirect.
 

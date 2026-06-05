@@ -57,10 +57,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           Expanded(
                             child: Row(
                               children: [
-                                Image.asset("assets/images/Hazel.png", height: 60, width: 60,),
+                                Image.asset("assets/images/Hazel1.png", height: 60, width: 60,),
                                 Padding(
                                   padding: EdgeInsets.only(left: 10, bottom: 25),
-                                  child: Image.asset("assets/images/alert.png",
+                                  child: Image.asset("assets/images/alert1.png",
                                       height: 20, width: 20),
                                 ),
                                 SizedBox(width: 5),
@@ -111,7 +111,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/p.png", height: 60, width: 60,),
+                            Image.asset("assets/images/p1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -159,7 +159,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Sam.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Sam1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -200,7 +200,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal:5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Julie.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Julie1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -247,7 +247,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Jolie.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Jolie1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -296,7 +296,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Sunny.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Sunny1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -341,7 +341,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal:5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Julie.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Julie1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -375,7 +375,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal:5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Mila.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Mila1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -409,7 +409,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal:5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Mila.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Mila1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -443,7 +443,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal:5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Bob.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Bob1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                               child: Padding(
@@ -477,7 +477,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         padding: const EdgeInsets.symmetric(horizontal:5),
                         child: Row(
                           children: [
-                            Image.asset("assets/images/Leo.png", height: 60, width: 60,),
+                            Image.asset("assets/images/Leo1.png", height: 60, width: 60,),
                             SizedBox(width: 10),
                             Expanded(
                                 child: Padding(
