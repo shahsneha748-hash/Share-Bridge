@@ -1,5 +1,11 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import 'package:sharebridge/model/notification_model.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:sharebridge/model/notification_model.dart';
+import 'package:sharebridge/notification_service.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -9,9 +15,45 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
+class _NotificationScreenState extends State<NotificationScreen> {     // Notification Screen => Pure UI, listens to ViewModel via Provider.
 
-class _NotificationScreenState extends State<NotificationScreen> {
-  final PageController pageController = PageController();
+  @override
+  void initState(){
+    NotificationService notificationService = NotificationService();
+    // notificationService.requestNotificationPermission();
+    // notificationService.getFcmToken();
+    super.initState();
+
+  }
+
+   final PageController pageController = PageController();
+
+  // PUSH NOTIFICATION
+  void firebaseMessaging() async {
+    // Firebasemessaging initialize
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    // FCM Token
+    String? token = await messaging.getToken();
+    print("FCM Token: $token");
+
+    // foreground notification
+    FirebaseMessaging.onMessage.listen((RemoteMessage message){
+      final title = message.notification!.title ?? "N/A";
+      final body = message.notification!.body ?? "N/A";
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(body,
+              maxLines: 1,
+              style: TextStyle(overflow: TextOverflow.ellipsis),
+            ),
+        ),
+    );
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +63,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         backgroundColor: Color(0XFF435944),
         foregroundColor: Colors.white,
         // leading: Icon(Icons.arrow_back_sharp),
-        title: Text("Notification", style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.w500),
+        title: Text("Notification", style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.w500),                   // whenever we click "Notification" inkwell button a notification will be appear ouside the app not inside app notification with a sound.
         ),
       ),
 
@@ -261,14 +303,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       children: [
                                         Text("Apr 30 ", style: TextStyle(fontSize: 17, color: Colors.grey, fontWeight: FontWeight.w500)),
                                         SizedBox(width: 10),
-                                        InkWell(
-                                            onTap: (){},
-                                            child: Text("Accept", style: TextStyle(color: Colors.blue, fontSize:18, fontWeight: FontWeight.w800))),
-                                        SizedBox(width: 10),
-                                        InkWell(
-                                            onTap: (){},
-                                            child: Text("Reject", style: TextStyle(color: Colors.red, fontSize:18, fontWeight: FontWeight.w800))),
-
                                       ],
                                     ),
                                   ],
@@ -310,15 +344,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                       children: [
                                         Text("Apr 25", style: TextStyle(fontSize: 17, color: Colors.grey, fontWeight: FontWeight.w500)),
                                         SizedBox(width: 10),
-                                        InkWell(
-                                            onTap: (){},
-                                            child: Text("Accepted", style: TextStyle(color: Colors.green, fontSize:18, fontWeight: FontWeight.w800))),
-                                        SizedBox(width: 10),
-                                        InkWell(
-                                            onTap: (){},
-                                            child: Text("Reject", style: TextStyle(color: Colors.red, fontSize:18, fontWeight: FontWeight.w800))),
-
-                                      ],
+                                        ],
                                     ),
                                   ],
                                 ),
@@ -491,15 +517,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           children: [
                                             Text("Apr 3", style: TextStyle(fontSize: 17, color: Colors.grey,  fontWeight: FontWeight.w500)),
                                             SizedBox(width: 10),
-                                            InkWell(
-                                                onTap: (){},
-                                                child: Text("Accept", style: TextStyle(color: Colors.blue, fontSize:18, fontWeight: FontWeight.w800))),
-                                            SizedBox(width: 10),
-                                            InkWell(
-                                                onTap: (){},
-                                                child: Text("Reject", style: TextStyle(color: Colors.red, fontSize:18, fontWeight: FontWeight.w800))),
-
-                                          ],
+                                             ],
                                         ),
                                       ]
                                   ),
@@ -519,3 +537,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 }
+
+
+// Note: ⚡ Flow Recap
+// Model → defines notification data. (Eg: Model = raw data only (like a database row).)
+// Repo → fetches/saves notifications from Firestore. (Eg: repo = only defines what function exits with hiding implementation of functions. Eg: addUser, deleteUser, etc. so that MVVM architecture is clean)
+// ViewModel → manages state, exposes clean methods.
+// View → displays notifications, calls ViewModel methods.   (Eg: Notification Screen => Pure UI, listens to ViewModel via Provider.)

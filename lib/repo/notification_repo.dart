@@ -1,11 +1,38 @@
 import 'package:sharebridge/model/notification_model.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:sharebridge/model/notification_model.dart';
 
 abstract class NotificationRepo {
-  Future<void> addNotification(NotificationModel notification);     // Add a new notification (e.g., request received, expiry alert) (This is C create (means add) from CRUD needs). Note for abstract class always first see CRUDE needs first.
-  Future<void> deleteNotification(String id);        // Delete a notification by ID (This is D delete (means delete) from CRUD needs).
-  Future<void> markAsRead(String id);         // Mark a notification as read (This is U update from CRUDE needs (means u can update notification as read or unread) ).
-  Future<List<NotificationModel>> getNotificationsByUser(String userId);      // Get all notifications for a specific user (This is R read (means to get notification) from CRUD needs).
-  Future<List<NotificationModel>> getNotificationsByType(String type);       // Get notifications by type (e.g., "request", "acceptance", "expiry")  (This is also R read (means to get notification) from CRUD needs)
-  Future<NotificationModel> getNotificationById(String id);         // Get a single notification by ID (This is also R read (means to get notification) from CRUD needs)
-  Future<void> editNotification(NotificationModel notification);    // Edit/update an existing notification (e.g., change message or status)  (This is U update from CRUDE needs (Update means = modify existing notification data (message, status, type, etc.))).
+  // Firebase Messaging permissions
+  Future<NotificationSettings> requestPermission();
+
+  // Get FCM token
+  Future<String?> getFcmToken();
+
+  // Send push notification
+  Future<bool> sendPushNotification({
+    required String deviceToken,
+    required NotificationModel notification,
+    required String projectId,
+    required String serviceAccountPath,
+  });
+
+  // CRUD operations with Firestore
+  Future<void> addNotification(NotificationModel notification);                  // The "NotificationModel notification" inside brackets is just the input your function needs.   //Basically the things in parentheses are requirements — they define what data the function needs to run successfully.
+  Future<List<NotificationModel>> getNotificationsByUser(String userId);
+  Future<List<NotificationModel>> getNotificationsByType(String type);
+  Future<NotificationModel> getNotificationById(String id);
+  Future<void> editNotification(NotificationModel notification);                // So when you call this function, you must supply a NotificationModel object. That object contains all the data fields (id, title, body, donorId, timestamp, isRead) which/that the function will use to update the notification in Firestore.
 }
+
+
+// Note: repo = talks with firestore to save and fetch data into it and from it.
+// Note: repo = only defines what function exits with hiding implementation of functions. Eg: addUser, deleteUser, etc.
+
+// Note: Abstract class = blueprint (defines what must exist).
+// ViewModel talks only to the abstract repo (the blueprint without detailed inner function works). This way it helps to keep MVVM architecture clean.
+
+// Breaking this code: (Future<void> editNotification(NotificationModel notification);) down fully:
+// Function name: editNotification → what the function does.
+// Return type: Future<void> → it runs asynchronously and doesn’t return a value.
+// Parameter: NotificationModel notification → the input the function requires.

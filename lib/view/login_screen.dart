@@ -7,7 +7,6 @@ import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 //import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 
 class LoginScreen extends StatefulWidget {
