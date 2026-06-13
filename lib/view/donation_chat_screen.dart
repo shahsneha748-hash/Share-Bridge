@@ -102,7 +102,8 @@ class DonationChatScreen extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.call, color: Colors.white),
-                onPressed: () => _showSnackbar(context, "Starting voice call with Ram Sah…"),
+                onPressed: () =>
+                    _showSnackbar(context, "Starting voice call with Ram Sah…"),
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -175,7 +176,8 @@ class DonationChatScreen extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: const Color(0xFFD7EDCA),
                 borderRadius: BorderRadius.circular(20),
@@ -191,7 +193,8 @@ class DonationChatScreen extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F0E8),
                 borderRadius: BorderRadius.circular(20),
@@ -202,7 +205,8 @@ class DonationChatScreen extends StatelessWidget {
                   SizedBox(width: 3),
                   Text(
                     "Exp 2d",
-                    style: TextStyle(fontSize: 11, color: Color(0xFF9E8A6A)),
+                    style:
+                    TextStyle(fontSize: 11, color: Color(0xFF9E8A6A)),
                   ),
                 ],
               ),
@@ -228,7 +232,8 @@ class DonationChatScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD7EDCA),
                     borderRadius: BorderRadius.circular(20),
@@ -328,7 +333,8 @@ class DonationChatScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: const Color.fromRGBO(0, 0, 0, 0.08),
             borderRadius: BorderRadius.circular(20),
@@ -359,7 +365,8 @@ class DonationChatScreen extends StatelessWidget {
         alignment: sent ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 280),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: sent ? _sentBubble : Colors.white,
             borderRadius: BorderRadius.only(
@@ -393,7 +400,7 @@ class DonationChatScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    msg.timestamp,
+                    msg.formattedTime,
                     style: TextStyle(
                       fontSize: 11,
                       color: sent
@@ -428,7 +435,8 @@ class DonationChatScreen extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: const BorderRadius.only(
@@ -463,7 +471,8 @@ class DonationChatScreen extends StatelessWidget {
       color: const Color.fromRGBO(255, 255, 255, 0.6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: vm.quickReplies
               .map(
@@ -526,13 +535,17 @@ class DonationChatScreen extends StatelessWidget {
             builder: (_, value, __) {
               final canSend = value.text.trim().isNotEmpty;
               return GestureDetector(
-                onTap: canSend ? () => vm.sendMessage(vm.inputController.text) : null,
+                onTap: canSend
+                    ? () => vm.sendMessage(vm.inputController.text)
+                    : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: canSend ? _greenMedium : Colors.grey.shade300,
+                    color: canSend
+                        ? _greenMedium
+                        : Colors.grey.shade300,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -562,7 +575,8 @@ class DonationChatScreen extends StatelessWidget {
           children: [
             const Text(
               "Share",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style:
+              TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 20),
             Row(
@@ -597,7 +611,8 @@ class DonationChatScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 28)),
+              child:
+              Text(emoji, style: const TextStyle(fontSize: 28)),
             ),
           ),
           const SizedBox(height: 6),

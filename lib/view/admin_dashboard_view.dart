@@ -128,7 +128,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       color: AppColors.primary,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top,
-        left: 16, right: 16, bottom: 14,
+        left: 16,
+        right: 16,
+        bottom: 14,
       ),
       child: Row(
         children: [
@@ -136,37 +138,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Good morning 👋',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                Text(
+                  'Good morning 👋',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
                 SizedBox(height: 2),
-                Text('Admin Dashboard',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  'Admin Dashboard',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
           Stack(
             children: [
               Container(
-                width: 38, height: 38,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(19),
                 ),
-                child: const Icon(Icons.notifications_outlined,
-                    color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               Positioned(
-                top: 6, right: 7,
+                top: 6,
+                right: 7,
                 child: Container(
-                  width: 8, height: 8,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
                     color: AppColors.accent,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                        color: AppColors.primary, width: 1.5),
+                    border: Border.all(color: AppColors.primary, width: 1.5),
                   ),
                 ),
               ),
@@ -182,13 +194,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _sectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 6),
-      child: Text(text.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.dark,
-            letterSpacing: 0.7,
-          )),
+      child: Text(
+        text.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: AppColors.dark,
+          letterSpacing: 0.7,
+        ),
+      ),
     );
   }
 
@@ -201,7 +215,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: 1.35,
+      childAspectRatio: 1.7, // FIX: increased further to eliminate 7.1px overflow
       padding: EdgeInsets.zero,
       children: [
         GestureDetector(
@@ -309,21 +323,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min, // FIX: prevents column from expanding beyond content
                   children: [
                     Container(
-                      width: 32, height: 32,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: AppColors.light1,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(a.icon,
-                          size: 16, color: AppColors.successText),
+                      child: Icon(a.icon, size: 16, color: AppColors.successText),
                     ),
                     const SizedBox(height: 5),
-                    Text(a.label,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 10, color: AppColors.textMuted)),
+                    Text(
+                      a.label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -346,8 +365,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           border: Border.all(color: AppColors.light2, width: 0.5),
         ),
         child: const Center(
-          child: Text('No flagged posts — all clear!',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          child: Text(
+            'No flagged posts — all clear!',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
         ),
       );
     }
@@ -360,6 +381,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // FIX
         children: controller.flaggedPosts
             .map((post) => _FlagCard(
           post: post,
@@ -388,18 +410,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // FIX
         children: categories.asMap().entries.map((entry) {
           final i   = entry.key;
           final cat = entry.value;
+          final color = barColors[i % barColors.length]; // FIX: safe index with modulo
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
                 SizedBox(
                   width: 56,
-                  child: Text(cat.label,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textMuted)),
+                  child: Text(
+                    cat.label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                 ),
                 Expanded(
                   child: ClipRRect(
@@ -408,8 +436,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       value: cat.percentage,
                       minHeight: 8,
                       backgroundColor: AppColors.light2,
-                      valueColor:
-                      AlwaysStoppedAnimation<Color>(barColors[i]),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
                     ),
                   ),
                 ),
@@ -447,36 +474,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // FIX
         children: donors.map((donor) {
+          final medalIndex = (donor.rank - 1).clamp(0, medals.length - 1); // FIX: safe index
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 7),
             child: Row(
               children: [
-                Text(medals[donor.rank - 1],
-                    style: const TextStyle(fontSize: 16)),
+                Text(
+                  medals[medalIndex],
+                  style: const TextStyle(fontSize: 16),
+                ),
                 const SizedBox(width: 10),
                 CircleAvatar(
                   radius: 15,
                   backgroundColor: AppColors.light1,
-                  child: Text(donor.initials,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.successText,
-                      )),
+                  child: Text(
+                    donor.initials,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.successText,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(donor.name,
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textDark)),
-                ),
-                Text('${donor.itemCount} items',
+                  child: Text(
+                    donor.name,
                     style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500,
-                    )),
+                      fontSize: 12,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${donor.itemCount} items',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           );
@@ -496,6 +535,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // FIX
         children: items.map((item) => _ActivityRow(item: item)).toList(),
       ),
     );
@@ -515,8 +555,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.cardBg,
-        border: Border(
-            top: BorderSide(color: AppColors.light2, width: 0.5)),
+        border: Border(top: BorderSide(color: AppColors.light2, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
@@ -537,21 +576,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     }
                   },
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.min, // FIX
                     children: [
                       const SizedBox(height: 8),
-                      Icon(tab.icon,
-                          size: 22,
+                      Icon(
+                        tab.icon,
+                        size: 22,
+                        color: isActive ? AppColors.primary : AppColors.light1,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        tab.label,
+                        style: TextStyle(
+                          fontSize: 9,
                           color: isActive
                               ? AppColors.primary
-                              : AppColors.light1),
-                      const SizedBox(height: 3),
-                      Text(tab.label,
-                          style: TextStyle(
-                              fontSize: 9,
-                              color: isActive
-                                  ? AppColors.primary
-                                  : AppColors.textMuted)),
+                              : AppColors.textMuted,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                     ],
                   ),
@@ -586,7 +628,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(14),
@@ -594,29 +636,46 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 30, height: 30,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, size: 15, color: iconColor),
+              color: iconBg,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Icon(icon, size: 13, color: iconColor),
           ),
-          const SizedBox(height: 8),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark)),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10, color: AppColors.textMuted)),
-          const SizedBox(height: 2),
-          Text(delta,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: deltaColor,
-                  fontWeight: FontWeight.w500)),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+              height: 1.1,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textMuted,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            delta,
+            style: TextStyle(
+              fontSize: 10,
+              color: deltaColor,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+          ),
         ],
       ),
     );
@@ -650,40 +709,53 @@ class _FlagCard extends StatelessWidget {
             CircleAvatar(
               radius: 16,
               backgroundColor: AppColors.dangerBg,
-              child: Text(post.initials,
-                  style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.dangerText)),
+              child: Text(
+                post.initials,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.dangerText,
+                ),
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // FIX
                 children: [
                   Row(
                     children: [
                       Expanded(
-                        child: Text(post.title,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textDark)),
+                        child: Text(
+                          post.title,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textDark,
+                          ),
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.dangerBg,
                           borderRadius: BorderRadius.circular(5),
                           border: Border.all(
-                              color: AppColors.dangerBorder,
-                              width: 0.5),
+                            color: AppColors.dangerBorder,
+                            width: 0.5,
+                          ),
                         ),
-                        child: Text(post.reason,
-                            style: const TextStyle(
-                                fontSize: 9,
-                                color: AppColors.dangerText)),
+                        child: Text(
+                          post.reason,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: AppColors.dangerText,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -692,7 +764,9 @@ class _FlagCard extends StatelessWidget {
                     'Posted by ${post.postedBy} · '
                         '${post.reportCount} reports · ${post.timeAgo}',
                     style: const TextStyle(
-                        fontSize: 10, color: AppColors.textMuted),
+                      fontSize: 10,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -746,14 +820,12 @@ class _SmallButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: border, width: 0.5),
           ),
-          child: Text(label,
-              style: TextStyle(fontSize: 10, color: fg)),
+          child: Text(label, style: TextStyle(fontSize: 10, color: fg)),
         ),
       ),
     );
@@ -801,23 +873,32 @@ class _ActivityRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 28, height: 28,
-            decoration: BoxDecoration(
-                color: _dotBg, shape: BoxShape.circle),
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(color: _dotBg, shape: BoxShape.circle),
             child: Icon(_dotIcon, size: 13, color: _dotFg),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // FIX
               children: [
-                Text(item.description,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textDark)),
+                Text(
+                  item.description,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textDark,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(item.timeAgo,
-                    style: const TextStyle(
-                        fontSize: 10, color: AppColors.textMuted)),
+                Text(
+                  item.timeAgo,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
