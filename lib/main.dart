@@ -13,16 +13,16 @@ import 'package:sharebridge/view/volunteer_screen.dart';
 import 'package:sharebridge/viewmodel/review_view_model.dart';
 import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
 
+import 'package:sharebridge/view/admin_dashboard_view.dart';
+import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
 import 'firebase_options.dart';
 
-
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  runApp(MyHomePage());
+  runApp(const MyHomePage());
 }
 
 class MyHomePage extends StatelessWidget {
@@ -46,13 +46,15 @@ class MyHomePage extends StatelessWidget {
             ),
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => AdminDashboardViewModel(),
+        ),
+
       ],
       child: MaterialApp(
           title: "sharebridge",
           debugShowCheckedModeBanner: false,
-          home: VolunteerScreen()
-
-
+          home: VolunteerScreen(),
       ),
     );
   }
