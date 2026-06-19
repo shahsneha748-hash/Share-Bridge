@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../model/donation_model.dart';
+import '../model/create_donation_model.dart';
 
 class DonationRepo {
   final _col = FirebaseFirestore.instance.collection('donations');
