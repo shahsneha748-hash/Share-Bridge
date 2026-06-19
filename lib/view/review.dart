@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../model/review_model.dart';
+import '../viewmodel/review_view_model.dart';
 
 class RatingsReviewsPage extends StatefulWidget {
   const RatingsReviewsPage({super.key});
@@ -13,128 +17,81 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
 
   final TextEditingController reviewController = TextEditingController();
 
-  List<Map<String, dynamic>> reviews = [
-    {
-      "name": "Shena",
-      "initials": "BN",
-      "rating": 5,
-      "time": "2 days ago",
-      "date": "May 22, 2026",
-      "likes": 14,
-      "liked": false,
-      "review":
-      "Amazing experience! The item was exactly as described and in perfect condition. Very grateful!"
-    },
-    {
-      "name": "Alex",
-      "initials": "AL",
-      "rating": 4,
-      "time": "3 days ago",
-      "date": "May 20, 2026",
-      "likes": 9,
-      "liked": false,
-      "review":
-      "Really good and respectful handover. The donor was communicative and kind. Would highly recommend."
-    },
-    {
-      "name": "Sam",
-      "initials": "BA",
-      "rating": 3,
-      "time": "1 week ago",
-      "date": "May 15, 2026",
-      "likes": 5,
-      "liked": false,
-      "review":
-      "Good overall. Item was decent but packaging could be better next time."
-    },
-    {
-      "name": "Priya",
-      "initials": "PR",
-      "rating": 2,
-      "time": "2 weeks ago",
-      "date": "May 10, 2026",
-      "likes": 2,
-      "liked": false,
-      "review":
-      "Item condition was not as described. Expected better quality."
-    },
-    {
-      "name": "Tom",
-      "initials": "TO",
-      "rating": 1,
-      "time": "3 weeks ago",
-      "date": "May 02, 2026",
-      "likes": 1,
-      "liked": false,
-      "review":
-      "Very disappointed. Item was damaged and unusable when received."
-    },
-  ];
-
-  List<Map<String, dynamic>> get filteredReviews {
-    if (selectedFilter == 0) return reviews;
-
-    return reviews
-        .where((review) => review['rating'] == selectedFilter)
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (!mounted) return;
+      context.read<ReviewViewModel>().getAllReviews();
+    });
   }
 
-  void submitReview() {
+  @override
+  void dispose() {
+    reviewController.dispose();
+    super.dispose();
+  }
+
+  // ✅ Fixed: takes vm as parameter
+  void submitReview(ReviewViewModel vm) async {
     if (selectedRating == 0 || reviewController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please add rating and review"),
-        ),
+        const SnackBar(content: Text("Please add rating and review")),
       );
       return;
     }
 
-    setState(() {
-      reviews.insert(0, {
-        "name": "You",
-        "initials": "YU",
-        "rating": selectedRating,
-        "time": "Just now",
-        "date": "Today",
-        "likes": 0,
-        "liked": false,
-        "review": reviewController.text,
-      });
+    final model = ReviewModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      donationId: "donationId_here",
+      userId: "userId_here",
+      name: "You",
+      initials: "YU",
+      rating: selectedRating.toDouble(),
+      review: reviewController.text,
+      time: "Just now",
+      date: "Today",
+      likes: 0,
+      liked: false,
+    );
 
+    await vm.addReview(model);
+
+    if (!mounted) return;
+
+    setState(() {
       selectedRating = 0;
       reviewController.clear();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Review submitted successfully"),
-      ),
+      const SnackBar(content: Text("Review submitted successfully")),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<ReviewViewModel>();
+
+    final filteredReviews = selectedFilter == 0
+        ? vm.reviews
+        : vm.reviews
+        .where((r) => r.rating.toInt() == selectedFilter)
+        .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xfff1f4ee),
       appBar: AppBar(
         backgroundColor: const Color(0xFF3A5C2E),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
         title: const Text(
           "Ratings & Reviews",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -142,7 +99,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ITEM IMAGE + NAME CARD
+            // ── ITEM CARD ──────────────────────────────────────────────
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -151,7 +108,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 border: Border.all(color: Colors.green.shade100),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -160,7 +117,6 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // CLOTH IMAGE
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(18),
@@ -173,8 +129,6 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-
-                  // ITEM NAME
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -191,9 +145,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                                   color: Colors.green.shade900,
                                 ),
                               ),
-
                               const SizedBox(height: 6),
-
                               Text(
                                 "Clothing",
                                 style: TextStyle(
@@ -204,12 +156,9 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                             ],
                           ),
                         ),
-
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(20),
@@ -221,7 +170,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -231,7 +180,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
 
             const SizedBox(height: 15),
 
-            // TOP CARD
+            // ── RATING SUMMARY ─────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -243,9 +192,9 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "3.0",
-                        style: TextStyle(
+                      Text(
+                        vm.averageRating.toStringAsFixed(1),
+                        style: const TextStyle(
                           color: Colors.black,
                           fontSize: 42,
                           fontWeight: FontWeight.bold,
@@ -255,20 +204,19 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                       Row(
                         children: List.generate(
                           5,
-                              (index) => const Icon(
+                              (index) => Icon(
                             Icons.star,
                             size: 16,
-                            color: Colors.orange,
+                            color: index < vm.averageRating.round()
+                                ? Colors.orange
+                                : Colors.grey.shade300,
                           ),
                         ),
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        "${reviews.length} reviews",
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 12,
-                        ),
+                        "${vm.reviews.length} reviews",
+                        style: const TextStyle(color: Colors.black54, fontSize: 12),
                       ),
                     ],
                   ),
@@ -276,21 +224,21 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   Expanded(
                     child: Column(
                       children: [
-                        buildRatingBar(5, 0.9, Colors.green),
-                        buildRatingBar(4, 0.7, Colors.lightGreen),
-                        buildRatingBar(3, 0.5, Colors.orange),
-                        buildRatingBar(2, 0.3, Colors.deepOrange),
-                        buildRatingBar(1, 0.2, Colors.red),
+                        _buildRatingBar(vm, 5, Colors.green),
+                        _buildRatingBar(vm, 4, Colors.lightGreen),
+                        _buildRatingBar(vm, 3, Colors.orange),
+                        _buildRatingBar(vm, 2, Colors.deepOrange),
+                        _buildRatingBar(vm, 1, Colors.red),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // FILTERS IN ONE ROW
+            // ── FILTER CHIPS ───────────────────────────────────────────
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -312,32 +260,30 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
               children: [
                 const Text(
                   "User Reviews",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
                   "${filteredReviews.length}",
                   style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.green, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
 
             const SizedBox(height: 15),
 
-            Column(
-              children: filteredReviews.map((review) {
-                return reviewCard(review);
-              }).toList(),
+            vm.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+              // ✅ Fixed: passes both review and vm
+              children: filteredReviews
+                  .map((review) => reviewCard(review, vm))
+                  .toList(),
             ),
 
             const SizedBox(height: 25),
 
-            // WRITE REVIEW
+            // ── WRITE REVIEW ───────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -350,56 +296,41 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 children: [
                   const Text(
                     "Write a Review",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                    style:
+                    TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   const SizedBox(height: 5),
                   const Text(
                     "Share your experience with this donor",
-                    style: TextStyle(
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 20),
-
-                  // CLICKABLE STARS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      5,
-                          (index) {
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedRating = index + 1;
-                            });
-                          },
-                          child: Padding(
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 5),
-                            child: Icon(
-                              Icons.star,
-                              size: 34,
-                              color: index < selectedRating
-                                  ? Colors.orange
-                                  : Colors.grey.shade300,
-                            ),
+                    children: List.generate(5, (index) {
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => selectedRating = index + 1),
+                        child: Padding(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 5),
+                          child: Icon(
+                            Icons.star,
+                            size: 34,
+                            color: index < selectedRating
+                                ? Colors.orange
+                                : Colors.grey.shade300,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    }),
                   ),
-
                   const SizedBox(height: 20),
-
                   TextField(
                     controller: reviewController,
                     maxLines: 5,
                     decoration: InputDecoration(
-                      hintText:
-                      "Share your experience with this donor...",
+                      hintText: "Share your experience with this donor...",
                       filled: true,
                       fillColor: const Color(0xfff3f5f2),
                       border: OutlineInputBorder(
@@ -408,15 +339,12 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // SUBMIT BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: submitReview,
+                      onPressed: () => submitReview(vm), // ✅ correct call
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(
@@ -426,36 +354,36 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                       child: const Text(
                         "Submit Review",
                         style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget buildRatingBar(int star, double value, Color color) {
+  // ✅ Dynamic bar from real data
+  Widget _buildRatingBar(ReviewViewModel vm, int star, Color color) {
+    final total = vm.reviews.length;
+    final count = vm.reviews.where((r) => r.rating.toInt() == star).length;
+    final ratio = total == 0 ? 0.0 : count / total;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(
-            "$star",
-            style: const TextStyle(color: Colors.white),
-          ),
+          Text("$star", style: const TextStyle(color: Colors.black54)),
           const SizedBox(width: 8),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(
-                value: value,
+                value: ratio,
                 minHeight: 6,
                 backgroundColor: Colors.white24,
                 valueColor: AlwaysStoppedAnimation(color),
@@ -463,26 +391,18 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
             ),
           ),
           const SizedBox(width: 8),
-          const Text(
-            "1",
-            style: TextStyle(color: Colors.white),
-          ),
+          Text("$count", style: const TextStyle(color: Colors.black54)),
         ],
       ),
     );
   }
 
   Widget filterChip(String text, int value) {
-    bool selected = selectedFilter == value;
-
+    final selected = selectedFilter == value;
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            selectedFilter = value;
-          });
-        },
+        onTap: () => setState(() => selectedFilter = value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding:
@@ -504,7 +424,8 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
     );
   }
 
-  Widget reviewCard(Map<String, dynamic> review) {
+  // ✅ Fixed: ReviewModel + vm, no Map<String, dynamic>
+  Widget reviewCard(ReviewModel review, ReviewViewModel vm) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
@@ -521,11 +442,9 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
               CircleAvatar(
                 backgroundColor: Colors.green.shade100,
                 child: Text(
-                  review['initials'],
+                  review.initials,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                      fontWeight: FontWeight.bold, color: Colors.black),
                 ),
               ),
               const SizedBox(width: 10),
@@ -533,26 +452,15 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review['name'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      review['time'],
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    Text(
-                      review['date'],
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 11,
-                      ),
-                    ),
+                    Text(review.name,
+                        style:
+                        const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(review.time,
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 12)),
+                    Text(review.date,
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 11)),
                   ],
                 ),
               ),
@@ -564,13 +472,11 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  "+${review['rating']}",
+                  "+${review.rating.toInt()}",
                   style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.green, fontWeight: FontWeight.bold),
                 ),
-              )
+              ),
             ],
           ),
 
@@ -582,7 +488,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   (index) => Icon(
                 Icons.star,
                 size: 16,
-                color: index < review['rating']
+                color: index < review.rating
                     ? Colors.orange
                     : Colors.grey.shade300,
               ),
@@ -597,48 +503,49 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
               color: const Color(0xfff4f6f3),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              review['review'],
-              style: const TextStyle(height: 1.5),
-            ),
+            child: Text(review.review,
+                style: const TextStyle(height: 1.5)),
           ),
 
           const SizedBox(height: 12),
 
-          // CLICKABLE HEART
+          // ✅ Like toggle via vm.updateReview
           GestureDetector(
             onTap: () {
-              setState(() {
-                review['liked'] = !review['liked'];
-
-                if (review['liked']) {
-                  review['likes']++;
-                } else {
-                  review['likes']--;
-                }
-              });
+              vm.updateReview(
+                ReviewModel(
+                  id: review.id,
+                  donationId: review.donationId,
+                  userId: review.userId,
+                  name: review.name,
+                  initials: review.initials,
+                  rating: review.rating,
+                  review: review.review,
+                  time: review.time,
+                  date: review.date,
+                  likes: review.liked
+                      ? review.likes - 1
+                      : review.likes + 1,
+                  liked: !review.liked,
+                ),
+              );
             },
             child: Row(
               children: [
                 Icon(
-                  review['liked']
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color:
-                  review['liked'] ? Colors.red : Colors.grey,
+                  review.liked ? Icons.favorite : Icons.favorite_border,
+                  color: review.liked ? Colors.red : Colors.grey,
                   size: 20,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  "${review['likes']} people found this helpful",
+                  "${review.likes} people found this helpful",
                   style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 12,
-                  ),
+                      color: Colors.grey.shade700, fontSize: 12),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

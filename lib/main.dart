@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,8 +9,6 @@ import 'package:sharebridge/repo/saved_items_repo_impl.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:sharebridge/repo/user_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/homescreentest.dart';
-import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/splash_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
@@ -31,16 +30,18 @@ Future<void> main() async {
 
         // ViewModels depend on repos
         ChangeNotifierProvider(
-          create: (context) => UserViewModel(
-            userRepo: context.read<UserRepo>(),
-            notificationRepo: context.read<NotificationRepo>(),
-          ),
+          create: (context) =>
+              UserViewModel(
+                userRepo: context.read<UserRepo>(),
+                notificationRepo: context.read<NotificationRepo>(),
+              ),
         ),
         ChangeNotifierProvider(
-          create: (context) => NotificationViewModel(
-            repo: context.read<NotificationRepo>(),
-            userRepo: context.read<UserRepo>(), // 👈 FIX: use Impl via Provider
-          ),
+          create: (context) =>
+              NotificationViewModel(
+                repo: context.read<NotificationRepo>(),
+                userRepo: context.read<UserRepo>(),
+              ),
         ),
         ChangeNotifierProvider(
           create: (context) =>
@@ -52,7 +53,6 @@ Future<void> main() async {
   );
 }
 
-
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 
@@ -61,7 +61,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(), // or Homescreentest()
+      home: SplashScreen(),
     );
   }
 }
