@@ -217,53 +217,75 @@ class _SignupScreenState extends State<SignupScreen> {
                               backgroundColor: Color(0XFF435944),
                               foregroundColor: Colors.white,
                             ),
-                            onPressed: () async{
-                              // ✅ Step 1: Check if fields are empty
-                              if (emailController.text.trim().isEmpty ||
-                                  passwordController.text.trim().isEmpty ||
-                                  confirmPasswordController.text.trim().isEmpty ||
-                                  nameController.text.trim().isEmpty ||
-                                  addressController.text.trim().isEmpty ||
-                                  phoneController.text.trim().isEmpty
-                              ) {
-                                Fluttertoast.showToast(msg: "All text must be filled");
-                                return; // stop execution here
-                              }
-                              final userId = await viewModel.signup(emailController.text, passwordController.text);                           // Calls your UserViewModel.signup method. Inside that method, it likely: i) Creates a FirebaseAuth account with email + password. ii) Returns the uid if account created successfully, or an empty string if failed.
+                              onPressed: () async {
+                                // Step 1: Check if fields are empty
+                                if (emailController.text.trim().isEmpty ||
+                                    passwordController.text.trim().isEmpty ||
+                                    confirmPasswordController.text.trim().isEmpty ||
+                                    nameController.text.trim().isEmpty ||
+                                    addressController.text.trim().isEmpty ||
+                                    phoneController.text.trim().isEmpty) {
+                                  Fluttertoast.showToast(msg: "All text must be filled");
+                                  return;
+                                }
 
-                              // Check signup result
-                              if (userId.isEmpty) {                                  // If signup failed, show the error.If signup succeeded, continue.
-                                Fluttertoast.showToast(msg: viewModel.error.toString());
-                              }else{
+                                // Step 2: Validate inputs BEFORE signup
+                                if (confirmPasswordController.text != passwordController.text) {
+                                  Fluttertoast.showToast(msg: "Confirm password must be same as password");
+                                  return;
+                                }
+                                if (passwordController.text.length < 6) {
+                                  Fluttertoast.showToast(msg: "Password must be at least 6 characters");
+                                  return;
+                                }
+                                if (phoneController.text.length < 10) {
+                                  Fluttertoast.showToast(msg: "Phone number must be at least 10 characters");
+                                  return;
+                                }
 
-                                // Create a UserModel object
-                                final model = UserModel(                             // Builds a UserModel with all the signup form data.This is your app’s own user profile structure (not just FirebaseAuth).
+                                try {
+                                  // Step 3: Attempt signup
+                                  final userId = await viewModel.signup(
+                                    emailController.text.trim(),
+                                    passwordController.text.trim(),
+                                  );
+
+                                  if (userId.isEmpty) {
+                                    Fluttertoast.showToast(msg: viewModel.error.toString());
+                                    return;
+                                  }
+
+                                  // Step 4: Build user model
+                                  final model = UserModel(
                                     id: userId,
-                                    fullName: nameController.text,
-                                    email: emailController.text,
-                                    phone: phoneController.text,
-                                    address: addressController.text,
+                                    fullName: nameController.text.trim(),
+                                    email: emailController.text.trim(),
+                                    phone: phoneController.text.trim(),
+                                    address: addressController.text.trim(),
                                     role: "user",
                                     isVerified: false,
                                     createdAt: DateTime.now(),
                                     updatedAt: DateTime.now(),
                                     rating: 0.0,
                                     totalDonations: 0,
-                                );
+                                    password: passwordController.text.trim(),
+                                  );
 
-                                // Save user profile in Firestore
-                                final success = await viewModel.addUser(model);                                                     // Calls addUser in your ViewModel, which writes the UserModel into Firestore. This ensures you have a full profile stored (name, phone, address, etc.), not just the FirebaseAuth account.
-                                if(success){
-                                  Fluttertoast.showToast(msg: "Registration successfully");
+                                  // Step 5: Save user profile
+                                  final success = await viewModel.addUser(model);
+                                  if (success) {
+                                    Fluttertoast.showToast(msg: "Signup successful");
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => LoginScreen()),
+                                    );
+                                  } else {
+                                    Fluttertoast.showToast(msg: "Signup failed");
+                                  }
+                                } catch (e) {
+                                  Fluttertoast.showToast(msg: "Signup failed: $e");
                                 }
-                                else{
-                                  Fluttertoast.showToast(msg: "Signup Failed");
-                                }
-                              }
-
-                              // Navigate to LoginScreen
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));                        // After signup, it redirects the user to the login screen.
-                            },
+                              },
                             child: viewModel.loading ? CircularProgressIndicator() : Text("Create Account",style: TextStyle(fontSize: 20),),
                           ),
                         ),

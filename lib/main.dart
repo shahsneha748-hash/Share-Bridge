@@ -1,33 +1,55 @@
-import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:sharebridge/notification_service.dart';
+import 'package:sharebridge/repo/notification_repo.dart';
+import 'package:sharebridge/repo/notification_repo_impl.dart';
+import 'package:sharebridge/repo/saved_items_repo.dart';
+import 'package:sharebridge/repo/saved_items_repo_impl.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:sharebridge/repo/user_repo_impl.dart';
-import 'package:sharebridge/view/notification_screen.dart';
-// import 'package:sharebridge/view/saved_items.dart';
+import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/homescreentest.dart';
+import 'package:sharebridge/view/login_screen.dart';
+import 'package:sharebridge/view/splash_screen.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
+import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
 import 'firebase_options.dart';
-import 'package:sharebridge/view/splash_screen.dart';
 
-
-// Future<void> _backgroundMessageHandler(RemoteMessage message) async {
-//   await Firebase.initializeApp();
-// }
-
-Future<void> main() async{
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.initialize();
 
-  final notificationService = NotificationService();
-  await notificationService.initFCM();
+  runApp(
+    MultiProvider(
+      providers: [
+        // Register repos first
+        Provider<UserRepo>(create: (_) => UserRepoImpl()),
+        Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
+        Provider<SavedItemRepo>(create: (_) => SavedItemRepositoryImpl()),
 
-  FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
-  runApp(const MyHomePage());
+        // ViewModels depend on repos
+        ChangeNotifierProvider(
+          create: (context) => UserViewModel(
+            userRepo: context.read<UserRepo>(),
+            notificationRepo: context.read<NotificationRepo>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => NotificationViewModel(
+            repo: context.read<NotificationRepo>(),
+            userRepo: context.read<UserRepo>(), // 👈 FIX: use Impl via Provider
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              SavedItemViewModel(savedItemRepo: context.read<SavedItemRepo>()),
+        ),
+      ],
+      child: const MyHomePage(),
+    ),
+  );
 }
 
 
@@ -36,27 +58,15 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<UserRepo>(create: (_) => UserRepoImpl()),
-        // provider ko object banako   . UserRepo initiliatize first after viewmodel
-
-        ChangeNotifierProvider(create: (context) =>
-            UserViewModel(userRepo: context.read<UserRepo>()),
-        ),
-      ],
-      child: MaterialApp( //we wrapped with multi provider becuase our app ma multiple view model huna sakcha so that's y we put it.
-        title: "Share-Bridge",
-        debugShowCheckedModeBanner: false,
-        home: NotificationScreen(),
-      ),
+    return MaterialApp(
+      title: "Share-Bridge",
+      debugShowCheckedModeBanner: false,
+      home: SplashScreen(), // or Homescreentest()
     );
   }
 }
-  Future<void> handleBackgroundMessage(RemoteMessage message) async{
-    print("Message: ${message.notification?.title}");
 
-}
+
 
 
 

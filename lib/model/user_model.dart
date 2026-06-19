@@ -11,7 +11,7 @@ class UserModel {               // UserModel is the blueprint of what gets store
   final DateTime updatedAt;     // last profile update
   final double rating;      // average rating across feedback (trust score for all roles). Eg: Donor profile: “Bunny — Verified ✅ — Rating: 4.7            Another eg: Volunteer profile: “Julie — Rating: 4.9                Another eg: Receiver profile: "Alisa — Rating: 4.2
   final int totalDonations; // donor/volunteer impact metric. Eg: Donor profile: “Bunny — Verified ✅ — Rating: 4.7 — Total Donations: 35”.     Another eg: Volunteer profile: “Julie — Rating: 4.9 — Deliveries: 20” (could reuse the same field if you extend logic).       Another eg: Receiver profile: "Alisa — Rating: 4.2 — Total Donations: 0”
-
+  final String password;        // login credential
 
   const UserModel({
     required this.id,
@@ -26,6 +26,7 @@ class UserModel {               // UserModel is the blueprint of what gets store
     required this.updatedAt,
     required this.rating,
     required this.totalDonations,
+    required this.password,
 
   });
 
@@ -43,6 +44,7 @@ class UserModel {               // UserModel is the blueprint of what gets store
       'updatedAt': this.updatedAt,
       'rating': this.rating,
       'totalDonations': this.totalDonations,
+      'password': this.password,
     };
   }
 
@@ -60,6 +62,7 @@ class UserModel {               // UserModel is the blueprint of what gets store
       updatedAt: map['updatedAt'] as DateTime,
       rating: map['rating'] as double,
       totalDonations: map['totalDonations'] as int,
+      password: map['password'] as String,
     );
   }
 }

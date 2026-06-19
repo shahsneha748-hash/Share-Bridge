@@ -10,4 +10,5 @@ abstract class UserRepo {
   Future<List<UserModel>> getAllUsers();          // list of usermodel leh derai string id return garcha
   Future<UserModel> getUserById(String id);       // usermodel leh euta matrai string id return garcha
   Future<void> editProfile(UserModel userModel);
+  Future<String> getReceiverName(String receiverId);
 }

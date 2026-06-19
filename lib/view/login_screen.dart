@@ -1,10 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/model/login_model.dart';
 import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
+import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/signup_screen.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 //import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
 
@@ -20,7 +23,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+
   bool visibility = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -150,35 +155,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 500, height: 57,
                       child: ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: Color(0XFF435944), foregroundColor: Colors.white),
-                        onPressed: () async {
-                          // ✅ Step 1: Check if fields are empty
-                          if (emailController.text.trim().isEmpty ||
-                              passwordController.text.trim().isEmpty) {
-                            Fluttertoast.showToast(msg: "All text must be filled");
-                            return; // stop execution here
-                          }
+    onPressed: () async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
 
-                          // ✅ Step 2: Proceed with login if not empty
-                          final userId = await viewModel.login(
-                            emailController.text.trim(),
-                            passwordController.text.trim(),
-                          );
+    // ✅ Step 1: Check if fields are empty
+    if (email.isEmpty || password.isEmpty) {
+    Fluttertoast.showToast(msg: "All fields must be filled");
+    return;
+    }
 
-                          if (userId.isNotEmpty) {
-                            Fluttertoast.showToast(msg: "Login successful");
-                            // Navigator.pushReplacement(
-                            //   context,
-                            //   MaterialPageRoute(builder: (_) => DashboardScreen()),
-                            // );
-                          } else {
-                            Fluttertoast.showToast(msg: "Login Failed");
-                          }
-                        },
-                        child: viewModel.loading ? CircularProgressIndicator() : Text("Login",style: TextStyle(fontSize: 20),),
-                      ),
-                    ),
+    try {
+    // ✅ Step 2: Attempt login with FirebaseAuth
+    await FirebaseAuth.instance.signInWithEmailAndPassword(
+    email: email,
+    password: password,
+    );
 
-
+    // Success
+    Fluttertoast.showToast(msg: "Login successful");
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => Homescreentest()),
+    );
+    }  on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        Fluttertoast.showToast(msg: "Incorrect email");
+      } else if (e.code == 'wrong-password') {
+        Fluttertoast.showToast(msg: "Incorrect password");
+      } else {
+        // covers invalid-email, too-many-requests, etc.
+        Fluttertoast.showToast(msg: "Login failed");
+      }
+    }
+    },
+    child: viewModel.loading
+    ? const CircularProgressIndicator()
+        : const Text("Login", style: TextStyle(fontSize: 20)),
+    ),),
                     SizedBox(
                       height: 30,),
                     Row(
@@ -190,7 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Navigator.pushReplacement(context, newRoute)
                             Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SignupScreen(),));
                             // Navigator.push(context, MaterialPageRoute(builder: (context) => SignupScreen(),));
-
                           },
                           child: Text(" Sign up", style: TextStyle(color: Colors.blue, fontSize: 17),),
                         )

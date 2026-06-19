@@ -76,14 +76,18 @@ class UserRepoImpl implements UserRepo {
     final userId = user.user?.uid;            // after login .user variable ma sabai login ko data is stored inside it.       //(user ko pichadi "?" symbol rakheko so it becomes nullable. userid ma value aunu pani sakcha naaunu pani sakcha)        Note: before we didn't add "?" symbol garyp bhaneh error auncha yo userid lai nullable bana bhanera so we added "?" symbol
 
     // 3. If UID is null → login failed
-    if (userId == null) {                // id userid ma value ayena bhane throw login failed else if userid ma value cha bhaneh login successful huncha
+    if (userId == null || userId != userId) {                // id userid ma value ayena bhane throw login failed else if userid ma value cha bhaneh login successful huncha
       throw Exception("Login failed");
+    } else if (password != password){
+      throw Exception("Password Incorrect");
+    } else if (email != email){
+      throw Exception("Email Incorrect");
+    } else if (email != email && password != password) {
+      throw Exception("Email and Password both Incorrect");
     }
-
     // 4. Otherwise return the UID string → login successful
     return userId;                 // yesleh userId return garyo bhaneh login successful huncha
   }
-
 
   // after login sabai data login ma bhako will store in this variable (.user) ma store gareko. Login bhaisakehpachi user ko sabai details (.user) bhanne variable bhitra store bhako huncha. login bhaisakeh pachi user ko instance yo user bhanneh variable auncha. for now just logic ko lagi userid matrai chaheko so userid rakheko (user id bhaneko primary key so rakheko) login ko lagi userid chahincha so userid(uid) rakheko
 
@@ -104,6 +108,17 @@ class UserRepoImpl implements UserRepo {
     }
     return userId;
   }
+
+  @override
+  Future<String> getReceiverName(String receiverId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(receiverId)
+        .get();
+
+    return doc.data()?['name'] ?? "Unknown User";
+  }
+
 }
 
 // register garda createUserWithEmailAndPassword (login garda signin, register garda create account ho similar ho just copy paste gareko code logic and then just added createUserWithEmailAndPassword )
