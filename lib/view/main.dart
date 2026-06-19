@@ -1,6 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:sharebridge/view/browse_screen.dart';
+import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/view/edit_profile_screen.dart';
+import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/review.dart';
 import 'package:sharebridge/view/user.dart';
 import 'package:sharebridge/view/user_profile.dart';
@@ -25,8 +28,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
         title: "sharebridge",
         debugShowCheckedModeBanner: false,
-        home: ProfileScreen()
-
+        home: BrowseScreen()
 
     );
   }

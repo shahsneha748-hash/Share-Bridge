@@ -1,147 +1,114 @@
-import 'dart:core';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sharebridge/view/item_data.dart';
+import 'package:provider/provider.dart';
+import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/repo/dashboard_repo_impl.dart';
+import 'package:sharebridge/components/app_header.dart';
+import 'package:sharebridge/components/category_card.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
+import '../viewmodel/dashboard_view_model.dart';
 
-
-
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends StatelessWidget {
   final void Function({String? category})? onGoToBrowse;
 
   const DashboardScreen({super.key, this.onGoToBrowse});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => DashboardViewModel(DashboardRepoImpl()),
+      child: _DashboardView(onGoToBrowse: onGoToBrowse),
+    );
+  }
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  List<Map<String, dynamic>> get featuredItems {
-    final available =
-    sharedItems.where((i) => i['available'] == true).toList();
-    available.sort((a, b) {
-      final da = _parseDistance(a['distance']);
-      final db = _parseDistance(b['distance']);
-      return da.compareTo(db);
-    });
-    return available.take(4).toList();
-  }
+// ── View ──────────────────────────────────────────────────────────────────────
 
-  double _parseDistance(dynamic d) {
-    if (d == null) return 999;
-    final s = d.toString().replaceAll(RegExp(r'[^0-9.]'), '');
-    return double.tryParse(s) ?? 999;
-  }
+class _DashboardView extends StatelessWidget {
+  final void Function({String? category})? onGoToBrowse;
 
-  void _info(String msg) {
+  const _DashboardView({this.onGoToBrowse});
+
+  void _showSnackbar(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: const Color(0xFF3A5C2E),
+        backgroundColor: AppColors.darkGreen,
         duration: const Duration(seconds: 1),
       ),
     );
   }
 
-  void _goToBrowse({String? category}) {
-    if (widget.onGoToBrowse != null) {
-      widget.onGoToBrowse!(category: category);
+  void _goToBrowse(BuildContext context, {String? category}) {
+    if (onGoToBrowse != null) {
+      onGoToBrowse!(category: category);
     } else {
-      _info('Browse — Coming Soon');
+      _showSnackbar(context, 'Browse — Coming Soon');
     }
   }
 
-  void _openItemDetail(Map<String, dynamic> item) {
+  void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
+    final vm = context.read<DashboardViewModel>();
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ItemDetailScreen(item: item),
+      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
+    ).then((_) => vm.refresh());
+  }
+
+  Widget _notificationBell(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showSnackbar(context, 'Notifications — Coming Soon'),
+      child: Stack(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: AppColors.cream,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications,
+              color: AppColors.darkGreen,
+              size: 26,
+            ),
+          ),
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.cream, width: 2),
+              ),
+            ),
+          ),
+        ],
       ),
-    ).then((_) => setState(() {}));
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<DashboardViewModel>();
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF3A5C2E),
+        statusBarColor: AppColors.darkGreen,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFF3A5C2E),
+        backgroundColor: AppColors.darkGreen,
         body: SafeArea(
           child: Column(
             children: [
-              // HEADER
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
-                color: const Color(0xFF3A5C2E),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Share Bridge',
-                          style: TextStyle(
-                            color: Color(0xFFF5F0E8),
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Hello, friend 👋',
-                          style: TextStyle(
-                            color: Color(0xFFD4E8C2),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () => _info('Notifications — Coming Soon'),
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF5F0E8),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.notifications,
-                              color: Color(0xFF3A5C2E),
-                              size: 26,
-                            ),
-                          ),
-                          Positioned(
-                            right: 8,
-                            top: 8,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: const Color(0xFFF5F0E8),
-                                    width: 2),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              AppHeader(
+                title: 'Share Bridge',
+                trailing: _notificationBell(context),
               ),
-
-              // WHITE CONTENT
               Expanded(
                 child: Container(
                   color: Colors.white,
@@ -152,84 +119,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         const SizedBox(height: 18),
 
-                        // SEARCH (tap → opens Browse tab)
+                        _SearchBar(onTap: () => _goToBrowse(context)),
+
+                        const SizedBox(height: 26),
+
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: GestureDetector(
-                            onTap: () => _goToBrowse(),
-                            child: Container(
-                              height: 48,
-                              padding:
-                              const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7F7F2),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(
-                                    color: Colors.grey.shade300, width: 1.2),
-                              ),
-                              child: Row(
-                                children: const [
-                                  Icon(Icons.search,
-                                      color: Colors.grey, size: 22),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    'Search for donations...',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          child: _ImpactBanner(
+                            itemsShared: vm.communityItemsShared,
+                            progress: vm.communityProgress,
+                            weeklyGoal: vm.communityWeeklyGoal,
                           ),
                         ),
 
                         const SizedBox(height: 26),
 
-                        // IMPACT BANNER
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _impactBanner(),
-                        ),
-
-                        const SizedBox(height: 26),
-
-                        // CATEGORIES HEADER — no "View all" link here
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: const Text(
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
                             'Browse by Category',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A2E0A),
+                              color: AppColors.darkText,
                             ),
                           ),
                         ),
                         const SizedBox(height: 12),
+
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Row(
                             children: [
                               Expanded(
-                                  child: _categoryCard(
-                                      Icons.restaurant, 'Food')),
+                                child: CategoryCard(
+                                  icon: Icons.restaurant,
+                                  label: 'Food',
+                                  onTap: () =>
+                                      _goToBrowse(context, category: 'Food'),
+                                ),
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
-                                  child: _categoryCard(
-                                      Icons.edit, 'Stationery')),
+                                child: CategoryCard(
+                                  icon: Icons.edit,
+                                  label: 'Stationery',
+                                  onTap: () => _goToBrowse(context,
+                                      category: 'Stationery'),
+                                ),
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
-                                  child: _categoryCard(
-                                      Icons.checkroom, 'Clothes')),
+                                child: CategoryCard(
+                                  icon: Icons.checkroom,
+                                  label: 'Clothes',
+                                  onTap: () => _goToBrowse(context,
+                                      category: 'Clothes'),
+                                ),
+                              ),
                             ],
                           ),
                         ),
 
                         const SizedBox(height: 26),
 
-                        // FEATURED NEARBY — "View all →" link (renamed from "See all")
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Row(
@@ -240,16 +193,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1A2E0A),
+                                  color: AppColors.darkText,
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () => _goToBrowse(),
+                                onTap: () => _goToBrowse(context),
                                 child: const Text(
                                   'View all →',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Color(0xFF3A5C2E),
+                                    color: AppColors.darkGreen,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -258,20 +211,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
+
                         SizedBox(
                           height: 220,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: featuredItems.length,
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: vm.featuredItems.length,
                             itemBuilder: (context, index) {
+                              final item = vm.featuredItems[index];
                               return Padding(
                                 padding: EdgeInsets.only(
-                                  right: index == featuredItems.length - 1
+                                  right: index == vm.featuredItems.length - 1
                                       ? 0
                                       : 12,
                                 ),
-                                child: _featuredCard(featuredItems[index]),
+                                child: _FeaturedCard(
+                                  item: item,
+                                  onTap: () => _openItemDetail(context, item),
+                                ),
                               );
                             },
                           ),
@@ -287,13 +246,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+}
 
-  Widget _impactBanner() {
+// ── Search Bar ────────────────────────────────────────────────────────────────
+
+class _SearchBar extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SearchBar({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.inputBg,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.shade300, width: 1.2),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.search, color: Colors.grey, size: 22),
+              SizedBox(width: 10),
+              Text(
+                'Search for donations...',
+                style: TextStyle(color: Colors.grey, fontSize: 15),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Impact Banner ─────────────────────────────────────────────────────────────
+
+class _ImpactBanner extends StatelessWidget {
+  final int itemsShared;
+  final double progress;
+  final int weeklyGoal;
+
+  const _ImpactBanner({
+    required this.itemsShared,
+    required this.progress,
+    required this.weeklyGoal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF3A5C2E),
+        color: AppColors.darkGreen,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -305,7 +315,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const Text(
                 'Community Impact',
                 style: TextStyle(
-                  color: Color(0xFFD4E8C2),
+                  color: AppColors.paleGreen,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -314,7 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5F7A45),
+                  color: AppColors.lightGreen,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
@@ -333,7 +343,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${CommunityStats.itemsShared}',
+                '$itemsShared',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 36,
@@ -346,10 +356,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: EdgeInsets.only(bottom: 4),
                 child: Text(
                   'items shared nearby',
-                  style: TextStyle(
-                    color: Color(0xFFD4E8C2),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.paleGreen, fontSize: 12),
                 ),
               ),
             ],
@@ -358,66 +365,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
-              value: CommunityStats.progress,
+              value: progress,
               minHeight: 6,
-              backgroundColor: const Color(0xFF5F7A45).withOpacity(0.5),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFFD4E8C2)),
+              backgroundColor: AppColors.lightGreen.withOpacity(0.5),
+              valueColor:
+              const AlwaysStoppedAnimation<Color>(AppColors.paleGreen),
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Goal: ${CommunityStats.weeklyGoal} items',
-            style: const TextStyle(
-              color: Color(0xFFD4E8C2),
-              fontSize: 11,
-            ),
+            'Goal: $weeklyGoal items',
+            style: const TextStyle(color: AppColors.paleGreen, fontSize: 11),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _categoryCard(IconData icon, String label) {
-    return GestureDetector(
-      onTap: () => _goToBrowse(category: label),
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFF5E8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFD4E8C2), width: 1),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFF3A5C2E),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 22),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A2E0A),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+// ── Featured Card ─────────────────────────────────────────────────────────────
 
-  Widget _featuredCard(Map<String, dynamic> item) {
+class _FeaturedCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final VoidCallback onTap;
+
+  const _FeaturedCard({required this.item, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     final bool available = item['available'] == true;
     return GestureDetector(
-      onTap: () => _openItemDetail(item),
+      onTap: onTap,
       child: Container(
         width: 160,
         decoration: BoxDecoration(
@@ -439,19 +417,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(13)),
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(13)),
                     child: SizedBox(
                       width: double.infinity,
                       child: Image.asset(
                         item['image'],
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          color: const Color(0xFFD4E8C2),
+                          color: AppColors.paleGreen,
                           child: const Center(
                             child: Icon(
                               Icons.image_not_supported,
-                              color: Color(0xFF3A5C2E),
+                              color: AppColors.darkGreen,
                               size: 36,
                             ),
                           ),
@@ -463,11 +441,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: available
-                            ? const Color(0xFF3A5C2E)
+                            ? AppColors.darkGreen
                             : Colors.redAccent,
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -494,7 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2E0A),
+                      color: AppColors.darkText,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -508,9 +486,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         item['distance'] ?? '—',
                         style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
+                            fontSize: 11, color: Colors.grey),
                       ),
                     ],
                   ),

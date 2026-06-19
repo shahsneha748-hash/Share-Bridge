@@ -1,43 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sharebridge/view/item_data.dart';
+import 'package:provider/provider.dart';
+import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/components/app_header.dart';
+import 'package:sharebridge/components/filter_chip_button.dart';
+import 'package:sharebridge/components/category_pill.dart';
+import 'package:sharebridge/components/browse_item_card.dart';
+import 'package:sharebridge/repo/browse_repo_impl.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
+import 'package:sharebridge/viewmodel/browse_view_model.dart';
 
-class BrowseScreen extends StatefulWidget {
+class BrowseScreen extends StatelessWidget {
   final String? initialCategory;
 
   const BrowseScreen({super.key, this.initialCategory});
 
   @override
-  State<BrowseScreen> createState() => _BrowseScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) =>
+          BrowseViewModel(BrowseRepoImpl(), initialCategory: initialCategory),
+      child: _BrowseView(initialCategory: initialCategory),
+    );
+  }
 }
 
-class _BrowseScreenState extends State<BrowseScreen> {
-  String _selectedCategory = 'All';
-  String _sortBy = 'Newest';
-  String _distanceFilter = 'Anywhere';
-  bool _availableOnly = false;
-  bool _todayOnly = false;
-  String _searchQuery = '';
+class _BrowseView extends StatefulWidget {
+  final String? initialCategory;
+  const _BrowseView({this.initialCategory});
 
+  @override
+  State<_BrowseView> createState() => _BrowseViewState();
+}
+
+class _BrowseViewState extends State<_BrowseView> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.initialCategory != null) {
-      _selectedCategory = widget.initialCategory!;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant BrowseScreen oldWidget) {
+  void didUpdateWidget(covariant _BrowseView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialCategory != null &&
-        widget.initialCategory != oldWidget.initialCategory) {
-      setState(() {
-        _selectedCategory = widget.initialCategory!;
-      });
+    if (widget.initialCategory != oldWidget.initialCategory) {
+      context.read<BrowseViewModel>().updateInitialCategory(widget.initialCategory);
     }
   }
 
@@ -47,93 +50,33 @@ class _BrowseScreenState extends State<BrowseScreen> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get filteredItems {
-    var list = List<Map<String, dynamic>>.from(sharedItems);
-
-    if (_selectedCategory != 'All') {
-      list = list.where((i) => i['category'] == _selectedCategory).toList();
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      list = list.where((i) {
-        return i['title']
-            .toString()
-            .toLowerCase()
-            .contains(_searchQuery.toLowerCase());
-      }).toList();
-    }
-
-    if (_availableOnly) {
-      list = list.where((i) => i['available'] == true).toList();
-    }
-
-    if (_todayOnly) {
-      list = list.where((i) {
-        final exp = i['expires']?.toString() ?? '';
-        return exp.contains('h');
-      }).toList();
-    }
-
-    if (_distanceFilter != 'Anywhere') {
-      final maxKm = _distanceFilter == '1 km' ? 1.0 : 5.0;
-      list = list.where((i) {
-        final d = _parseDistance(i['distance']);
-        final km = d * 1.6;
-        return km <= maxKm;
-      }).toList();
-    }
-
-    if (_sortBy == 'Nearest') {
-      list.sort((a, b) => _parseDistance(a['distance'])
-          .compareTo(_parseDistance(b['distance'])));
-    } else if (_sortBy == 'Newest') {
-      list.sort((a, b) => (a['expires'] ?? 'zz')
-          .toString()
-          .compareTo((b['expires'] ?? 'zz').toString()));
-    } else if (_sortBy == 'Available') {
-      list.sort((a, b) {
-        if (a['available'] == b['available']) return 0;
-        return a['available'] == true ? -1 : 1;
-      });
-    }
-
-    return list;
-  }
-
-  double _parseDistance(dynamic d) {
-    if (d == null) return 999;
-    final s = d.toString().replaceAll(RegExp(r'[^0-9.]'), '');
-    return double.tryParse(s) ?? 999;
-  }
-
-  void _openItemDetail(Map<String, dynamic> item) {
+  void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
+    final vm = context.read<BrowseViewModel>();
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ItemDetailScreen(item: item),
-      ),
-    ).then((_) => setState(() {}));
+      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
+    ).then((_) => vm.refresh());
   }
 
-  void _toggleFavorite(String title) {
-    final wasSaved = Favorites.isFavorite(title);
-    setState(() {
-      Favorites.toggle(title);
-    });
+  void _toggleFavorite(BuildContext context, String title) {
+    final vm = context.read<BrowseViewModel>();
+    final wasSaved = vm.isFavorite(title);
+    vm.toggleFavorite(title);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(wasSaved ? 'Removed from saved' : 'Added to saved'),
-        backgroundColor: const Color(0xFF3A5C2E),
+        backgroundColor: AppColors.darkGreen,
         duration: const Duration(seconds: 1),
       ),
     );
   }
 
-  void _openFilterSheet() {
-    String tempCategory = _selectedCategory;
-    String tempDistance = _distanceFilter;
-    bool tempAvailable = _availableOnly;
-    String tempSort = _sortBy;
+  void _openFilterSheet(BuildContext context) {
+    final vm = context.read<BrowseViewModel>();
+    String tempCategory = vm.selectedCategory;
+    String tempDistance = vm.distanceFilter;
+    bool tempAvailable = vm.availableOnly;
+    String tempSort = vm.sortBy;
 
     showModalBottomSheet(
       context: context,
@@ -149,18 +92,16 @@ class _BrowseScreenState extends State<BrowseScreen> {
               return GestureDetector(
                 onTap: onTap,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 9),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                   decoration: BoxDecoration(
-                    color: active
-                        ? const Color(0xFF3A5C2E)
-                        : const Color(0xFFEFF5E8),
+                    color: active ? AppColors.darkGreen : AppColors.backgroundGreen,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     text,
                     style: TextStyle(
-                      color: active ? Colors.white : const Color(0xFF1A2E0A),
+                      color: active ? Colors.white : AppColors.darkText,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -170,9 +111,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
             }
 
             return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
+              padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
               child: SafeArea(
                 top: false,
                 child: SingleChildScrollView(
@@ -196,7 +136,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2E0A),
+                          color: AppColors.darkText,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -204,18 +144,12 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A2E0A))),
+                              color: AppColors.darkText)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: [
-                          'All',
-                          'Food',
-                          'Clothes',
-                          'Stationery',
-                          'Others'
-                        ]
+                        children: ['All', 'Food', 'Clothes', 'Stationery', 'Others']
                             .map((c) => pill(
                           c,
                           tempCategory == c,
@@ -228,7 +162,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A2E0A))),
+                              color: AppColors.darkText)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -245,7 +179,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A2E0A))),
+                              color: AppColors.darkText)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -261,7 +195,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A2E0A))),
+                              color: AppColors.darkText)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -276,23 +210,23 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       const SizedBox(height: 28),
                       GestureDetector(
                         onTap: () {
-                          setState(() {
-                            _selectedCategory = tempCategory;
-                            _distanceFilter = tempDistance;
-                            _availableOnly = tempAvailable;
-                            _sortBy = tempSort;
-                          });
+                          vm.applyFilters(
+                            category: tempCategory,
+                            distance: tempDistance,
+                            available: tempAvailable,
+                            sort: tempSort,
+                          );
                           Navigator.pop(ctx);
                         },
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3A5C2E),
+                            color: AppColors.darkGreen,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
-                            'Show ${_previewCount(tempCategory, tempDistance, tempAvailable)} results',
+                            'Show ${vm.previewCount(category: tempCategory, distance: tempDistance, available: tempAvailable)} results',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
@@ -319,7 +253,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                             'Reset all filters',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Color(0xFF3A5C2E),
+                              color: AppColors.darkGreen,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -337,72 +271,22 @@ class _BrowseScreenState extends State<BrowseScreen> {
     );
   }
 
-  int _previewCount(String cat, String dist, bool avail) {
-    var list = List<Map<String, dynamic>>.from(sharedItems);
-    if (cat != 'All') {
-      list = list.where((i) => i['category'] == cat).toList();
-    }
-    if (avail) {
-      list = list.where((i) => i['available'] == true).toList();
-    }
-    if (dist != 'Anywhere') {
-      final maxKm = dist == '1 km' ? 1.0 : 5.0;
-      list = list.where((i) {
-        final d = _parseDistance(i['distance']) * 1.6;
-        return d <= maxKm;
-      }).toList();
-    }
-    return list.length;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final items = filteredItems;
+    final vm = context.watch<BrowseViewModel>();
+    final items = vm.filteredItems;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF3A5C2E),
+        statusBarColor: AppColors.darkGreen,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFF3A5C2E),
+        backgroundColor: AppColors.darkGreen,
         body: SafeArea(
           child: Column(
             children: [
-              // ===== HEADER =====
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
-                color: const Color(0xFF3A5C2E),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Browse',
-                          style: TextStyle(
-                            color: Color(0xFFF5F0E8),
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Find what you need nearby',
-                          style: TextStyle(
-                            color: Color(0xFFD4E8C2),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // ===== WHITE CONTENT =====
+              const AppHeader(title: 'Browse'),
               Expanded(
                 child: Container(
                   color: Colors.white,
@@ -410,46 +294,40 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     children: [
                       const SizedBox(height: 18),
 
-                      // SEARCH BAR
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Container(
                           height: 48,
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF7F7F2),
+                            color: AppColors.inputBg,
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                                color: Colors.grey.shade300, width: 1.2),
+                            border:
+                            Border.all(color: Colors.grey.shade300, width: 1.2),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.search,
-                                  color: Colors.grey, size: 22),
+                              const Icon(Icons.search, color: Colors.grey, size: 22),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: TextField(
                                   controller: _searchController,
-                                  autofocus: false,
                                   decoration: const InputDecoration(
                                     hintText: 'Search all items',
-                                    hintStyle: TextStyle(
-                                        color: Colors.grey, fontSize: 15),
+                                    hintStyle:
+                                    TextStyle(color: Colors.grey, fontSize: 15),
                                     border: InputBorder.none,
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
                                   ),
-                                  onChanged: (v) {
-                                    setState(() => _searchQuery = v);
-                                  },
+                                  onChanged: (v) => vm.setSearchQuery(v),
                                 ),
                               ),
-                              if (_searchQuery.isNotEmpty)
+                              if (vm.searchQuery.isNotEmpty)
                                 GestureDetector(
                                   onTap: () {
                                     _searchController.clear();
-                                    setState(() => _searchQuery = '');
+                                    vm.setSearchQuery('');
                                   },
                                   child: const Icon(Icons.close,
                                       color: Colors.grey, size: 20),
@@ -461,40 +339,35 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
                       const SizedBox(height: 18),
 
-                      // Filter chips row
                       SizedBox(
                         height: 38,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           children: [
-                            _filterChip(
+                            FilterChipButton(
                               icon: Icons.tune,
                               label: 'Filters',
                               active: true,
-                              onTap: _openFilterSheet,
+                              onTap: () => _openFilterSheet(context),
                             ),
                             const SizedBox(width: 8),
-                            _filterChip(
+                            FilterChipButton(
                               label: 'Nearest',
-                              active: _sortBy == 'Nearest',
-                              onTap: () => setState(() => _sortBy =
-                              _sortBy == 'Nearest' ? 'Newest' : 'Nearest'),
+                              active: vm.sortBy == 'Nearest',
+                              onTap: vm.toggleSortNearest,
                             ),
                             const SizedBox(width: 8),
-                            _filterChip(
+                            FilterChipButton(
                               label: 'Available only',
-                              active: _availableOnly,
-                              onTap: () => setState(
-                                      () => _availableOnly = !_availableOnly),
+                              active: vm.availableOnly,
+                              onTap: vm.toggleAvailableOnly,
                             ),
                             const SizedBox(width: 8),
-                            _filterChip(
+                            FilterChipButton(
                               label: 'Today',
-                              active: _todayOnly,
-                              onTap: () =>
-                                  setState(() => _todayOnly = !_todayOnly),
+                              active: vm.todayOnly,
+                              onTap: vm.toggleTodayOnly,
                             ),
                           ],
                         ),
@@ -502,33 +375,34 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Category row
                       SizedBox(
                         height: 38,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           children: [
-                            _categoryPill('All'),
-                            const SizedBox(width: 8),
-                            _categoryPill('Food'),
-                            const SizedBox(width: 8),
-                            _categoryPill('Clothes'),
-                            const SizedBox(width: 8),
-                            _categoryPill('Stationery'),
-                            const SizedBox(width: 8),
-                            _categoryPill('Others'),
-                          ],
+                            'All',
+                            'Food',
+                            'Clothes',
+                            'Stationery',
+                            'Others'
+                          ].map((label) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: CategoryPill(
+                                label: label,
+                                active: vm.selectedCategory == label,
+                                onTap: () => vm.setCategory(label),
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
 
                       const SizedBox(height: 14),
 
-                      // Item count + sort
                       Padding(
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -537,19 +411,19 @@ class _BrowseScreenState extends State<BrowseScreen> {
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A2E0A),
+                                color: AppColors.darkText,
                               ),
                             ),
                             Row(
                               children: [
                                 const Icon(Icons.swap_vert,
-                                    size: 16, color: Color(0xFF3A5C2E)),
+                                    size: 16, color: AppColors.darkGreen),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _sortBy,
+                                  vm.sortBy,
                                   style: const TextStyle(
                                     fontSize: 13,
-                                    color: Color(0xFF3A5C2E),
+                                    color: AppColors.darkGreen,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -561,7 +435,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
                       const SizedBox(height: 12),
 
-                      // GRID
                       Expanded(
                         child: items.isEmpty
                             ? const Center(
@@ -573,15 +446,14 @@ class _BrowseScreenState extends State<BrowseScreen> {
                               SizedBox(height: 10),
                               Text(
                                 'No items match your filters',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 15),
+                                style:
+                                TextStyle(color: Colors.grey, fontSize: 15),
                               ),
                             ],
                           ),
                         )
                             : Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: GridView.builder(
                             padding: EdgeInsets.zero,
                             itemCount: items.length,
@@ -592,7 +464,17 @@ class _BrowseScreenState extends State<BrowseScreen> {
                               mainAxisSpacing: 12,
                               childAspectRatio: 0.72,
                             ),
-                            itemBuilder: (ctx, i) => _itemCard(items[i]),
+                            itemBuilder: (ctx, i) {
+                              final item = items[i];
+                              final title = item['title'].toString();
+                              return BrowseItemCard(
+                                item: item,
+                                isSaved: vm.isFavorite(title),
+                                onTap: () => _openItemDetail(context, item),
+                                onFavoriteTap: () =>
+                                    _toggleFavorite(context, title),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -602,194 +484,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _filterChip({
-    IconData? icon,
-    required String label,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFF3A5C2E) : const Color(0xFFEFE9D5),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon,
-                  size: 14,
-                  color: active ? Colors.white : const Color(0xFF1A2E0A)),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: active ? Colors.white : const Color(0xFF1A2E0A),
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _categoryPill(String label) {
-    final bool active = _selectedCategory == label;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFF3A5C2E) : const Color(0xFFEFF5E8),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? Colors.white : const Color(0xFF1A2E0A),
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _itemCard(Map<String, dynamic> item) {
-    final bool available = item['available'] == true;
-    final String title = item['title'].toString();
-    final bool isSaved = Favorites.isFavorite(title);
-
-    return GestureDetector(
-      onTap: () => _openItemDetail(item),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFF5E8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFD4E8C2), width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Top row: Available/Taken badge + bookmark icon ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: available
-                          ? const Color(0xFFD4E8C2)
-                          : const Color(0xFFFDD7D7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      available ? 'Available' : 'Taken',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: available
-                            ? const Color(0xFF2D5016)
-                            : Colors.redAccent,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _toggleFavorite(title),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, anim) => ScaleTransition(
-                        scale: anim,
-                        child: child,
-                      ),
-                      child: Icon(
-                        isSaved ? Icons.bookmark : Icons.bookmark_border,
-                        key: ValueKey(isSaved),
-                        size: 18,
-                        color: const Color(0xFF3A5C2E),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
-
-            // ── Image ──
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: double.infinity,
-                    color: const Color(0xFFD4E8C2),
-                    child: Image.asset(
-                      item['image'],
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: Color(0xFF3A5C2E),
-                          size: 36,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // ── Bottom: title + distance ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['title'],
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2E0A),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on,
-                          size: 12, color: Colors.grey),
-                      const SizedBox(width: 2),
-                      Text(
-                        item['distance'] ?? '—',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
