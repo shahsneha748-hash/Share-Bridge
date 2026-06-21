@@ -2,27 +2,55 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sharebridge/repo/review_repo.dart';
-import 'package:sharebridge/repo/review_repo_impl.dart';
-import 'package:sharebridge/repo/volunteer_repo_impl.dart';
-import 'package:sharebridge/view/edit_profile_screen.dart';
-import 'package:sharebridge/view/review.dart';
-import 'package:sharebridge/view/user.dart';
-import 'package:sharebridge/view/user_profile.dart';
-import 'package:sharebridge/view/volunteer_screen.dart';
-import 'package:sharebridge/viewmodel/review_view_model.dart';
-import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
-
-import 'package:sharebridge/view/admin_dashboard_view.dart';
-import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
+import 'package:sharebridge/repo/notification_repo.dart';
+import 'package:sharebridge/repo/notification_repo_impl.dart';
+import 'package:sharebridge/repo/saved_items_repo.dart';
+import 'package:sharebridge/repo/saved_items_repo_impl.dart';
+import 'package:sharebridge/repo/user_repo.dart';
+import 'package:sharebridge/repo/user_repo_impl.dart';
+import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/splash_screen.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
+import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
+import 'package:sharebridge/viewmodel/user_view_model.dart';
 import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.initialize();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // Register repos first
+        Provider<UserRepo>(create: (_) => UserRepoImpl()),
+        Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
+        Provider<SavedItemRepo>(create: (_) => SavedItemRepositoryImpl()),
+
+        // ViewModels depend on repos
+        ChangeNotifierProvider(
+          create: (context) =>
+              UserViewModel(
+                userRepo: context.read<UserRepo>(),
+                notificationRepo: context.read<NotificationRepo>(),
+              ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              NotificationViewModel(
+                repo: context.read<NotificationRepo>(),
+                userRepo: context.read<UserRepo>(),
+              ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              SavedItemViewModel(savedItemRepo: context.read<SavedItemRepo>()),
+        ),
+      ],
+      child: const MyHomePage(),
+    ),
   );
-  runApp(const MyHomePage());
 }
 
 class MyHomePage extends StatelessWidget {
@@ -30,32 +58,15 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<ReviewRepository>(create: (_) => ReviewRepositoryImpl() ),
-
-        ChangeNotifierProvider(
-          create: (_) => ReviewViewModel(repository: context.read<ReviewRepository>(),
-          ),
-        ),
-
-        ChangeNotifierProvider(
-          create: (_) => VolunteerViewModel(
-            repo: VolunteerRepoImpl(
-              firestore: FirebaseFirestore.instance,
-            ),
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AdminDashboardViewModel(),
-        ),
-
-      ],
-      child: MaterialApp(
-          title: "sharebridge",
-          debugShowCheckedModeBanner: false,
-          home: VolunteerScreen(),
-      ),
+    return MaterialApp(
+      title: "Share-Bridge",
+      debugShowCheckedModeBanner: false,
+      home: SplashScreen(),
     );
   }
 }
+
+
+
+
+

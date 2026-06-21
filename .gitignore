@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+# Firebase / Google secrets
+secrets/
+*.json
+*.env        // we kept this file in .gitignore so to ignore this file so that whenever we push our changes to github this environment file (in short form called .env file) will not be pushed in your github projct repository u are working on!  This way your secrets are secured.     // we have added this here to secure our sensitive files. This way our files will be secured hidden from everyone only you know it. This is just for testing. For real production these secrets sensitive files must be stored in the server side.

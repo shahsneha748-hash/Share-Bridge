@@ -1,7 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+
+    <!-- Camera permission --><!-- Camera permission -->
     <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Declare camera hardware feature -->
+    <uses-feature android:name="android.hardware.camera" android:required="true"/>
 
     <application
         android:label="sharebridge"
@@ -28,6 +34,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel"/>
     </application>
     <queries>
         <intent>

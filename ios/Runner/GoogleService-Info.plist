@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyDHlsQgnreg9Yjix3Lvgc7iZ0TxmSIQCf4</string>
+	<string>AIzaSyA6ys2nNgFsKdq-AXL785FAphWRxfWfujo</string>
 	<key>GCM_SENDER_ID</key>
-	<string>915432512394</string>
+	<string>856936215607</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.project.project</string>
+	<string>com.sharebridge.sharebridge</string>
 	<key>PROJECT_ID</key>
-	<string>project-3b0f3</string>
+	<string>sharebridge-2668c</string>
 	<key>STORAGE_BUCKET</key>
-	<string>project-3b0f3.firebasestorage.app</string>
+	<string>sharebridge-2668c.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:915432512394:ios:5caf2f8ef8e495987fc673</string>
+	<string>1:856936215607:ios:3c3bbfb63a656830f0fbb2</string>
 </dict>
 </plist>
