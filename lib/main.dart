@@ -9,6 +9,9 @@ import 'package:sharebridge/repo/saved_items_repo_impl.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:sharebridge/repo/user_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/dashboard_screen.dart';
+import 'package:sharebridge/view/item_detail_screen.dart';
+import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/splash_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
@@ -61,8 +64,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
-    );
+      home: const NavigationScreen(),    );
   }
 }
 
