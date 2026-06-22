@@ -1,57 +1,67 @@
-import 'dart:io';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:sharebridge/model/notification_model.dart';
-import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
-Widget _notificationCard(NotificationModel n, NotificationViewModel vm) {
-  return Card(
-    child: ListTile(
-      title: Text(n.title),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(n.body),
-          if (n.type == "request") Row(
+enum NotificationType { request, pickup, alert }
+
+class NotificationCard extends StatelessWidget {
+  final NotificationType type;
+  final String description;
+  final String? numberField;
+  final VoidCallback? onAccept;
+  final VoidCallback? onReject;
+  final VoidCallback? onEdit;
+
+  const NotificationCard({
+    required this.type,
+    required this.description,
+    this.numberField,
+    this.onAccept,
+    this.onReject,
+    this.onEdit,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    switch (type) {
+      case NotificationType.request:
+        return Card(
+          color: Colors.orange[50],
+          child: Column(
             children: [
-              ElevatedButton(
-                onPressed: () async {
-                  final responseModel = NotificationModel(
-                    id: "",
-                    senderId: FirebaseAuth.instance.currentUser!.uid,
-                    receiverId: n.receiverId,
-                    type: "response",
-                    title: "Donor accepted your request",
-                    body: "Your donation request has been accepted.",
-                    createdAt: DateTime.now(),
-                    isRead: false,
-                  );
-                  await vm.addNotification(responseModel);
-                },
-                child: const Text("Accept"),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () async {
-                  final responseModel = NotificationModel(
-                    id: "",
-                    senderId: FirebaseAuth.instance.currentUser!.uid,
-                    receiverId: n.receiverId,
-                    type: "response",
-                    title: "Donor rejected your request",
-                    body: "Your donation request has been rejected.",
-                    createdAt: DateTime.now(),
-                    isRead: false,
-                  );
-                  await vm.addNotification(responseModel);
-                },
-                child: const Text("Reject"),
+              Text("Donation Request", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(description),
+              Row(
+                children: [
+                  ElevatedButton(onPressed: onAccept, child: const Text("Accept")),
+                  ElevatedButton(onPressed: onReject, child: const Text("Reject")),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-    ),
-  );
+        );
+      case NotificationType.pickup:
+        return Card(
+          color: Colors.green[50],
+          child: Column(
+            children: [
+              Text("Pickup Scheduled", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(description),
+              if (numberField != null) Text("Pickup Number: $numberField"),
+              TextButton(onPressed: onEdit, child: const Text("Edit")),
+            ],
+          ),
+        );
+      case NotificationType.alert:
+        return Card(
+          color: Colors.red[50],
+          child: Column(
+            children: [
+              Text("Alert!", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(description),
+            ],
+          ),
+        );
+    }
+  }
 }
+

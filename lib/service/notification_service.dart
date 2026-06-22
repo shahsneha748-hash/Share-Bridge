@@ -173,7 +173,6 @@ class NotificationService {
   }
 
   /// Display custom notification (with asset images)
-  /// Display custom notification (with asset images)
   static Future<void> display({
     required String title,
     required String body,

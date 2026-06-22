@@ -14,7 +14,6 @@ class NotificationModel {
   final bool isRead;
   final Map<String, dynamic>? data;
   final String? assetImage;
-  final String? imageUrl;
   final String? filePath;
 
   NotificationModel({
@@ -31,7 +30,6 @@ class NotificationModel {
     required this.isRead,
     this.data,
     this.assetImage,
-    this.imageUrl,
     this.filePath,
   });
 
@@ -51,7 +49,6 @@ class NotificationModel {
       "isRead": isRead,
       "data": data ?? {},
       "assetImage": assetImage,
-      "imageUrl": imageUrl,
       "filePath": filePath,
     };
   }
@@ -74,7 +71,6 @@ class NotificationModel {
       isRead: map["isRead"] ?? false,
       data: map["data"],
       assetImage: map["assetImage"],
-      imageUrl: map["imageUrl"],
       filePath: map["filePath"],
     );
   }
@@ -111,7 +107,6 @@ class NotificationModel {
       isRead: isRead ?? this.isRead,
       data: data ?? this.data,
       assetImage: assetImage ?? this.assetImage,
-      imageUrl: imageUrl ?? this.imageUrl,
       filePath: filePath ?? this.filePath,
     );
   }

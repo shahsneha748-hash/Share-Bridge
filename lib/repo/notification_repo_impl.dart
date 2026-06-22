@@ -44,7 +44,6 @@ class NotificationRepoImpl implements NotificationRepo {
   }
 
 
-
   /// Get FCM token for this device
   @override
   Future<String?> getFcmToken() async {
@@ -67,7 +66,8 @@ class NotificationRepoImpl implements NotificationRepo {
     if (deviceToken.isEmpty) return false;
 
     try {
-      final serviceAccountJson = await rootBundle.loadString(serviceAccountPath);
+      final serviceAccountJson = await rootBundle.loadString(
+          serviceAccountPath);
       final serviceAccount =
       ServiceAccountCredentials.fromJson(serviceAccountJson);
       final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
@@ -110,12 +110,14 @@ class NotificationRepoImpl implements NotificationRepo {
   Stream<List<NotificationModel>> getNotifications(String userId) {
     return firestore
         .collection("notifications")
-        .where("receiverId", isEqualTo: userId)
+        .where("receiverId", isEqualTo: userId) // ✅ always receiverId
         .orderBy("createdAt", descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
-        .toList());
+        .map((snapshot) =>
+        snapshot.docs
+            .map((doc) =>
+            NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList());
   }
 
   /// Add a new notification
@@ -126,10 +128,9 @@ class NotificationRepoImpl implements NotificationRepo {
       final newNotification = notification.copyWith(
         id: ref.id,
         createdAt: DateTime.now(),
-        isRead: false,
+        isRead: false, // ✅ always start unread
       );
       await ref.set(newNotification.toMap());
-      print("Notification added with ID: ${ref.id}");
       return true;
     } catch (e) {
       print("Failed to add notification: $e");
@@ -147,7 +148,8 @@ class NotificationRepoImpl implements NotificationRepo {
         .get();
 
     return snapshot.docs
-        .map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
+        .map((doc) =>
+        NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
         .toList();
   }
 
@@ -161,7 +163,8 @@ class NotificationRepoImpl implements NotificationRepo {
         .get();
 
     return snapshot.docs
-        .map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
+        .map((doc) =>
+        NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
         .toList();
   }
 
@@ -195,29 +198,30 @@ class NotificationRepoImpl implements NotificationRepo {
   }
 
 
+  /// Mark all notifications as read for a user
   @override
-  Future<void> markAsRead(String id) async {
-    try {
-      Future<void> markAsRead(String id) async {
-        await FirebaseFirestore.instance
-            .collection("notifications")
-            .doc(id)
-            .update({"isRead": true});
-        // Firestore listener will update automatically
-      }
-      print("Notification $id marked as read");
-    } catch (e) {
-      print("Failed to mark notification as read: $e");
-      rethrow;
+  Future<void> markAllAsRead(String userId) async {
+    final query = await firestore
+        .collection("notifications")
+        .where("receiverId", isEqualTo: userId)
+        .where("isRead", isEqualTo: false)
+        .get();
+
+    final batch = firestore.batch();
+    for (var doc in query.docs) {
+      batch.update(doc.reference, {"isRead": true});
     }
+    await batch.commit();
   }
 
+
   @override
-  Future<void> sendNotificationToUser(String token, String title, String body) async {
+  Future<void> sendNotificationToUser(String token, String title,
+      String body) async {
     await FCMService.sendPushMessage(
       token,
-      {"title": title, "body": body},   // data payload
-      {"title": title, "body": body},   // notification payload
+      {"title": title, "body": body}, // data payload
+      {"title": title, "body": body}, // notification payload
     );
   }
 
@@ -229,6 +233,21 @@ class NotificationRepoImpl implements NotificationRepo {
         .get();
 
     return doc.data()?['name'] ?? "Unknown User";
+  }
+
+  @override
+  Future<List<NotificationModel>> getAllNotifications() async {
+    final users = await firestore
+        .collection("notifications")
+        .get();
+    List<NotificationModel> data = []; // empty list banako
+
+    for (int i = 0; i <= users.docs
+        .length; i++) { // derai data (list of data) .docs bhaneh object ma auncha ani euta matrai data ho bhaneh .data ma auncha
+      data.add(NotificationModel.fromMap(users.docs[i]
+          .data())); // yo for loop ma document ko length jati cha teti samma for loop run huncha. ani everytime for loop use hunda hamro data yo data bhanneh variable ma bascha.
+    }
+    return data;
   }
 }
 
