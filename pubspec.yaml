@@ -57,6 +57,9 @@ dependencies:
   cached_network_image: ^3.4.1          # image render garcha
   image_picker: ^1.2.2
   cloudinary_public: ^0.23.1
+  url_launcher: ^6.3.0
+
+
 
 
 
