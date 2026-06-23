@@ -40,20 +40,21 @@ class _SignupScreenState extends State<SignupScreen> {
       body:
         SafeArea(
           child: SingleChildScrollView(
-            child: Column(
+            // 👇 ensures padding when keyboard is open
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),          child: Column(
               children: [
                 SizedBox(height: 35),
                 Container(
-                  width: 393,
+                  width: double.infinity,
                   decoration: BoxDecoration(color: Color(0XFFd1e8bf), borderRadius: BorderRadius.circular(37)),
-
+            
                   child: Padding(
                     padding: const EdgeInsets.only(right: 20, left: 20, top:20, bottom: 40),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-
+            
                         Padding(
                           padding: const EdgeInsets.only(left: 10, top: 20),
                           child: Row(
@@ -62,7 +63,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ],
                           ),
                         ),
-
+            
                         Padding(
                           padding: const EdgeInsets.only(left: 10, bottom: 10),
                           child: Row(
@@ -71,7 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ],
                           ),
                         ),
-
+            
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           child: TextFormField(
@@ -85,11 +86,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                 filled: true,
                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
                                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+            
                             ),
                           ),
                         ),
-
+            
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           child: TextFormField(
@@ -103,11 +104,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                 filled: true,
                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
                                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+            
                             ),
                           ),
                         ),
-
+            
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           child: TextFormField(
@@ -125,11 +126,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                 filled: true,
                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
                                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+            
                             ),
                           ),
                         ),
-
+            
                             Padding(
                               padding: const EdgeInsets.only(left:10, right: 10, top: 10, bottom: 3),
                               child: TextFormField(
@@ -150,7 +151,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                               ),
                             ),
-
+            
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10,  vertical: 10),
                           child: TextFormField(
@@ -177,11 +178,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                 filled: true,
                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
                                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+            
                             ),
                           ),
                         ),
-
+            
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10,  vertical: 10),
                           child: TextFormField(
@@ -208,11 +209,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                 filled: true,
                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent),borderRadius: BorderRadius.circular(25)),
                                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+            
                             ),
                           ),
                         ),
-
+            
                         SizedBox(height: 15),
                         SizedBox(
                           width: 500, height: 57,
@@ -234,7 +235,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Fluttertoast.showToast(msg: "All text must be filled");
                                     return;
                                   }
-
+            
                                   // Step 2: Validate inputs BEFORE signup
                                   if (confirmPasswordController.text != passwordController.text) {
                                     Fluttertoast.showToast(msg: "Confirm password must be same as password");
@@ -248,19 +249,19 @@ class _SignupScreenState extends State<SignupScreen> {
                                     Fluttertoast.showToast(msg: "Phone number must be at least 10 characters");
                                     return;
                                   }
-
+            
                                   try {
                                     // Step 3: Attempt signup
                                     final userId = await viewModel.signup(
                                       emailController.text.trim(),
                                       passwordController.text.trim(),
                                     );
-
+            
                                     if (userId.isEmpty) {
                                       Fluttertoast.showToast(msg: viewModel.error.toString());
                                       return;
                                     }
-
+            
                                     // Step 4: Build user model
                                     final model = UserModel(
                                       id: userId,
@@ -275,7 +276,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       rating: 0.0,
                                       totalDonations: 0,
                                     );
-
+            
                                     // Step 5: Save user profile
                                     final success = await viewModel.addUser(model);
                                     if (success) {
