@@ -119,6 +119,24 @@ class UserRepoImpl implements UserRepo {
     return doc.data()?['name'] ?? "Unknown User";
   }
 
+  @override
+  Future<String?> getProfilePicture(String senderId) async {
+    try {
+      final doc = await firestore
+          .collection("users")
+          .doc(senderId)
+          .get();
+      if (doc.exists) {
+        // Assuming you store profile picture under "profilePicture" field
+        return doc.data()?["profilePicture"] as String?;
+      }
+      return null; // no picture stored
+    } catch (e) {
+      // Log error or handle gracefully
+      print("Error fetching profile picture: $e");
+      return null;
+    }
+  }
 }
 
 // register garda createUserWithEmailAndPassword (login garda signin, register garda create account ho similar ho just copy paste gareko code logic and then just added createUserWithEmailAndPassword )

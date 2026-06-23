@@ -1,65 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/repo/item_detail_repo_impl.dart';
+import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
 
-class ItemDetailScreen extends StatefulWidget {
+class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
 
   const ItemDetailScreen({super.key, required this.item});
 
   @override
-  State<ItemDetailScreen> createState() => _ItemDetailScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ItemDetailViewModel(ItemDetailRepoImpl(), item),
+      child: const _ItemDetailView(),
+    );
+  }
 }
 
-class _ItemDetailScreenState extends State<ItemDetailScreen> {
-  bool _isFollowing = false;
+// ── View ──────────────────────────────────────────────────────────────────────
 
-  // Theme palette
-  static const Color cDarkGreen = Color(0xFF3A5C2E);
-  static const Color cDeepGreen = Color(0xFF1A2E0A);
-  static const Color cMidGreen = Color(0xFF5F7A45);
-  static const Color cSoftGreen = Color(0xFFEFF5E8);
-  static const Color cMintGreen = Color(0xFFD4E8C2);
-  static const Color cBeige = Color(0xFFF5F0E8);
+class _ItemDetailView extends StatelessWidget {
+  const _ItemDetailView();
 
-  void _snack(String msg) {
+  void _snack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: cDarkGreen,
+        backgroundColor: AppColors.darkGreen,
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  Future<void> _openInMaps() async {
-    final item = widget.item;
-    final double? lat = (item['mapLat'] as num?)?.toDouble();
-    final double? lng = (item['mapLng'] as num?)?.toDouble();
-
-    if (lat == null || lng == null) {
-      _snack('Location not available for this item');
-      return;
-    }
-
-    final Uri googleMapsApp = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-    final Uri geoUri = Uri.parse('geo:$lat,$lng?q=$lat,$lng');
-
-    try {
-      if (await canLaunchUrl(googleMapsApp)) {
-        await launchUrl(googleMapsApp, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(geoUri)) {
-        await launchUrl(geoUri);
-      } else {
-        _snack('Could not open Maps. Please install Google Maps.');
-      }
-    } catch (e) {
-      _snack('Error opening Maps');
-    }
-  }
-
-  void _showMoreMenu() {
+  void _showMoreMenu(BuildContext context) {
+    final vm = context.read<ItemDetailViewModel>();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -72,28 +48,32 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.flag_outlined, color: cDarkGreen),
+                leading: const Icon(Icons.flag_outlined,
+                    color: AppColors.darkGreen),
                 title: const Text('Report this item'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(ctx);
-                  _snack('Reported. Thank you for keeping us safe.');
+                  await vm.reportItem();
+                  _snack(context, 'Reported. Thank you for keeping us safe.');
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.bookmark_outline, color: cDarkGreen),
+                leading: const Icon(Icons.bookmark_outline,
+                    color: AppColors.darkGreen),
                 title: const Text('Save for later'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _snack('Saved to your bookmarks');
+                  _snack(context, 'Saved to your bookmarks');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.block, color: Colors.redAccent),
                 title: const Text('Block donor',
                     style: TextStyle(color: Colors.redAccent)),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(ctx);
-                  _snack('Donor blocked');
+                  await vm.blockDonor();
+                  _snack(context, 'Donor blocked');
                 },
               ),
               const SizedBox(height: 8),
@@ -104,31 +84,35 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  void _showRequestDialog() {
+  void _showRequestDialog(BuildContext context) {
+    final vm = context.read<ItemDetailViewModel>();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Request this item?',
             style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text(
-          'A request will be sent to ${widget.item['donorName'] ?? 'the donor'}. They will review and respond shortly.',
+          'A request will be sent to ${vm.item['donorName'] ?? 'the donor'}. They will review and respond shortly.',
           style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child:
+            const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: cDarkGreen,
+              backgroundColor: AppColors.darkGreen,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              _snack('Request sent to donor!');
+              await vm.sendRequest();
+              _snack(context, 'Request sent to donor!');
             },
             child: const Text('Send Request',
                 style: TextStyle(color: Colors.white)),
@@ -138,29 +122,43 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
+  Future<void> _handleOpenMaps(BuildContext context) async {
+    final vm = context.read<ItemDetailViewModel>();
+    final opened = await vm.openInMaps();
+    if (!opened) {
+      _snack(context, 'Location not available for this item');
+    }
+  }
+
+  Future<void> _handleFollowTap(BuildContext context) async {
+    final vm = context.read<ItemDetailViewModel>();
+    await vm.toggleFollow();
+    _snack(
+      context,
+      vm.isFollowing
+          ? 'Following ${vm.item['donorName'] ?? 'donor'}'
+          : 'Unfollowed',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-    final bool available = item['available'] == true;
-
-    final bool showExpiry = (item['category'] == 'Food') &&
-        (item['expires'] != null) &&
-        (item['expires'].toString().isNotEmpty);
+    final vm = context.watch<ItemDetailViewModel>();
+    final item = vm.item;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: cDarkGreen,
+        statusBarColor: AppColors.darkGreen,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        // ===== Back to clean WHITE background =====
         backgroundColor: Colors.white,
         body: Column(
           children: [
-            // ===== HEADER =====
+            // ── Header ──────────────────────────────────────────────────────
             Container(
               width: double.infinity,
-              color: cDarkGreen,
+              color: AppColors.darkGreen,
               child: SafeArea(
                 bottom: false,
                 child: Padding(
@@ -174,11 +172,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           width: 36,
                           height: 36,
                           decoration: const BoxDecoration(
-                            color: cBeige,
+                            color: AppColors.cream,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.arrow_back,
-                              color: cDarkGreen, size: 20),
+                              color: AppColors.darkGreen, size: 20),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -186,20 +184,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: Text(
                           'Item Detail',
                           style: TextStyle(
-                            color: cBeige,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: AppColors.cream,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                       IconButton(
-                        onPressed: () => _snack('Sharing link copied!'),
-                        icon: const Icon(Icons.share, color: cBeige, size: 22),
+                        onPressed: () =>
+                            _snack(context, 'Sharing link copied!'),
+                        icon: const Icon(Icons.share,
+                            color: AppColors.cream, size: 22),
                       ),
                       IconButton(
-                        onPressed: _showMoreMenu,
+                        onPressed: () => _showMoreMenu(context),
                         icon: const Icon(Icons.more_vert,
-                            color: cBeige, size: 22),
+                            color: AppColors.cream, size: 22),
                       ),
                     ],
                   ),
@@ -207,49 +206,55 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
             ),
 
+            // ── Scrollable Body ──────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ===== HERO IMAGE (UNCHANGED) =====
-                    _heroImage(item, available, showExpiry),
+                    _HeroImage(
+                      item: item,
+                      available: vm.available,
+                      showExpiry: vm.showExpiry,
+                    ),
 
-                    // ===== DONOR CARD overlapping hero =====
                     Transform.translate(
                       offset: const Offset(0, -20),
                       child: Padding(
                         padding:
                         const EdgeInsets.symmetric(horizontal: 20),
-                        child: _donorCard(item),
+                        child: _DonorCard(
+                          item: item,
+                          isFollowing: vm.isFollowing,
+                          onFollowTap: () => _handleFollowTap(context),
+                        ),
                       ),
                     ),
 
-                    // ===== BODY CONTENT =====
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ===== DESCRIPTION =====
-                          _sectionHeader('Description'),
+                          // Description
+                          const _SectionHeader('Description'),
                           const SizedBox(height: 10),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: cSoftGreen,
+                              color: AppColors.backgroundGreen,
                               borderRadius: BorderRadius.circular(14),
-                              border:
-                              Border.all(color: cMintGreen, width: 1),
+                              border: Border.all(
+                                  color: AppColors.paleGreen, width: 1),
                             ),
                             child: Text(
                               item['description'] ??
                                   'No description provided.',
                               style: const TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF3D4A35),
+                                color: AppColors.descriptionText,
                                 height: 1.55,
                               ),
                             ),
@@ -257,38 +262,40 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
                           const SizedBox(height: 22),
 
-                          // ===== DETAILS =====
-                          _featureGrid(item),
+                          // Feature Grid
+                          if (vm.features.isNotEmpty)
+                            _FeatureGrid(features: vm.features),
 
                           const SizedBox(height: 22),
 
-                          // ===== PICKUP LOCATION =====
+                          // Pickup Location
                           Row(
                             mainAxisAlignment:
                             MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              _sectionHeader('Pickup Location'),
+                              const _SectionHeader('Pickup Location'),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: cSoftGreen,
+                                  color: AppColors.backgroundGreen,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: cMintGreen, width: 1),
+                                      color: AppColors.paleGreen, width: 1),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.near_me,
-                                        size: 12, color: cDarkGreen),
+                                        size: 12,
+                                        color: AppColors.darkGreen),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${item['distance'] ?? '—'} away',
                                       style: const TextStyle(
                                         fontSize: 11,
-                                        color: cDarkGreen,
+                                        color: AppColors.darkGreen,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -304,13 +311,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: cSoftGreen,
+                              color: AppColors.backgroundGreen,
                               borderRadius: BorderRadius.circular(14),
-                              border:
-                              Border.all(color: cMintGreen, width: 1),
+                              border: Border.all(
+                                  color: AppColors.paleGreen, width: 1),
                             ),
                             child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
                                 Container(
                                   width: 36,
@@ -321,7 +329,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                     BorderRadius.circular(10),
                                   ),
                                   child: const Icon(Icons.location_on,
-                                      color: cDarkGreen, size: 18),
+                                      color: AppColors.darkGreen,
+                                      size: 18),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
@@ -333,7 +342,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                         'ADDRESS',
                                         style: TextStyle(
                                           fontSize: 10,
-                                          color: cMidGreen,
+                                          color: AppColors.lightGreen,
                                           fontWeight: FontWeight.w600,
                                           letterSpacing: 0.5,
                                         ),
@@ -344,7 +353,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                             'Location not set',
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          color: cDeepGreen,
+                                          color: AppColors.darkText,
                                           fontWeight: FontWeight.bold,
                                           height: 1.4,
                                         ),
@@ -357,8 +366,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           ),
                           const SizedBox(height: 12),
 
-                          // Map preview
-                          _mapPreview(),
+                          // Map Preview
+                          _MapPreview(
+                              onTap: () => _handleOpenMaps(context)),
 
                           const SizedBox(height: 22),
                         ],
@@ -369,16 +379,88 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
             ),
 
-            _bottomActionBar(available),
+            // ── Bottom Action Bar ────────────────────────────────────────────
+            _BottomActionBar(
+              available: vm.available,
+              onMessageTap: () =>
+                  _snack(context, 'Messaging — Coming Soon'),
+              onRequestTap: vm.available
+                  ? () => _showRequestDialog(context)
+                  : null,
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  // ===== HERO IMAGE (UNCHANGED) =====
-  Widget _heroImage(
-      Map<String, dynamic> item, bool available, bool showExpiry) {
+// ── Private Widgets ───────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String text;
+  const _SectionHeader(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.bold,
+          color: AppColors.darkText),
+    );
+  }
+}
+
+class _FloatingBadge extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color bg;
+  final Color fg;
+
+  const _FloatingBadge({
+    required this.icon,
+    required this.text,
+    required this.bg,
+    required this.fg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+          color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: fg, size: 13),
+          const SizedBox(width: 4),
+          Text(text,
+              style: TextStyle(
+                  color: fg,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroImage extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final bool available;
+  final bool showExpiry;
+
+  const _HeroImage({
+    required this.item,
+    required this.available,
+    required this.showExpiry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
         SizedBox(
@@ -388,10 +470,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             item['image'],
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              color: cMintGreen,
+              color: AppColors.paleGreen,
               child: const Center(
                 child: Icon(Icons.image_not_supported,
-                    color: cDarkGreen, size: 60),
+                    color: AppColors.darkGreen, size: 60),
               ),
             ),
           ),
@@ -408,7 +490,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  cDeepGreen.withOpacity(0.85),
+                  AppColors.darkText.withOpacity(0.85),
                 ],
               ),
             ),
@@ -420,19 +502,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _floatingBadge(
+              _FloatingBadge(
                 icon: available ? Icons.check_circle : Icons.cancel,
                 text: available ? 'Available' : 'Taken',
-                bg: cDeepGreen.withOpacity(0.85),
+                bg: AppColors.darkText.withOpacity(0.85),
                 fg: Colors.white,
               ),
               if (showExpiry) ...[
                 const SizedBox(height: 8),
-                _floatingBadge(
+                _FloatingBadge(
                   icon: Icons.access_time,
                   text: 'Expiring ${item['expires']}',
-                  bg: const Color(0xFFFFE9E9),
-                  fg: const Color(0xFFD64545),
+                  bg: AppColors.expiryBg,
+                  fg: AppColors.expiryText,
                 ),
               ],
             ],
@@ -449,7 +531,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: cMintGreen.withOpacity(0.95),
+                  color: AppColors.paleGreen.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -459,7 +541,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: cDeepGreen,
+                    color: AppColors.darkText,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -474,10 +556,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   height: 1.15,
                   shadows: [
                     Shadow(
-                      color: Colors.black26,
-                      offset: Offset(0, 1),
-                      blurRadius: 4,
-                    ),
+                        color: Colors.black26,
+                        offset: Offset(0, 1),
+                        blurRadius: 4),
                   ],
                 ),
               ),
@@ -487,60 +568,30 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       ],
     );
   }
+}
 
-  // ===== Clean section header — no accent bar =====
-  Widget _sectionHeader(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 17,
-        fontWeight: FontWeight.bold,
-        color: cDeepGreen,
-      ),
-    );
-  }
+class _DonorCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final bool isFollowing;
+  final VoidCallback onFollowTap;
 
-  Widget _floatingBadge({
-    required IconData icon,
-    required String text,
-    required Color bg,
-    required Color fg,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: fg, size: 13),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              color: fg,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  const _DonorCard({
+    required this.item,
+    required this.isFollowing,
+    required this.onFollowTap,
+  });
 
-  // ===== DONOR CARD — solid soft green (not gradient), lighter Follow button =====
-  Widget _donorCard(Map<String, dynamic> item) {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cSoftGreen,
+        color: AppColors.backgroundGreen,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cMintGreen, width: 1),
+        border: Border.all(color: AppColors.paleGreen, width: 1),
         boxShadow: [
           BoxShadow(
-            color: cDeepGreen.withOpacity(0.06),
+            color: AppColors.darkText.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
@@ -552,14 +603,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: cDarkGreen,
+                backgroundColor: AppColors.darkGreen,
                 child: Text(
                   (item['donorName'] ?? 'U')[0].toUpperCase(),
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 19,
-                  ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 19),
                 ),
               ),
               Positioned(
@@ -569,9 +619,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50),
+                    color: AppColors.onlineDot,
                     shape: BoxShape.circle,
-                    border: Border.all(color: cSoftGreen, width: 2),
+                    border: Border.all(
+                        color: AppColors.backgroundGreen, width: 2),
                   ),
                 ),
               ),
@@ -585,58 +636,50 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Text(
                   item['donorName'] ?? 'Unknown',
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: cDeepGreen,
-                  ),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: AppColors.darkText),
                 ),
                 const SizedBox(height: 3),
                 Row(
                   children: [
                     const Icon(Icons.star,
-                        color: Color(0xFFE5B83A), size: 14),
+                        color: AppColors.ratingStar, size: 14),
                     const SizedBox(width: 3),
                     Text(
                       '${item['donorRating'] ?? 'N/A'}',
                       style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: cDeepGreen,
-                      ),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkText),
                     ),
                     Text(
                       '  ·  ${item['donorDonations'] ?? '0'} donations',
                       style: const TextStyle(
-                        fontSize: 12,
-                        color: cMidGreen,
-                      ),
+                          fontSize: 12, color: AppColors.lightGreen),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          // Lighter Follow button — medium green instead of dark
           GestureDetector(
-            onTap: () {
-              setState(() => _isFollowing = !_isFollowing);
-              _snack(_isFollowing
-                  ? 'Following ${item['donorName'] ?? 'donor'}'
-                  : 'Unfollowed');
-            },
+            onTap: onFollowTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(
                   horizontal: 18, vertical: 9),
               decoration: BoxDecoration(
-                color: _isFollowing ? Colors.white : cDarkGreen,
+                color: isFollowing ? Colors.white : AppColors.darkGreen,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: cDarkGreen, width: 1.4),
+                border:
+                Border.all(color: AppColors.darkGreen, width: 1.4),
               ),
               child: Text(
-                _isFollowing ? 'Following' : 'Follow',
+                isFollowing ? 'Following' : 'Follow',
                 style: TextStyle(
-                  color: _isFollowing ? cDarkGreen : Colors.white,
+                  color:
+                  isFollowing ? AppColors.darkGreen : Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -647,55 +690,28 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _featureGrid(Map<String, dynamic> item) {
-    final features = <Map<String, dynamic>>[];
-    if (item['portion'] != null) {
-      features.add({
-        'icon': Icons.group,
-        'label': 'Portion',
-        'value': item['portion'],
-      });
-    }
-    if (item['weight'] != null) {
-      features.add({
-        'icon': Icons.scale,
-        'label': 'Weight',
-        'value': item['weight'],
-      });
-    }
-    if (item['tag'] != null) {
-      features.add({
-        'icon': Icons.local_offer_outlined,
-        'label': 'Tag',
-        'value': item['tag'],
-      });
-    }
-    if (item['condition'] != null) {
-      features.add({
-        'icon': Icons.verified_outlined,
-        'label': 'Condition',
-        'value': item['condition'],
-      });
-    }
+class _FeatureGrid extends StatelessWidget {
+  final List<Map<String, dynamic>> features;
+  const _FeatureGrid({required this.features});
 
-    if (features.isEmpty) return const SizedBox.shrink();
-
+  @override
+  Widget build(BuildContext context) {
     final rows = <Widget>[];
     for (int i = 0; i < features.length; i += 2) {
       final left = features[i];
       final right = i + 1 < features.length ? features[i + 1] : null;
-
       rows.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(
             children: [
-              Expanded(child: _featureChip(left)),
+              Expanded(child: _FeatureChip(feature: left)),
               const SizedBox(width: 10),
               Expanded(
                 child: right != null
-                    ? _featureChip(right)
+                    ? _FeatureChip(feature: right)
                     : const SizedBox.shrink(),
               ),
             ],
@@ -703,20 +719,23 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ),
       );
     }
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: rows,
-    );
+        crossAxisAlignment: CrossAxisAlignment.start, children: rows);
   }
+}
 
-  Widget _featureChip(Map<String, dynamic> f) {
+class _FeatureChip extends StatelessWidget {
+  final Map<String, dynamic> feature;
+  const _FeatureChip({required this.feature});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cSoftGreen,
+        color: AppColors.backgroundGreen,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cMintGreen, width: 1),
+        border: Border.all(color: AppColors.paleGreen, width: 1),
       ),
       child: Row(
         children: [
@@ -727,8 +746,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(f['icon'] as IconData,
-                size: 18, color: cDarkGreen),
+            child: Icon(feature['icon'] as IconData,
+                size: 18, color: AppColors.darkGreen),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -737,22 +756,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  f['label'] as String,
+                  feature['label'] as String,
                   style: const TextStyle(
-                    fontSize: 10,
-                    color: cMidGreen,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+                      fontSize: 10,
+                      color: AppColors.lightGreen,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  f['value'].toString(),
+                  feature['value'].toString(),
                   style: const TextStyle(
-                    fontSize: 13,
-                    color: cDeepGreen,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      fontSize: 13,
+                      color: AppColors.darkText,
+                      fontWeight: FontWeight.bold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -763,70 +780,70 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _mapPreview() {
+class _MapPreview extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MapPreview({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _openInMaps,
+      onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: Container(
           height: 160,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: cBeige,
+            color: AppColors.cream,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cMintGreen, width: 1),
+            border: Border.all(color: AppColors.paleGreen, width: 1),
           ),
           child: Stack(
             children: [
               CustomPaint(
-                size: Size.infinite,
-                painter: _MapDecorPainter(),
-              ),
+                  size: Size.infinite, painter: _MapDecorPainter()),
               Container(
                 decoration: BoxDecoration(
-                  color: cSoftGreen.withOpacity(0.35),
+                  color: AppColors.backgroundGreen.withOpacity(0.35),
                 ),
               ),
               const Center(
-                child: Icon(
-                  Icons.location_pin,
-                  color: cDarkGreen,
-                  size: 42,
-                ),
+                child: Icon(Icons.location_pin,
+                    color: AppColors.darkGreen, size: 42),
               ),
               Positioned(
                 bottom: 12,
                 right: 12,
                 child: GestureDetector(
-                  onTap: _openInMaps,
+                  onTap: onTap,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: cDarkGreen,
+                      color: AppColors.darkGreen,
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: cDeepGreen.withOpacity(0.3),
+                          color: AppColors.darkText.withOpacity(0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Icon(Icons.directions,
                             size: 15, color: Colors.white),
                         SizedBox(width: 5),
                         Text(
                           'Open in Maps',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -839,17 +856,60 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _bottomActionBar(bool available) {
-    const double buttonHeight = 54;
+class _MapDecorPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.mapGridLine
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
 
+    for (double y = 20; y < size.height; y += 28) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+    for (double x = 20; x < size.width; x += 38) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+
+    final road = Paint()
+      ..color = AppColors.mapRoadLine
+      ..strokeWidth = 5
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(
+      Offset(0, size.height * 0.7),
+      Offset(size.width, size.height * 0.3),
+      road,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+class _BottomActionBar extends StatelessWidget {
+  final bool available;
+  final VoidCallback onMessageTap;
+  final VoidCallback? onRequestTap;
+
+  const _BottomActionBar({
+    required this.available,
+    required this.onMessageTap,
+    required this.onRequestTap,
+  });
+
+  static const double _buttonHeight = 54;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: cDeepGreen.withOpacity(0.08),
+            color: AppColors.darkText.withOpacity(0.08),
             blurRadius: 14,
             offset: const Offset(0, -3),
           ),
@@ -862,28 +922,28 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             Expanded(
               flex: 1,
               child: GestureDetector(
-                onTap: () => _snack('Messaging — Coming Soon'),
+                onTap: onMessageTap,
                 child: Container(
-                  height: buttonHeight,
+                  height: _buttonHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: cSoftGreen,
+                    color: AppColors.backgroundGreen,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: cMintGreen, width: 1),
+                    border: Border.all(
+                        color: AppColors.paleGreen, width: 1),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.chat_bubble_outline,
-                          color: cDeepGreen, size: 18),
+                          color: AppColors.darkText, size: 18),
                       SizedBox(width: 6),
                       Text(
                         'Message',
                         style: TextStyle(
-                          color: cDeepGreen,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: AppColors.darkText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -894,16 +954,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             Expanded(
               flex: 2,
               child: GestureDetector(
-                onTap: available ? _showRequestDialog : null,
+                onTap: onRequestTap,
                 child: Container(
-                  height: buttonHeight,
+                  height: _buttonHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     gradient: available
                         ? const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [cDarkGreen, cDeepGreen],
+                      colors: [
+                        AppColors.darkGreen,
+                        AppColors.darkText,
+                      ],
                     )
                         : null,
                     color: available ? null : Colors.grey.shade400,
@@ -911,7 +974,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     boxShadow: available
                         ? [
                       BoxShadow(
-                        color: cDeepGreen.withOpacity(0.3),
+                        color: AppColors.darkText.withOpacity(0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -927,10 +990,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       Text(
                         available ? 'Request Item' : 'Not Available',
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -942,33 +1004,4 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       ),
     );
   }
-}
-
-class _MapDecorPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFCFC9B2)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    for (double y = 20; y < size.height; y += 28) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    for (double x = 20; x < size.width; x += 38) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    final road = Paint()
-      ..color = const Color(0xFFA8A083)
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(
-      Offset(0, size.height * 0.7),
-      Offset(size.width, size.height * 0.3),
-      road,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
 }
