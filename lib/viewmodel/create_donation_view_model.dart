@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../model/create_donation_model.dart';
 import '../repo/create_donation_repo.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateDonationViewModel extends ChangeNotifier {
   final DonationRepo _repo;
@@ -189,6 +190,7 @@ class CreateDonationViewModel extends ChangeNotifier {
       final donation = DonationModel(
         // FIX: no client-side UUID — repo.createDonation uses Firestore .add()
         id:          '',
+        donorId:     FirebaseAuth.instance.currentUser!.uid,
         firstName:   firstNameController.text.trim(),
         lastName:    lastNameController.text.trim(),
         location:    locationController.text.trim(),

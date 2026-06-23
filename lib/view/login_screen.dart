@@ -6,6 +6,8 @@ import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
+import 'package:sharebridge/view/navigation_screen.dart';
+import 'package:sharebridge/view/donation_chat_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -217,7 +219,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 password: password,
                               );
                               Fluttertoast.showToast(msg: "Login successful");
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Homescreentest()));
+                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DonationChatScreen(
+                                donorId: 'test_donor',
+                                donorName: 'Ram Sah',
+                                itemName: 'Grocery Essentials Bundle',
+                                chatId: 'test_chat_123',
+                              )));
+
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {
                                 Fluttertoast.showToast(msg: "Incorrect email");

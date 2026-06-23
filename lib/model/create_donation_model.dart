@@ -12,6 +12,7 @@ class DonationModel {
   final bool isDonated;
   final DateTime createdAt;
   final String? expiresAt;
+  final String donorId;
 
   DonationModel({
     required this.id,
@@ -26,6 +27,7 @@ class DonationModel {
     this.isDonated = false,
     required this.createdAt,
     this.expiresAt,
+    required this.donorId,
   });
 
   Map<String, dynamic> toMap() => {
@@ -41,6 +43,7 @@ class DonationModel {
     'isDonated': isDonated,
     'createdAt': createdAt.toIso8601String(),
     'expiresAt': expiresAt,
+    'donorId': donorId,
   };
 
   factory DonationModel.fromMap(Map<String, dynamic> map) => DonationModel(
@@ -58,6 +61,7 @@ class DonationModel {
         ? DateTime.parse(map['createdAt'])
         : (map['createdAt'] as Timestamp).toDate(),
     expiresAt:   map['expiresAt'],
+    donorId: map['donorId'] ?? '',
   );
 
   DonationModel copyWith({
@@ -73,6 +77,7 @@ class DonationModel {
     bool? isDonated,
     DateTime? createdAt,
     String? expiresAt,
+    String? donorId,
   }) {
     return DonationModel(
       id:          id          ?? this.id,
@@ -87,6 +92,7 @@ class DonationModel {
       isDonated:   isDonated   ?? this.isDonated,
       createdAt:   createdAt   ?? this.createdAt,
       expiresAt:   expiresAt   ?? this.expiresAt,
+      donorId: donorId ?? this.donorId,
     );
   }
 }
