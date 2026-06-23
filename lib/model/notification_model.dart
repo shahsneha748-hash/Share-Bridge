@@ -13,6 +13,7 @@ class NotificationModel {
   final DateTime createdAt;
   final bool isRead;
   final Map<String, dynamic>? data;
+  final String? pickupNumber;
   final String? assetImage;
   final String? filePath;
 
@@ -29,6 +30,7 @@ class NotificationModel {
     required this.createdAt,
     required this.isRead,
     this.data,
+    this.pickupNumber,
     this.assetImage,
     this.filePath,
   });
@@ -48,6 +50,7 @@ class NotificationModel {
       "createdAt": createdAt,
       "isRead": isRead,
       "data": data ?? {},
+      "pickupNumber": pickupNumber,
       "assetImage": assetImage,
       "filePath": filePath,
     };
@@ -70,6 +73,7 @@ class NotificationModel {
           : DateTime.now(),
       isRead: map["isRead"] ?? false,
       data: map["data"],
+      pickupNumber: map["pickupNumber"],
       assetImage: map["assetImage"],
       filePath: map["filePath"],
     );
@@ -89,6 +93,7 @@ class NotificationModel {
     DateTime? createdAt,
     bool? isRead,
     Map<String, dynamic>? data,
+    String? pickupNumber,
     String? assetImage,
     String? imageUrl,
     String? filePath,
@@ -106,6 +111,7 @@ class NotificationModel {
       createdAt: createdAt ?? this.createdAt,
       isRead: isRead ?? this.isRead,
       data: data ?? this.data,
+      pickupNumber: pickupNumber ?? this.pickupNumber,
       assetImage: assetImage ?? this.assetImage,
       filePath: filePath ?? this.filePath,
     );

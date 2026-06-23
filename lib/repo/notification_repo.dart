@@ -41,6 +41,10 @@ abstract class NotificationRepo {
   Future<String> getReceiverName(String receiverId);
 
   Future<List<NotificationModel>> getAllNotifications();
+
+  Future<String?> getFcmTokenForUser(String receiverId);
+
+  Future<void> markAsRead(String id);
 }
 
 

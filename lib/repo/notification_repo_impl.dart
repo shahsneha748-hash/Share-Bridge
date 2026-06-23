@@ -249,6 +249,38 @@ class NotificationRepoImpl implements NotificationRepo {
     }
     return data;
   }
+
+  @override
+  Future<String?> getFcmTokenForUser(String receiverId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(receiverId)
+          .get();
+
+      if (doc.exists) {
+        return doc.data()?["fcmToken"] as String?;
+      }
+      return null;
+    } catch (e) {
+      print("Error fetching FCM token: $e");
+      return null;
+    }
+  }
+
+
+  @override
+  Future<void> markAsRead(String id) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection("notifications")
+          .doc(id)
+          .update({"isRead": true});
+    } catch (e) {
+      print("Error marking notification as read: $e");
+    }
+  }
+
 }
 
 

@@ -8,10 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse response) {
-  // This will run when a notification is tapped in background
   debugPrint("Background notification tapped: ${response.payload}");
 }
 
@@ -80,16 +80,34 @@ class NotificationService {
       print("Notification error: $e");
     }
   }
-
-  /// Initialize notifications + request permissions
+// Initialize plugin only (no permission here)
   static Future<void> initialize() async {
-    // Android 13+ permission
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    const initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings("@mipmap/ic_launcher"),
+      iOS: DarwinInitializationSettings(),
+    );
+    await _notificationsPlugin.initialize(
+      settings: initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        print("Notification tapped: ${response.payload}");
+        if (response.payload != null && context != null) {
+          Navigator.of(context!).pushNamed(response.payload!);
+        }
+      },
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground, // use top-level function
+    );
+  }
 
-    // iOS permission
+  /// Request permission only once after login/signup
+  static Future<void> requestPermissionOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    final asked = prefs.getBool("notificationsAsked") ?? false;
+
+    if (asked) {
+      print("Permission already requested before, skipping.");
+      return;
+    }
+
     final settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -106,26 +124,8 @@ class NotificationService {
       print('User denied the permission');
     }
 
-    // Initialize plugin
-    const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings("@mipmap/ic_launcher"),
-      iOS: DarwinInitializationSettings(
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        requestAlertPermission: true,
-      ),
-    );
-
-    await _notificationsPlugin.initialize(
-      settings: initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print("Notification tapped: ${response.payload}");
-        if (response.payload != null && context != null) {
-          Navigator.of(context!).pushNamed(response.payload!);
-        }
-      },
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground, // 👈 use top-level function
-    );
+    // Save flag so we don’t ask again
+    await prefs.setBool("notificationsAsked", true);
 
     // Save initial token
     final user = FirebaseAuth.instance.currentUser;
@@ -139,7 +139,7 @@ class NotificationService {
           "fcmToken": token,
           "updatedAt": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        print("✅ Initial token saved for ${user.uid}: $token");
+        print("Initial token saved for ${user.uid}: $token");
       }
     }
 
@@ -154,7 +154,7 @@ class NotificationService {
           "fcmToken": newToken,
           "updatedAt": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        print("🔄 Token refreshed for ${user.uid}: $newToken");
+        print("Token refreshed for ${user.uid}: $newToken");
       }
     });
   }
@@ -223,5 +223,4 @@ class NotificationService {
       payload: payload,
     );
   }
-
 }

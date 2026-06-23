@@ -32,6 +32,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final viewModel = context.watch<UserViewModel>();              // notify listeners leh listen gariraknu ko lagi watch rakheko (like error loading haru bhairakcha so) (we initialized it build bhitra)
     return Scaffold(
       backgroundColor: Color(0XFF435944),
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Color(0XFF435944),
       ),

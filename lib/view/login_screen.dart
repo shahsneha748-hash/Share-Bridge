@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
@@ -25,10 +26,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0XFF435944),
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: const Color(0XFF435944),
       ),
-      resizeToAvoidBottomInset: true,
 
       body: SafeArea(
         child: SingleChildScrollView(
@@ -216,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 password: password,
                               );
                               Fluttertoast.showToast(msg: "Login successful");
-                              // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()));
+                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Homescreentest()));
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {
                                 Fluttertoast.showToast(msg: "Incorrect email");

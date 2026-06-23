@@ -37,15 +37,44 @@ class NotificationViewModel extends ChangeNotifier {
   List<NotificationModel> get recentNotifications {
     if (_loading) return _notifications; // keep last state until Firestore updates
     final now = DateTime.now();
-    return _notifications.where((n) {
-      final age = now.difference(n.createdAt);
-      return age.inDays < 30; // only show if less than 30 days old
-    }).toList();
+    return _notifications.where((n) => now.difference(n.createdAt).inDays < 30).toList();
   }
 
   int get unreadCount {
     if (_loading) return _notifications.where((n) => !n.isRead).length;
     return _notifications.where((n) => !n.isRead).length;
+  }
+
+  String? _senderProfilePicture;
+  String? get senderProfilePicture => _senderProfilePicture;
+
+  Map<String, List<NotificationModel>> groupNotifications() {
+    final now = DateTime.now();
+    final Map<String, List<NotificationModel>> grouped = {
+      "Urgent": [],
+      "Today": [],
+      "PastDates": [],
+    };
+
+    for (var n in notifications) {
+      final diff = now.difference(n.createdAt);
+
+      if (n.type == "alert") {
+        if (diff.inHours < 24) {
+          grouped["Urgent"]!.add(n);
+        } else {
+          grouped["PastDates"]!.add(n); // normal alert reminder
+        }
+      } else {
+        if (diff.inDays == 0) {
+          grouped["Today"]!.add(n);
+        } else if (diff.inDays <= 30) {
+          grouped["PastDates"]!.add(n);
+        }
+      }
+    }
+
+    return grouped;
   }
 
   // Helpers
@@ -80,6 +109,7 @@ Future<String?> getFcmToken() async {
       return null;
     }
   }
+
 
   Future<bool> sendPushNotification({
     required String deviceToken,
@@ -197,6 +227,92 @@ Future<String?> getFcmToken() async {
       await fetchNotificationsByUser(uid);
     }
   }
+
+  Future<void> loadSenderProfilePicture() async {
+    try {
+      final senderId = FirebaseAuth.instance.currentUser?.uid;
+      if (senderId == null) {
+        setError("No logged-in user");
+        return;
+      }
+
+      // Fetch from UserRepo (Firestore)
+      final pic = await _userRepo.getProfilePicture(senderId);
+
+      // Fallback to default asset if null
+      _senderProfilePicture = pic ?? "assets/images/default_avatar.png";
+
+      notifyListeners(); // so UI can rebuild if needed
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
+
+  Future<void> sendNotification(String action, String receiverId) async {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Current logged-in user is the sender
+      final senderId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (senderId == null) {
+        setError("No logged-in user");
+        return;
+      }
+
+      // 👇 Fetch sender’s profile picture from UserRepo (stored in Firestore)
+      final senderProfilePic = await _userRepo.getProfilePicture(senderId);
+
+      // Build notification model based on action
+      final model = NotificationModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        senderId: senderId,
+        receiverId: receiverId,
+        type: "alert", // accept/reject are alerts for the receiver
+        title: action == "accepted"
+            ? "Request Accepted"
+            : "Request Rejected",
+        body: action == "accepted"
+            ? "Donor has accepted your donation request."
+            : "Donor has rejected your donation request.",
+        createdAt: DateTime.now(),
+        isRead: false,
+        profilePicture: senderProfilePicture,
+      );
+
+      // Save to Firestore
+      final success = await _repo.addNotification(model);
+      if (success) {
+        _notifications.add(model);
+        notifyListeners();
+      }
+
+      // Get receiver’s FCM token
+      final token = await _repo.getFcmTokenForUser(receiverId);
+      if (token != null) {
+        await _repo.sendPushNotification(
+          deviceToken: token,
+          notification: model,
+          projectId: "your-firebase-project-id",
+          serviceAccountPath: "path/to/serviceAccount.json",
+        );
+      }
+    } catch (e) {
+      setError(e.toString());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<void> markAsRead(String id) async{
+    try {
+      await _repo.markAsRead(id);
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
+
 
 
 }
