@@ -37,11 +37,8 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No saved items yet."));
-          }
 
-          final docs = snapshot.data!.docs;
+          final docs = snapshot.data?.docs ?? [];
 
           // Filter by category
           final filteredItems = selectedCategory == "All"
@@ -50,62 +47,62 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
 
           return ListView(
             controller: pageController,
+            padding: const EdgeInsets.all(10),
             children: [
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("My Collection",
-                        style: TextStyle(
-                            color: Color(0XFF435944),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700)),
-                    const Text("Items you have bookmarked for later.",
-                        style: TextStyle(
-                            color: Color(0XFF435944),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 15),
+              // Header
+              const Text("My Collection",
+                  style: TextStyle(
+                      color: Color(0XFF435944),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700)),
+              const Text("Items you have bookmarked for later.",
+                  style: TextStyle(
+                      color: Color(0XFF435944),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500)),
+              const SizedBox(height: 15),
 
-                    // Filter buttons
-                    Row(
-                      children: [
-                        buildFilterButton("All"),
-                        buildFilterButton("Food"),
-                        buildFilterButton("Books"),
-                        buildFilterButton("Clothes"),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Render saved cards from Firestore
-                    ...filteredItems.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 15),
-                        child: SavedItemCard(
-                          title: data["title"] ?? "",
-                          imagePath: data["image"] ?? "",
-                          miles: data["miles"] ?? "",
-                          addedTime: data["addedTime"] ?? "",
-                          isBookmarked: true,
-                          onBookmarkToggle: (isBookmarked) {
-                            if (!isBookmarked) {
-                              FirebaseFirestore.instance
-                                  .collection("users")
-                                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                                  .collection("saved_items")
-                                  .doc(doc.id)
-                                  .delete();
-                            }
-                          },
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+              // Filter buttons (always visible)
+              Row(
+                children: [
+                  buildFilterButton("All"),
+                  buildFilterButton("Food"),
+                  buildFilterButton("Books"),
+                  buildFilterButton("Clothes"),
+                ],
               ),
+              const SizedBox(height: 10),
+
+              // Saved items list (conditionally visible)
+              if (filteredItems.isEmpty)
+                Center(child: Padding(
+                  padding: const EdgeInsets.only(top: 280),
+                  child: Text("No saved items yet."),
+                ))
+              else
+                ...filteredItems.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 15),
+                    child: SavedItemCard(
+                      title: data["title"] ?? "",
+                      imagePath: data["image"] ?? "",
+                      miles: data["miles"] ?? "",
+                      addedTime: data["addedTime"] ?? "",
+                      isBookmarked: true,
+                      onBookmarkToggle: (isBookmarked) {
+                        if (!isBookmarked) {
+                          FirebaseFirestore.instance
+                              .collection("users")
+                              .doc(FirebaseAuth.instance.currentUser!.uid)
+                              .collection("saved_items")
+                              .doc(doc.id)
+                              .delete();
+                        }
+                      },
+                    ),
+                  );
+                }),
             ],
           );
         },
@@ -120,8 +117,10 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
       padding: const EdgeInsets.only(right: 8),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? const Color(0XFF435944) : const Color(0XFFf2ead3),
-          foregroundColor: isSelected ? Colors.white : const Color(0XFF435944),
+          backgroundColor:
+          isSelected ? const Color(0XFF435944) : const Color(0XFFf2ead3),
+          foregroundColor:
+          isSelected ? Colors.white : const Color(0XFF435944),
           elevation: 5,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(40),
@@ -137,3 +136,4 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
     );
   }
 }
+
