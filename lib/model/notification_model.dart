@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected }
+
 class NotificationModel {
   final String id;
   final String senderId;
   final String receiverId;
-  final String type;
+  final NotificationType type;
   final String title;
   final String body;
   final String? profilePicture;
@@ -16,6 +18,10 @@ class NotificationModel {
   final String? pickupNumber;
   final String? assetImage;
   final String? filePath;
+  final String? imageUrl;
+  final String? senderName;
+  final String? receiverName;
+
 
   NotificationModel({
     required this.id,
@@ -33,6 +39,9 @@ class NotificationModel {
     this.pickupNumber,
     this.assetImage,
     this.filePath,
+    this.imageUrl,
+    this.senderName,
+    this.receiverName,
   });
 
   /// Convert to Firestore map
@@ -41,7 +50,7 @@ class NotificationModel {
       "id": id,
       "senderId": senderId,
       "receiverId": receiverId,
-      "type": type,
+      "type": type.toString().split('.').last,
       "title": title,
       "body": body,
       "profilePicture": profilePicture,
@@ -53,6 +62,9 @@ class NotificationModel {
       "pickupNumber": pickupNumber,
       "assetImage": assetImage,
       "filePath": filePath,
+      "imageUrl": imageUrl,
+      "senderName": senderName,
+      "receiverName": receiverName,
     };
   }
 
@@ -62,7 +74,7 @@ class NotificationModel {
       id: map["id"] ?? "",
       senderId: map["senderId"] ?? "",
       receiverId: map["receiverId"] ?? "",
-      type: map["type"] ?? "",
+      type: _mapStringToType(map["type"]),   // ✅ convert string back to enum
       title: map["title"] ?? "",
       body: map["body"] ?? "",
       profilePicture: map["profilePicture"],
@@ -76,7 +88,23 @@ class NotificationModel {
       pickupNumber: map["pickupNumber"],
       assetImage: map["assetImage"],
       filePath: map["filePath"],
+      imageUrl: map["imageUrl"],
+      senderName: map["senderName"],
+      receiverName: map["receiverName"],
     );
+  }
+
+  /// Helper to map Firestore string to enum
+  static NotificationType _mapStringToType(String? type) {
+    switch (type) {
+      case 'request': return NotificationType.request;
+      case 'pickup': return NotificationType.pickup;
+      case 'alert': return NotificationType.alert;
+      case 'normal_alert': return NotificationType.normal_alert;
+      case 'accepted': return NotificationType.accepted;
+      case 'rejected': return NotificationType.rejected;
+      default: return NotificationType.alert;
+    }
   }
 
   /// Copy with new values
@@ -84,7 +112,7 @@ class NotificationModel {
     String? id,
     String? senderId,
     String? receiverId,
-    String? type,
+    NotificationType? type,   // ✅ enum instead of String
     String? title,
     String? body,
     String? profilePicture,
@@ -95,8 +123,10 @@ class NotificationModel {
     Map<String, dynamic>? data,
     String? pickupNumber,
     String? assetImage,
-    String? imageUrl,
     String? filePath,
+    String? imageUrl,
+    String? senderName,
+    String? receiverName,
   }) {
     return NotificationModel(
       id: id ?? this.id,
@@ -114,9 +144,14 @@ class NotificationModel {
       pickupNumber: pickupNumber ?? this.pickupNumber,
       assetImage: assetImage ?? this.assetImage,
       filePath: filePath ?? this.filePath,
+      imageUrl: imageUrl ?? this.imageUrl,
+      senderName: senderName ?? this.senderName,
+      receiverName: receiverName ?? this.receiverName,
+
     );
   }
 }
+
 
 
 // Note: Model = raw data only (like a database row).

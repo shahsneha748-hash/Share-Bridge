@@ -59,7 +59,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           padding: const EdgeInsets.only(left: 10, top: 20),
                           child: Row(
                             children: [
-                              Text("Signup", style: TextStyle(color: Color(0XFF435944), fontSize: 38, fontWeight: FontWeight.w600 ))
+                              Text("Signup", style: TextStyle(color: Color(0XFF435944), fontSize: 38, fontWeight: FontWeight.w600 )),
+                              SizedBox(width: 15),
+                              Image.asset('assets/images/loogo1.png', height: 70, width: 75),
+
                             ],
                           ),
                         ),
@@ -264,7 +267,7 @@ class _SignupScreenState extends State<SignupScreen> {
             
                                     // Step 4: Build user model
                                     final model = UserModel(
-                                      id: userId,
+                                      uid: userId,
                                       fullName: nameController.text.trim(),
                                       email: emailController.text.trim(),
                                       phone: phoneController.text.trim(),

@@ -7,18 +7,19 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
-class PickupNotificationScreen extends StatefulWidget {
-  final String receiverUid; // volunteer's UID passed in
+class FoodAlertScreen extends StatefulWidget {
 
-  const PickupNotificationScreen({super.key, required this.receiverUid});
+
+  const FoodAlertScreen({super.key,});
 
   @override
-  State<PickupNotificationScreen> createState() => _PickupNotificationScreenState();
+  State<FoodAlertScreen> createState() => _FoodAlertScreenState();
 }
 
-class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
+class _FoodAlertScreenState extends State<FoodAlertScreen> {
   final TitleController = TextEditingController();
   final BodyController = TextEditingController();
 
@@ -93,10 +94,10 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser!.uid; // logged-in user (donor)
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Pickup Notification")),
+      appBar: AppBar(title: const Text("Food Alert Notification")),
       body: Column(
         children: [
           Expanded(
@@ -111,31 +112,36 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                     return buildProfileImage(snapshot.data);
                   },
                 ),
-
                 const SizedBox(width: 10),
-                // Title field
+
+                // Title
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
                     controller: TitleController,
                     decoration: InputDecoration(
                       hintText: "Title",
+                      fillColor: Colors.white,
+                      filled: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
                     ),
                   ),
                 ),
 
-                // Body field
+                // Body
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
                     controller: BodyController,
                     decoration: InputDecoration(
                       hintText: "Description",
+                      fillColor: Colors.white,
+                      filled: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
                     ),
                   ),
                 ),
+
 
                 const SizedBox(height: 20),
 
@@ -148,26 +154,28 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                     }
 
                     final vm = context.read<NotificationViewModel>();
+                    final currentUid = FirebaseAuth.instance.currentUser!.uid;
 
-                    // Sender = logged-in user (donor)
-                    final senderInfo = await vm.getUserById(currentUserId);
+                    // 🔑 Sender = the one who clicked (requester)
+                    final senderInfo = await vm.getUserById(currentUid);
                     final senderName = senderInfo.fullName;
                     final senderPic = senderInfo.profilePicture;
 
-                    // Receiver = volunteer (UID passed into this screen)
-                    final receiverId = widget.receiverUid;                // "BmbWYHtwszNrTbRiVgRovbKeEZk2";    //widget.receiverUid;
+                    // 🔑 Receiver = the post owner (donor)
+                    final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
 
+                    // Build notification model
                     final model = NotificationModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
                       title: TitleController.text.trim(),
                       body: BodyController.text.trim(),
-                      senderId: currentUserId,          // donor UID
+                      senderId: currentUid,        // requester UID
                       senderName: senderName,
                       profilePicture: senderPic,
-                      receiverId: widget.receiverUid,          // final replace with --> widget.receiverUid,         // volunteer UID
+                      receiverId: "BmbWYHtwszNrTbRiVgRovbKeEZk2",      // donor UID
                       createdAt: DateTime.now(),
                       isRead: false,
-                      type: NotificationType.pickup,
+                      type: NotificationType.normal_alert,
                     );
 
                     final success = await vm.sendNotification(model);
@@ -176,12 +184,13 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                       await NotificationService.display(
                         title: model.title,
                         body: model.body,
-                        payload: "pickup_notification_screen",
+                        payload: "food_alert_screen",
                         buildContext: context,
                         createdAt: model.createdAt,
                       );
 
                       Navigator.pop(context);
+
 
                       Fluttertoast.showToast(msg: "Notification sent successfully");
                     } else {
@@ -189,7 +198,8 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                     }
                   },
                   child: const Text("Send Notification"),
-                ),
+                )
+
               ],
             ),
           ),

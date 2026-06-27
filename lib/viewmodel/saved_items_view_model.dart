@@ -3,10 +3,13 @@ import 'package:sharebridge/model/saved_items_model.dart';
 import 'package:sharebridge/repo/saved_items_repo.dart';
 
 class SavedItemViewModel extends ChangeNotifier {
-  final SavedItemRepo _savedItemRepo;
+  final SavedItemRepo repo;
+  final String uid;
 
-  SavedItemViewModel({required SavedItemRepo savedItemRepo
-  }) : _savedItemRepo = savedItemRepo;
+  SavedItemViewModel({
+    required this.repo,
+    required this.uid,
+  });
 
   String? _error;
   String? get error => _error;
@@ -14,45 +17,47 @@ class SavedItemViewModel extends ChangeNotifier {
   bool _loading = false;
   bool get loading => _loading;
 
-  SavedItem? _selectedsavedItems;
-  SavedItem? get selectedsavedItems => _selectedsavedItems;
+  List<SavedItemsModel>? _savedItems;
+  List<SavedItemsModel>? get savedItems => _savedItems;
 
-  List<SavedItem>? _savedItems;
-  List<SavedItem>? get savedItems => _savedItems;
-
-  void setError(String? error){
+  void setError(String? error) {
     _error = error;
     notifyListeners();
   }
 
-  void setLoading(bool value){
+  void setLoading(bool value) {
     _loading = value;
     notifyListeners();
   }
 
-  Future<bool> saveItem(SavedItem item) async{
+  Future<bool> saveItem(SavedItemsModel item) async {
     setLoading(true);
     setError(null);
     try {
-      await _savedItemRepo.saveItem(item);
+      await repo.saveItem(item);
       return true;
-    } on Exception catch (e) {
+    } catch (e) {
       setError(e.toString());
       return false;
-    }finally{
+    } finally {
       setLoading(false);
     }
   }
 
-  Future<void> getSavedItems() async {
-    setLoading(true);
-    setError(null);
+  Stream<List<SavedItemsModel>> get savedItemsStream =>
+      repo.getBookmarks(uid);
+
+  Future<void> toggleBookmark(SavedItemsModel item, bool isBookmarked) async {
     try {
-      _savedItems = await _savedItemRepo.getSavedItems();
-    } on Exception catch (e) {
+      if (isBookmarked) {
+        await repo.removeBookmark(uid, item.id);
+      } else {
+        await repo.addBookmark(uid, item);
+      }
+    } catch (e) {
       setError(e.toString());
-    }finally{
-      setLoading(false);
     }
+    notifyListeners();
   }
 }
+

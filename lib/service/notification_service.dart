@@ -44,15 +44,15 @@ class NotificationService {
         context = buildContext;
       }
 
-      var styleinformationDesign;
+      BigPictureStyleInformation? styleinformationDesign;
       if (notification.android?.imageUrl != null) {
         final bigpicture = await _downloadAndSaveFile(
             notification.android!.imageUrl!, 'bigPicture');
         final smallpicture = await _downloadAndSaveFile(
             notification.android!.imageUrl!, 'smallIcon');
         styleinformationDesign = BigPictureStyleInformation(
-          FilePathAndroidBitmap(smallpicture),
-          largeIcon: FilePathAndroidBitmap(bigpicture),
+          FilePathAndroidBitmap(bigpicture),
+          largeIcon: FilePathAndroidBitmap(smallpicture),
         );
       }
 
@@ -69,18 +69,21 @@ class NotificationService {
         iOS: const DarwinNotificationDetails(),
       );
 
+      // Correct positional arguments
       await _notificationsPlugin.show(
-        id: id,
+        id: id, // required
         title: notification.title ?? "No Title",
         body: notification.body ?? "No Body",
         notificationDetails: notificationDetails,
         payload: payload,
       );
+
     } on Exception catch (e) {
       print("Notification error: $e");
     }
   }
-// Initialize plugin only (no permission here)
+
+  /// Initialize plugin only (no permission here)
   static Future<void> initialize() async {
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings("@mipmap/ic_launcher"),
@@ -94,7 +97,7 @@ class NotificationService {
           Navigator.of(context!).pushNamed(response.payload!);
         }
       },
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground, // use top-level function
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
   }
 
@@ -124,10 +127,8 @@ class NotificationService {
       print('User denied the permission');
     }
 
-    // Save flag so we don’t ask again
     await prefs.setBool("notificationsAsked", true);
 
-    // Save initial token
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final token = await FirebaseMessaging.instance.getToken();
@@ -143,7 +144,6 @@ class NotificationService {
       }
     }
 
-    // Listen for token refresh
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -158,8 +158,6 @@ class NotificationService {
       }
     });
   }
-
-
 
   /// Load image from assets
   static Future<String> getImageFilePathFromAssets(
@@ -180,12 +178,13 @@ class NotificationService {
     BuildContext? buildContext,
     String? image,
     String? logo,
+    required DateTime createdAt,
   }) async {
     if (buildContext != null) {
       context = buildContext;
     }
 
-    var styleinformationDesign;
+    BigPictureStyleInformation? styleinformationDesign;
     if (image != null && logo != null) {
       try {
         var imageLoader = await getImageFilePathFromAssets(image, 'bigpicture');
@@ -215,12 +214,17 @@ class NotificationService {
       iOS: const DarwinNotificationDetails(),
     );
 
+    // ✅ Correct positional arguments
     await _notificationsPlugin.show(
-      id: id,
+      id: id, // required
       title: title,
       body: body,
       notificationDetails: notificationDetails,
       payload: payload,
     );
+
   }
 }
+
+
+

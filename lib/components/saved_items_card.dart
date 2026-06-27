@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 
 class SavedItemCard extends StatelessWidget {
+  final Function(bool)? onBookmarkToggle;
   final String title;
   final String imagePath;
   final String miles;
   final String addedTime;
+  final bool isBookmarked;
 
   const SavedItemCard({
     super.key,
+    this.onBookmarkToggle,
     required this.title,
     required this.imagePath,
     required this.miles,
     required this.addedTime,
+    this.isBookmarked = false,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +57,7 @@ class SavedItemCard extends StatelessWidget {
                 ),
                 Spacer(),
                 IconButton(
-                  onPressed: () {
-                    // Later: remove from saved list
+                  onPressed: () {onBookmarkToggle?.call(!isBookmarked);
                   },
                   icon: Icon(Icons.bookmark,
                       color: Color(0XFF414439), size: 22),
@@ -94,7 +98,7 @@ class SavedItemCard extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {},
-                child: Text("Request Item"),
+                child: Text("Message Donor"),
               ),
             ),
           ],
@@ -102,4 +106,6 @@ class SavedItemCard extends StatelessWidget {
       ),
     );
   }
+
+
 }

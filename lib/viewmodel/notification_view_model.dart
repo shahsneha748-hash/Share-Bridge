@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import '../model/notification_model.dart';
+import '../model/user_model.dart';
 import '../repo/notification_repo.dart';
-
 
 class NotificationViewModel extends ChangeNotifier {
   final NotificationRepo _repo;
@@ -30,54 +30,70 @@ class NotificationViewModel extends ChangeNotifier {
   bool _loading = false;
   bool get loading => _loading;
 
+  NotificationModel? _notification;
+  NotificationModel? get notification => _notification;
+
   List<NotificationModel> _notifications = [];
   List<NotificationModel> get notifications => _notifications;
 
-  // Only show notifications newer than 30 days
   List<NotificationModel> get recentNotifications {
-    if (_loading) return _notifications; // keep last state until Firestore updates
     final now = DateTime.now();
     return _notifications.where((n) => now.difference(n.createdAt).inDays < 30).toList();
   }
 
-  int get unreadCount {
-    if (_loading) return _notifications.where((n) => !n.isRead).length;
-    return _notifications.where((n) => !n.isRead).length;
-  }
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
   String? _senderProfilePicture;
   String? get senderProfilePicture => _senderProfilePicture;
 
+  /// Group notifications by type
   Map<String, List<NotificationModel>> groupNotifications() {
     final now = DateTime.now();
-    final Map<String, List<NotificationModel>> grouped = {
-      "Urgent": [],
-      "Today": [],
-      "PastDates": [],
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final oneMonthAgo = now.subtract(const Duration(days: 30));
+
+    final grouped = {
+      "Urgent": <NotificationModel>[],
+      "Today": <NotificationModel>[],
+      "Yesterday": <NotificationModel>[],
+      // dynamic date keys will be added below
     };
 
-    for (var n in notifications) {
-      final diff = now.difference(n.createdAt);
+    for (var n in _notifications) {
+      final created = n.createdAt;
 
-      if (n.type == "alert") {
-        if (diff.inHours < 24) {
-          grouped["Urgent"]!.add(n);
-        } else {
-          grouped["PastDates"]!.add(n); // normal alert reminder
-        }
-      } else {
-        if (diff.inDays == 0) {
-          grouped["Today"]!.add(n);
-        } else if (diff.inDays <= 30) {
-          grouped["PastDates"]!.add(n);
-        }
+      if (n.type == NotificationType.alert) {
+        grouped["Urgent"]!.add(n);
+      } else if (created.isAfter(today)) {
+        grouped["Today"]!.add(n);
+      } else if (created.isAfter(yesterday) && created.isBefore(today)) {
+        grouped["Yesterday"]!.add(n);
+      } else if (created.isAfter(oneMonthAgo)) {
+        final key = "${created.day} ${_monthName(created.month)} ${created.year}";
+        grouped.putIfAbsent(key, () => []);
+        grouped[key]!.add(n);
       }
+    }
+
+    // sort each section newest first
+    for (var section in grouped.keys) {
+      grouped[section]!.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
 
     return grouped;
   }
 
-  // Helpers
+  String _monthName(int month) {
+    const months = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
+    return months[month - 1];
+  }
+
+
+
   void setLoading(bool value) {
     _loading = value;
     notifyListeners();
@@ -88,11 +104,45 @@ class NotificationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<UserModel> getUserById(String uid) async {
+    return await _userRepo.getUserById(uid);
+  }
+
+  /// Update notification type both in Firestore and locally
+  Future<void> updateNotificationType(String id, NotificationType newType) async {
+    try {
+      final typeString = newType.toString().split('.').last;
+      await _repo.updateType(id, typeString); // Firestore update
+
+      final index = _notifications.indexWhere((n) => n.id == id);
+      if (index != -1) {
+        final current = _notifications[index];
+
+        _notifications[index] = current.copyWith(
+          type: newType,
+          isRead: false,
+          title: newType == NotificationType.accepted
+              ? "Request Accepted"
+              : newType == NotificationType.rejected
+              ? "Request Rejected"
+              : current.title ?? "Notification",
+          body: newType == NotificationType.accepted
+              ? "Donor has accepted your donation request."
+              : newType == NotificationType.rejected
+              ? "Donor has rejected your donation request."
+              : current.body ?? "",
+        );
+      }
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
+
+
   Future<String> getReceiverName(String receiverId) async {
     return await _userRepo.getReceiverName(receiverId);
   }
 
-  // Actions (delegated to repo)
   Future<void> requestPermission() async {
     try {
       await _repo.requestPermission();
@@ -101,15 +151,14 @@ class NotificationViewModel extends ChangeNotifier {
     }
   }
 
-Future<String?> getFcmToken() async {
+  Future<String?> getFcmToken(String uid) async {
     try {
-      return await _repo.getFcmToken();
+      return await _repo.getFcmToken(uid);
     } catch (e) {
       setError(e.toString());
       return null;
     }
   }
-
 
   Future<bool> sendPushNotification({
     required String deviceToken,
@@ -138,10 +187,6 @@ Future<String?> getFcmToken() async {
     setError(null);
     try {
       final success = await _repo.addNotification(model);
-      if (success) {
-        _notifications.add(model);
-        notifyListeners();
-      }
       return success;
     } catch (e) {
       setError(e.toString());
@@ -163,10 +208,11 @@ Future<String?> getFcmToken() async {
     }
   }
 
-  Future<void> fetchNotificationsByType(String type) async {
+  Future<void> fetchNotificationsByType(NotificationType type) async {
     setLoading(true);
     try {
-      _notifications = await _repo.getNotificationsByType(type);
+      final typeString = type.toString().split('.').last;
+      _notifications = await _repo.getNotificationsByType(typeString);
       notifyListeners();
     } catch (e) {
       setError(e.toString());
@@ -202,19 +248,13 @@ Future<String?> getFcmToken() async {
 
   Future<void> markAllAsRead() async {
     try {
-      // Get current user ID
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) {
         setError("No user logged in");
         return;
       }
-      // Call repo to mark all as read in Firestore
       await _repo.markAllAsRead(uid);
-
-      // Update local list so unreadCount becomes 0 immediately
       _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
-
-      // Notify UI to rebuild (badge will disappear)
       notifyListeners();
     } catch (e) {
       setError(e.toString());
@@ -235,61 +275,23 @@ Future<String?> getFcmToken() async {
         setError("No logged-in user");
         return;
       }
-
-      // Fetch from UserRepo (Firestore)
       final pic = await _userRepo.getProfilePicture(senderId);
-
-      // Fallback to default asset if null
       _senderProfilePicture = pic ?? "assets/images/default_avatar.png";
-
-      notifyListeners(); // so UI can rebuild if needed
+      notifyListeners();
     } catch (e) {
       setError(e.toString());
     }
   }
-
-  Future<void> sendNotification(String action, String receiverId) async {
+  Future<bool> sendNotification(NotificationModel model) async {
     try {
       setLoading(true);
       setError(null);
 
-      // Current logged-in user is the sender
-      final senderId = FirebaseAuth.instance.currentUser?.uid;
-
-      if (senderId == null) {
-        setError("No logged-in user");
-        return;
-      }
-
-      // 👇 Fetch sender’s profile picture from UserRepo (stored in Firestore)
-      final senderProfilePic = await _userRepo.getProfilePicture(senderId);
-
-      // Build notification model based on action
-      final model = NotificationModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        senderId: senderId,
-        receiverId: receiverId,
-        type: "alert", // accept/reject are alerts for the receiver
-        title: action == "accepted"
-            ? "Request Accepted"
-            : "Request Rejected",
-        body: action == "accepted"
-            ? "Donor has accepted your donation request."
-            : "Donor has rejected your donation request.",
-        createdAt: DateTime.now(),
-        isRead: false,
-        profilePicture: senderProfilePicture,
-      );
-
       // Save to Firestore
       final success = await _repo.addNotification(model);
-      if (success) {
-        _notifications.add(model);
-        notifyListeners();
-      }
 
-      // Get receiver’s FCM token
-      final token = await _repo.getFcmTokenForUser(receiverId);
+      // Get FCM token for the receiver
+      final token = await _repo.getFcmToken(model.receiverId);
       if (token != null) {
         await _repo.sendPushNotification(
           deviceToken: token,
@@ -298,22 +300,39 @@ Future<String?> getFcmToken() async {
           serviceAccountPath: "path/to/serviceAccount.json",
         );
       }
+
+      return success;
     } catch (e) {
       setError(e.toString());
+      return false;
     } finally {
       setLoading(false);
     }
   }
 
-  Future<void> markAsRead(String id) async{
+
+
+  Future<void> markAsRead(String id) async {
     try {
       await _repo.markAsRead(id);
+
+      // Update local list immediately
+      final index = _notifications.indexWhere((n) => n.id == id);
+      if (index != -1) {
+        final current = _notifications[index];
+        if (!current.isRead) {
+          _notifications[index] = current.copyWith(isRead: true);
+          notifyListeners(); // refresh UI
+        }
+      }
     } catch (e) {
       setError(e.toString());
     }
   }
 
 
-
 }
+
+
+
 

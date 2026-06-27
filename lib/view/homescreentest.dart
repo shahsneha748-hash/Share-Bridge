@@ -1,16 +1,23 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/food_alert_screen.dart';
+import 'package:sharebridge/view/item_detail_demo.dart';
+import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/pickup_notification_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
 class Homescreentest extends StatefulWidget {
-  const Homescreentest({super.key});
+  final String uid;
+
+
+
+  const Homescreentest({super.key, required this.uid,});
 
   @override
   State<Homescreentest> createState() => _HomescreentestState();
@@ -57,6 +64,21 @@ class _HomescreentestState extends State<Homescreentest> {
       print("Background tap: $message");
       // Navigate if needed
     });
+  }
+
+  String formatRelativeTime(DateTime createdAt) {
+    final now = DateTime.now();
+    final diff = now.difference(createdAt);
+
+    if (diff.inMinutes < 60) {
+      return "${diff.inMinutes}m"; // minutes
+    } else if (diff.inHours < 24) {
+      return "${diff.inHours}h"; // hours
+    } else if (diff.inDays < 30) {
+      return "${diff.inDays}d"; // days
+    } else {
+      return "30d"; // cap at 30 days
+    }
   }
 
 
@@ -122,109 +144,162 @@ class _HomescreentestState extends State<Homescreentest> {
         Card(
         child: Padding(
         padding: const EdgeInsets.all(8.0),
-      child: Row(
+      child: Column(
         children: [
-          FloatingActionButton(
+
+          // This button should be in post page
+          ElevatedButton(
             onPressed: () async {
               final vm = context.read<NotificationViewModel>();
+              final currentUid = widget.uid;
+
+              final senderInfo = await vm.getUserById(currentUid);
 
               final model = NotificationModel(
-                id: "",
-                senderId: FirebaseAuth.instance.currentUser!.uid,
-                receiverId: "receiverUserIdHere",
-                type: "alert", // special type
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                senderId: currentUid,
+                senderName: senderInfo.fullName,
+                profilePicture: senderInfo.profilePicture,
+                receiverId: currentUid,
+                type: NotificationType.alert,
                 title: "Urgent Alert",
-                body: "Food item expires today", // custom description
+                body: "${senderInfo.fullName} says: Food item expires today",
                 createdAt: DateTime.now(),
                 isRead: false,
               );
 
-              await vm.addNotification(model);
+              final success = await vm.addNotification(model);
 
-              await NotificationService.display(
-                title: model.title,
-                body: model.body,
-                payload: "notification_screen",
-                buildContext: context,
-              );
+              if (success) {
+                await NotificationService.display(
+                  title: model.title,
+                  body: model.body,
+                  payload: "notification_screen",
+                  buildContext: context,
+                  createdAt: model.createdAt,
+                );
+                Fluttertoast.showToast(msg: "Notification sent successfully"); // 👈 added
+              } else {
+                Fluttertoast.showToast(msg: "Failed to send notification");
+              }
             },
             child: const Text("Trigger Alert"),
           ),
 
-          SizedBox(width: 20,),
 
-          FloatingActionButton(
+// Request Item (sender = requester, receiver = post owner)
+          ElevatedButton(
             onPressed: () async {
               final vm = context.read<NotificationViewModel>();
+              final currentUid = widget.uid;
 
-              final receiverId = "receiverUserId"; // dynamic in real flow
-              final receiverName = await vm.getReceiverName(receiverId);
+              final senderInfo = await vm.getUserById(currentUid);
+
+              // Replace with the UID of the post owner (the donor)
+              final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
 
               final model = NotificationModel(
-                id: "",
-                senderId: FirebaseAuth.instance.currentUser!.uid,
-                receiverId: receiverId,
-                type: "request",
-                title: "$receiverName has requested for your donation",
-                body: "Choose accept or reject",
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                senderId: currentUid,                 // requester
+                senderName: senderInfo.fullName,
+                profilePicture: senderInfo.profilePicture,
+                receiverId: receiverId,               // donor
+                type: NotificationType.request,
+                title: "${senderInfo.fullName} has requested your donation",
+                body: "I would like to receive your donation",
                 createdAt: DateTime.now(),
                 isRead: false,
               );
 
-              await vm.addNotification(model);
+              final success = await vm.addNotification(model);
 
-              await NotificationService.display(
-                title: model.title,
-                body: model.body,
-                payload: "notification_screen",
-                buildContext: context,
-              );
+              if (success) {
+                await NotificationService.display(
+                  title: model.title,
+                  body: model.body,
+                  createdAt: model.createdAt,
+                  payload: "notification_screen",
+                  buildContext: context,
+                );
+                Fluttertoast.showToast(msg: "Notification sent successfully");
+              } else {
+                Fluttertoast.showToast(msg: "Failed to send notification");
+              }
             },
-            child: const Text("Request Notification"),
+            child: const Text("Request this item"),
           ),
 
-          SizedBox(width: 20,),
-          // This button must be in volunteer page:
-          FloatingActionButton(onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PickupNotificationScreen()));
-          }, child: Text("Pickup Notification")),
 
-          // CachedNetworkImage(
-          //   height: 100,width: 100,
-          //   imageUrl: data.imageUrl.toString(),
-          //   placeholder: (context, url) =>
-          //   const Center(child: CircularProgressIndicator()),
-          //   errorWidget: (context, url, error) =>
-          //   const Icon(Icons.error),
-          // ),
-          // Image.asset("assets/images/Mila1.png"),
-          // Column(
-          //   mainAxisAlignment: MainAxisAlignment.start,
-          //   crossAxisAlignment: CrossAxisAlignment.start,
-          //   children: [
-          //     Text("${data.name}"),
-          //     Text("${data.description}"),
-          //
-          //     TextButton(
-          //       onPressed: () {
-          //         Navigator.push(
-          //           context,
-          //           MaterialPageRoute(
-          //             builder: (context) =>
-          //                 PickupNotificationScreen(id: data.id.toString()),
-          //           ),
-          //         );
-          //       },
-          //       child: Text("Edit"),
-          //     ),
-          //     TextButton(
-          //       onPressed: () async {
-          //         await vm.deleteproduct(data.id.toString());
-          //       },
-          //       child: Text("Delete"),
-          //     ),
-          //   ],
-          // ),
+          // This button is food expiry alert button in dashboard page
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FoodAlertScreen(),
+                ),
+              );
+            },
+            child: const Text("Normal Food Alert Notification"),
+          ),
+
+
+          SizedBox(width: 20,),
+
+          // This button must be in volunteer page:
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PickupNotificationScreen(receiverUid: widget.uid),         // final make this inside round brackets --> (receiverUid: volunteerUid)
+                ),
+              );
+            },
+            child: const Text("Pickup Notification"),
+          ),
+
+          ElevatedButton(
+            onPressed: () async {
+              final vm = context.read<NotificationViewModel>();
+              final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+              // Fake receiver UID for testing
+              final fakeReceiverUid = "BmbWYHtwszNrTbRiVgRovbKeEZk2"; // replace with any real UID
+
+              final senderInfo = await vm.getUserById(currentUid);
+
+              final model = NotificationModel(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                senderId: currentUid,
+                senderName: senderInfo.fullName ?? "Unknown User",
+                profilePicture: senderInfo.profilePicture ?? "",
+                receiverId: fakeReceiverUid,   //  send to fake user
+                type: NotificationType.pickup,
+                title: "Test Notification",
+                body: "This is a fake notification for testing",
+                createdAt: DateTime.now(),
+                isRead: false,
+              );
+
+              final success = await vm.addNotification(model);
+
+              if (success) {
+                Fluttertoast.showToast(msg: "Notification sent successfully");
+              } else {
+                Fluttertoast.showToast(msg: "Failed to send notification");
+              }
+            },
+            child: const Text("Send Fake Notification"),
+          ),
+
+          ElevatedButton(onPressed: (){
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ItemDetailDemoScreen(item: {},),));
+          }, child: Text("Item Detail")),
+
+          ElevatedButton(onPressed: (){
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen(),));
+          }, child: Text("Logout")),
         ],
       ),
     ),),

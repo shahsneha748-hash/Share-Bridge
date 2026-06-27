@@ -1,17 +1,21 @@
 // import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/repo/notification_repo.dart';
 import 'package:sharebridge/repo/notification_repo_impl.dart';
 import 'package:sharebridge/repo/saved_items_repo.dart';
-import 'package:sharebridge/repo/saved_items_repo_impl.dart';
+import 'package:sharebridge/repo/saved_items_repo_impl.dart' hide SavedItemRepo;
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:sharebridge/repo/user_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/item_detail_demo.dart';
 // import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
+import 'package:sharebridge/view/saved_items.dart';
 // import 'package:sharebridge/view/dashboard_screen.dart';
 // import 'package:sharebridge/view/item_detail_screen.dart';
 // import 'package:sharebridge/view/navigation_screen.dart';
@@ -31,8 +35,8 @@ Future<void> main() async {
         // Register repos first
         Provider<UserRepo>(create: (_) => UserRepoImpl()),
         Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
-        Provider<SavedItemRepo>(create: (_) => SavedItemRepositoryImpl()),
-
+        Provider<SavedItemRepo>(create: (_) => SavedItemRepoImpl(firestore: FirebaseFirestore.instance),
+        ),
         // ViewModels depend on repos
         ChangeNotifierProvider(
           create: (context) =>
@@ -50,8 +54,10 @@ Future<void> main() async {
           child: const NotificationScreen(),
         ),
         ChangeNotifierProvider(
-          create: (context) =>
-              SavedItemViewModel(savedItemRepo: context.read<SavedItemRepo>()),
+          create: (context) => SavedItemViewModel(
+            repo: context.read<SavedItemRepo>(),
+            uid: FirebaseAuth.instance.currentUser?.uid ?? '',
+          ),
         ),
       ],
       child: const MyHomePage(),
