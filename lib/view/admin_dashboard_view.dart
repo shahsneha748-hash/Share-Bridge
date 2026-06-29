@@ -7,6 +7,8 @@ import 'admin_report_screen.dart';
 import 'users_admin_screen.dart';
 import 'donation_admin_screen.dart';
 import 'settings_admin_screen.dart';
+import 'stats_admin_screen.dart';
+import 'admin_notification_screen.dart';
 
 class AppColors {
   static const primary      = Color(0xFF6B9757);
@@ -117,7 +119,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
+
     );
   }
 
@@ -154,41 +156,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
           ),
-          Stack(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(19),
-                ),
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              Positioned(
-                top: 6,
-                right: 7,
-                child: Container(
-                  width: 8,
-                  height: 8,
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const AdminNotificationScreen()),
+            ),
+            child: Stack(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 1.5),
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(19),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_outlined,
+                    color: Colors.white,
+                    size: 20,
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: 6,
+                  right: 7,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AppColors.primary, width: 1.5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
   // ── SECTION LABEL ───────────────────────────────────────────────────────────
 
   Widget _sectionLabel(String text) {
@@ -236,7 +245,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             icon: Icons.people_outline,
             iconBg: AppColors.light3,
             iconColor: const Color(0xFF4a6830),
-            value: '1,043',
+            value: stats.activeUsers.toString(),
             label: 'Active users',
             delta: '+23 new',
             deltaColor: AppColors.successText,
@@ -280,25 +289,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         destination: 'Manage Categories',
       ),
       _QuickAction(
+        icon: Icons.bar_chart,
+        label: 'Statistics',
+        destination: 'Statistics',
+      ),
+      _QuickAction(
         icon: Icons.campaign_outlined,
         label: 'Announce',
         destination: 'Send Announcement',
       ),
-      _QuickAction(
-        icon: Icons.file_download_outlined,
-        label: 'Export\nreport',
-        destination: 'Reports',
-      ),
-      _QuickAction(
-        icon: Icons.person_off_outlined,
-        label: 'Ban user',
-        destination: 'Users',
-      ),
-      _QuickAction(
-        icon: Icons.bar_chart,
-        label: 'Analytics',
-        destination: 'Reports',
-      ),
+
     ];
 
     return SizedBox(
@@ -314,7 +314,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             borderRadius: BorderRadius.circular(10),
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
-              onTap: () => _navigateTo(a.destination),
+              onTap: () {
+                if (a.destination == 'Statistics') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const StatsAdminScreen()),
+                  );
+                }
+              },
               child: Container(
                 width: 72,
                 decoration: BoxDecoration(
@@ -329,10 +337,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: AppColors.light1,
+                        color: AppColors.light2,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(a.icon, size: 16, color: AppColors.successText),
+                      child: Icon(a.icon, size: 16, color: AppColors.primary),
                     ),
                     const SizedBox(height: 5),
                     Text(

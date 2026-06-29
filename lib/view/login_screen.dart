@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:sharebridge/view/homescreentest.dart';
+import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
-import 'package:sharebridge/view/navigation_screen.dart';
-import 'package:sharebridge/view/donation_chat_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(0),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -80,16 +78,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       Text(
-                        "Login",
-                        style: TextStyle(
-                          color: Color(0XFF435944),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 40,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            "Login",
+                            style: TextStyle(
+                              color: Color(0XFF435944),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 40,
+                            ),
+                          ),
+                          SizedBox(width: 15),
+                          Image.asset('assets/images/loogo1.png', height: 70, width: 75),
+                        ],
                       ),
 
-                       SizedBox(height: 20),
+                      SizedBox(height: 20),
 
                       // Email field
                       TextFormField(
@@ -97,11 +101,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white,
-                          prefixIcon:  Padding(
+                          prefixIcon: Padding(
                             padding: EdgeInsets.only(left: 15),
                             child: Icon(Icons.email_outlined),
                           ),
-                          hint:  Padding(
+                          hint: Padding(
                             padding: EdgeInsets.only(left: 5),
                             child: Text(
                               "Email",
@@ -113,11 +117,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderSide:  BorderSide(color: Colors.transparent),
+                            borderSide: BorderSide(color: Colors.transparent),
                             borderRadius: BorderRadius.circular(25),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide:  BorderSide(color: Colors.grey),
+                            borderSide: BorderSide(color: Colors.grey),
                             borderRadius: BorderRadius.circular(25),
                           ),
                         ),
@@ -201,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 57,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:  Color(0XFF435944),
+                            backgroundColor: const Color(0XFF435944),
                             foregroundColor: Colors.white,
                           ),
                           onPressed: () async {
@@ -218,13 +222,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 email: email,
                                 password: password,
                               );
+
                               Fluttertoast.showToast(msg: "Login successful");
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DonationChatScreen(
-                                donorId: 'test_donor',
-                                donorName: 'Ram Sah',
-                                itemName: 'Grocery Essentials Bundle',
-                                chatId: 'test_chat_123',
-                              )));
+
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DashboardScreen(), // ✅ fixed
+                                ),
+                              );
 
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {
@@ -237,8 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                           },
                           child: viewModel.loading
-                              ? CircularProgressIndicator()
-                              : Text("Login", style: TextStyle(fontSize: 20)),
+                              ? const CircularProgressIndicator()
+                              : const Text("Login", style: TextStyle(fontSize: 20)),
                         ),
                       ),
 
@@ -279,5 +285,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

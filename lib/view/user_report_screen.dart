@@ -164,8 +164,7 @@ class UserReportScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color:
-                            isSelected ? Colors.white : Colors.black87,
+                            color: isSelected ? Colors.white : Colors.black87,
                           ),
                         ),
                       ],
@@ -190,26 +189,111 @@ class UserReportScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: Colors.black87)),
         const SizedBox(height: 12),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
+        if (vm.isLoadingItems)
+          const Center(child: CircularProgressIndicator())
+        else if (vm.selectedType == 'A User' && vm.selectedUser == null)
+          _buildUserPickerList(vm)
+        else
+          GestureDetector(
+            onTap: () => vm.selectType(vm.selectedType),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                key: ValueKey(vm.selectedType + vm.reportingName),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _creamCard,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: _greenMedium,
+                      child: Text(
+                        vm.reportingInitial,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            vm.reportingName,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (vm.reportingStars > 0)
+                                ...List.generate(
+                                  5,
+                                      (i) => Icon(Icons.star,
+                                      size: 13,
+                                      color: i < vm.reportingStars
+                                          ? const Color(0xFFFFC107)
+                                          : Colors.grey.shade300),
+                                ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  vm.reportingSubtitle,
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.grey),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.grey),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildUserPickerList(UserReportViewModel vm) {
+    if (vm.usersList.isEmpty) {
+      return const Center(
+        child: Text('No users found',
+            style: TextStyle(color: Colors.grey)),
+      );
+    }
+    return Column(
+      children: vm.usersList.map((user) {
+        return GestureDetector(
+          onTap: () => vm.selectUser(user),
           child: Container(
-            key: ValueKey(vm.selectedType),
-            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: _creamCard,
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
             ),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 22,
+                  radius: 20,
                   backgroundColor: _greenMedium,
                   child: Text(
-                    vm.selectedTypeData?.initial ?? '',
+                    user.fullName.isNotEmpty
+                        ? user.fullName[0].toUpperCase()
+                        : '?',
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18),
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -217,43 +301,28 @@ class UserReportScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        vm.selectedTypeData?.name ?? '',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if ((vm.selectedTypeData?.stars ?? 0) > 0)
-                            ...List.generate(
-                              5,
-                                  (i) => Icon(Icons.star,
-                                  size: 13,
-                                  color: i < (vm.selectedTypeData?.stars ?? 0)
-                                      ? const Color(0xFFFFC107)
-                                      : Colors.grey.shade300),
-                            ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              vm.selectedTypeData?.subtitle ?? '',
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                      Text(user.fullName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(user.email,
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                ...List.generate(
+                  5,
+                      (i) => Icon(Icons.star,
+                      size: 12,
+                      color: i < user.rating.round()
+                          ? const Color(0xFFFFC107)
+                          : Colors.grey.shade300),
+                ),
               ],
             ),
           ),
-        ),
-      ],
+        );
+      }).toList(),
     );
   }
 
@@ -366,8 +435,7 @@ class UserReportScreen extends StatelessWidget {
               Text("${vm.charCount}/500",
                   style: TextStyle(
                       fontSize: 12,
-                      color:
-                      vm.charCount >= 15 ? _greenMedium : Colors.grey)),
+                      color: vm.charCount >= 15 ? _greenMedium : Colors.grey)),
             ],
           ),
         ),
@@ -375,8 +443,7 @@ class UserReportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAttachEvidence(
-      BuildContext context, UserReportViewModel vm) {
+  Widget _buildAttachEvidence(BuildContext context, UserReportViewModel vm) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -422,8 +489,7 @@ class UserReportScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: _greenLight,
               borderRadius: BorderRadius.circular(12),
-              border:
-              Border.all(color: const Color(0xFFC8E6C9)),
+              border: Border.all(color: const Color(0xFFC8E6C9)),
             ),
             child: Column(
               children: [
@@ -447,8 +513,7 @@ class UserReportScreen extends StatelessWidget {
 
   Widget _buildAnonymousToggle(UserReportViewModel vm) {
     return Container(
-      padding:
-      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -490,14 +555,12 @@ class UserReportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSubmitButton(
-      BuildContext context, UserReportViewModel vm) {
+  Widget _buildSubmitButton(BuildContext context, UserReportViewModel vm) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-          vm.canSubmit ? _darkButton : Colors.grey.shade400,
+          backgroundColor: vm.canSubmit ? _darkButton : Colors.grey.shade400,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12)),

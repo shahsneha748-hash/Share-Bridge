@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../model/message_model.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../model/message_model.dart';
+import '../repo/chat_repo.dart';
+import '../repo/chat_repo_impl.dart';
 
 class ChatViewModel extends ChangeNotifier {
   final String chatId;
   final String donorId;
   final String donorName;
+
+  final ChatRepo _repo = ChatRepoImpl();
 
   final TextEditingController inputController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -16,14 +19,6 @@ class ChatViewModel extends ChangeNotifier {
   final List<Message> messages = [];
 
   StreamSubscription? _messageSubscription;
-
-  ChatViewModel({
-    required this.chatId,
-    required this.donorId,
-    required this.donorName,
-  }) {
-    listenToMessages();
-  }
 
   bool isTyping = false;
 
@@ -34,32 +29,31 @@ class ChatViewModel extends ChangeNotifier {
     "Got it",
   ];
 
+  ChatViewModel({
+    required this.chatId,
+    required this.donorId,
+    required this.donorName,
+  }) {
+    listenToMessages();
+  }
+
   void listenToMessages() {
-    _messageSubscription = FirebaseFirestore.instance
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .orderBy('timestamp')
-        .snapshots()
-        .listen((snapshot) {
-      messages.clear();
-      for (var doc in snapshot.docs) {
-        messages.add(Message.fromMap(doc.data(), doc.id, currentUserId));
-      }
-      notifyListeners();
-      scrollToBottom();
-    });
+    _messageSubscription =
+        _repo.listenToMessages(chatId).listen((messageMaps) {
+          messages.clear();
+          for (var map in messageMaps) {
+            messages.add(Message.fromMap(map, map['id'], currentUserId));
+          }
+          notifyListeners();
+          scrollToBottom();
+        });
   }
 
   void sendMessage(String text) async {
     if (text.trim().isEmpty) return;
     inputController.clear();
 
-    await FirebaseFirestore.instance
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .add({
+    await _repo.sendMessage(chatId, {
       'text': text.trim(),
       'senderId': currentUserId,
       'timestamp': DateTime.now(),

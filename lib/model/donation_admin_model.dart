@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum DonationCategory { food, clothes, stationery, others }
 enum DonationStatus { available, taken }
 
@@ -36,5 +38,45 @@ class AdminDonation {
       case DonationStatus.available: return 'Available';
       case DonationStatus.taken:     return 'Taken';
     }
+  }
+
+  static DonationCategory _parseCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'food':       return DonationCategory.food;
+      case 'clothes':    return DonationCategory.clothes;
+      case 'stationery': return DonationCategory.stationery;
+      default:           return DonationCategory.others;
+    }
+  }
+
+  static String _timeAgo(dynamic createdAt) {
+    if (createdAt == null) return '';
+    DateTime dt;
+    if (createdAt is Timestamp) {
+      dt = createdAt.toDate();
+    } else {
+      return '';
+    }
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24)   return '${diff.inHours} hr ago';
+    return '${diff.inDays} day ago';
+  }
+
+  factory AdminDonation.fromMap(Map<String, dynamic> map) {
+    final itemName = map['itemName'] as String? ?? 'Unknown';
+    final donorId  = map['userId']   as String? ?? '';
+    return AdminDonation(
+      id:            map['id']       as String? ?? '',
+      title:         itemName,
+      donorName: map['donorName'] as String? ?? 'Unknown',
+      donorInitials: itemName.isNotEmpty ? itemName[0].toUpperCase() : '?',
+      category:      _parseCategory(map['category'] as String? ?? ''),
+      status:        (map['isDonated'] as bool? ?? false)
+          ? DonationStatus.taken
+          : DonationStatus.available,
+      location:      map['location']  as String? ?? '',
+      postedTime:    _timeAgo(map['createdAt']),
+    );
   }
 }
