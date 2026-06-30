@@ -86,7 +86,6 @@ class NotificationRepoImpl implements NotificationRepo {
         'message': {
           'token': deviceToken,
           'notification': {
-            'title': notification.title,
             'body': notification.body,
           },
           'data': notification.data ?? {},
@@ -255,8 +254,8 @@ class NotificationRepoImpl implements NotificationRepo {
       // Send push notification
       await FCMService.sendPushMessage(
         token,
-        {"title": model.title, "body": model.body}, // data payload
-        {"title": model.title, "body": model.body}, // notification payload
+        {"body": model.body}, // data payload
+        {"body": model.body}, // notification payload
       );
 
       return true; // success

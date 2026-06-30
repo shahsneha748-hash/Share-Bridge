@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sharebridge/view/adminnavigationscreen_demo.dart';
+import 'package:sharebridge/view/dashboard_screen.dart';
+import 'package:sharebridge/view/dashboardscreen_demo.dart';
 import 'package:sharebridge/view/homescreentest.dart';
+import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
@@ -177,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Forgot password link
                       Align(
                         alignment: Alignment.centerRight,
-                        child: GestureDetector(
+                        child: InkWell(
                           onTap: () {
                             Navigator.push(
                               context,
@@ -227,17 +232,28 @@ class _LoginScreenState extends State<LoginScreen> {
                               Fluttertoast.showToast(msg: "Login successful");
 
                               // 🔑 Step 2: Get the logged-in user's UID
-                              final currentUid = FirebaseAuth.instance.currentUser!.uid;
+                              final uid = FirebaseAuth.instance.currentUser!.uid;
 
-                              // 🔑 Step 3: Navigate to their unique dashboard
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => Homescreentest(
-                                    uid: currentUid,    // 👈 pass their UID
-                                  ),
-                                ),
-                              );
+                              // 🔑 Step 3: Fetch user document from Firestore
+                              final userDoc = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(uid)
+                                  .get();
+
+                              final role = userDoc.data()?['role'];
+
+                              // 🔑 Step 4: Navigate based on role
+                              if (role == 'admin') {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
+                                );
+                              } else {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const NavigationScreen()),
+                                );
+                              }
 
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {

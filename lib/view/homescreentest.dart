@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -7,7 +6,6 @@ import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/food_alert_screen.dart';
 import 'package:sharebridge/view/item_detail_demo.dart';
-import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/pickup_notification_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
@@ -162,7 +160,6 @@ class _HomescreentestState extends State<Homescreentest> {
                 profilePicture: senderInfo.profilePicture,
                 receiverId: currentUid,
                 type: NotificationType.alert,
-                title: "Urgent Alert",
                 body: "${senderInfo.fullName} says: Food item expires today",
                 createdAt: DateTime.now(),
                 isRead: false,
@@ -172,13 +169,12 @@ class _HomescreentestState extends State<Homescreentest> {
 
               if (success) {
                 await NotificationService.display(
-                  title: model.title,
                   body: model.body,
                   payload: "notification_screen",
                   buildContext: context,
                   createdAt: model.createdAt,
                 );
-                Fluttertoast.showToast(msg: "Notification sent successfully"); // 👈 added
+                Fluttertoast.showToast(msg: "Notification sent successfully");
               } else {
                 Fluttertoast.showToast(msg: "Failed to send notification");
               }
@@ -205,8 +201,7 @@ class _HomescreentestState extends State<Homescreentest> {
                 profilePicture: senderInfo.profilePicture,
                 receiverId: receiverId,               // donor
                 type: NotificationType.request,
-                title: "${senderInfo.fullName} has requested your donation",
-                body: "I would like to receive your donation",
+                body: "${senderInfo.fullName} has requested for your donation",
                 createdAt: DateTime.now(),
                 isRead: false,
               );
@@ -215,10 +210,9 @@ class _HomescreentestState extends State<Homescreentest> {
 
               if (success) {
                 await NotificationService.display(
-                  title: model.title,
                   body: model.body,
                   createdAt: model.createdAt,
-                  payload: "notification_screen",
+                  payload: "request_system_screen",
                   buildContext: context,
                 );
                 Fluttertoast.showToast(msg: "Notification sent successfully");
@@ -258,48 +252,12 @@ class _HomescreentestState extends State<Homescreentest> {
             },
             child: const Text("Pickup Notification"),
           ),
-
-          ElevatedButton(
-            onPressed: () async {
-              final vm = context.read<NotificationViewModel>();
-              final currentUid = FirebaseAuth.instance.currentUser!.uid;
-
-              // Fake receiver UID for testing
-              final fakeReceiverUid = "BmbWYHtwszNrTbRiVgRovbKeEZk2"; // replace with any real UID
-
-              final senderInfo = await vm.getUserById(currentUid);
-
-              final model = NotificationModel(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                senderId: currentUid,
-                senderName: senderInfo.fullName ?? "Unknown User",
-                profilePicture: senderInfo.profilePicture ?? "",
-                receiverId: fakeReceiverUid,   //  send to fake user
-                type: NotificationType.pickup,
-                title: "Test Notification",
-                body: "This is a fake notification for testing",
-                createdAt: DateTime.now(),
-                isRead: false,
-              );
-
-              final success = await vm.addNotification(model);
-
-              if (success) {
-                Fluttertoast.showToast(msg: "Notification sent successfully");
-              } else {
-                Fluttertoast.showToast(msg: "Failed to send notification");
-              }
-            },
-            child: const Text("Send Fake Notification"),
-          ),
+          SizedBox(width: 20,),
 
           ElevatedButton(onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ItemDetailDemoScreen(item: {},),));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ItemDetailDemoScreen(item: {}, uid: '',),));
           }, child: Text("Item Detail")),
 
-          ElevatedButton(onPressed: (){
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen(),));
-          }, child: Text("Logout")),
         ],
       ),
     ),),

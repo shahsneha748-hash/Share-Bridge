@@ -14,9 +14,10 @@ import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
 class ItemDetailDemoScreen extends StatelessWidget {
   final Map<String, dynamic> item;
+  final String uid;
 
 
-  const ItemDetailDemoScreen({super.key, required this.item});
+  const ItemDetailDemoScreen({super.key, required this.item, required this.uid});
 
   @override
   Widget build(BuildContext context) {
@@ -1042,8 +1043,7 @@ class _BottomActionBar extends StatelessWidget {
                               profilePicture: senderInfo.profilePicture,
                               receiverId: receiverId,               // donor
                               type: NotificationType.request,
-                              title: "${senderInfo.fullName} has requested your donation",
-                              body: "I would like to receive your donation",
+                              body: "${senderInfo.fullName} has requested for your donation",
                               createdAt: DateTime.now(),
                               isRead: false,
                             );
@@ -1052,10 +1052,9 @@ class _BottomActionBar extends StatelessWidget {
 
                             if (success) {
                               await NotificationService.display(
-                                title: model.title,
                                 body: model.body,
                                 createdAt: model.createdAt,
-                                payload: "notification_screen",
+                                payload: "request_system_screen",
                                 buildContext: context,
                               );
                               Fluttertoast.showToast(msg: "Notification sent successfully");

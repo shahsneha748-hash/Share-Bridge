@@ -7,7 +7,6 @@ class NotificationModel {
   final String senderId;
   final String receiverId;
   final NotificationType type;
-  final String title;
   final String body;
   final String? profilePicture;
   final String? targetId;
@@ -28,7 +27,6 @@ class NotificationModel {
     required this.senderId,
     required this.receiverId,
     required this.type,
-    required this.title,
     required this.body,
     this.profilePicture,
     this.targetId,
@@ -51,7 +49,6 @@ class NotificationModel {
       "senderId": senderId,
       "receiverId": receiverId,
       "type": type.toString().split('.').last,
-      "title": title,
       "body": body,
       "profilePicture": profilePicture,
       "targetId": targetId,
@@ -74,8 +71,7 @@ class NotificationModel {
       id: map["id"] ?? "",
       senderId: map["senderId"] ?? "",
       receiverId: map["receiverId"] ?? "",
-      type: _mapStringToType(map["type"]),   // ✅ convert string back to enum
-      title: map["title"] ?? "",
+      type: _mapStringToType(map["type"]),
       body: map["body"] ?? "",
       profilePicture: map["profilePicture"],
       targetId: map["targetId"],
@@ -112,8 +108,7 @@ class NotificationModel {
     String? id,
     String? senderId,
     String? receiverId,
-    NotificationType? type,   // ✅ enum instead of String
-    String? title,
+    NotificationType? type,
     String? body,
     String? profilePicture,
     String? targetId,
@@ -133,7 +128,6 @@ class NotificationModel {
       senderId: senderId ?? this.senderId,
       receiverId: receiverId ?? this.receiverId,
       type: type ?? this.type,
-      title: title ?? this.title,
       body: body ?? this.body,
       profilePicture: profilePicture ?? this.profilePicture,
       targetId: targetId ?? this.targetId,

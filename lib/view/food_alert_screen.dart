@@ -59,7 +59,7 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
 
   Widget buildProfileImage(String? profilePicture) {
     if (profilePicture == null || profilePicture.isEmpty) {
-      return const CircleAvatar(radius: 40, child: Icon(Icons.person));
+      return CircleAvatar(radius: 40, child: Icon(Icons.person));
     }
     if (profilePicture.startsWith("http")) {
       return CircleAvatar(radius: 40, backgroundImage: NetworkImage(profilePicture));
@@ -97,7 +97,7 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
     final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Food Alert Notification")),
+      appBar: AppBar(title: Text("Food Alert Notification")),
       body: Column(
         children: [
           Expanded(
@@ -107,12 +107,12 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                   future: _getProfilePictureFromFirestore(currentUserId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircleAvatar(radius: 40, child: CircularProgressIndicator());
+                      return CircleAvatar(radius: 40, child: CircularProgressIndicator());
                     }
                     return buildProfileImage(snapshot.data);
                   },
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
 
                 // Title
                 Padding(
@@ -143,12 +143,11 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                 ),
 
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 ElevatedButton(
                   onPressed: () async {
-                    if (TitleController.text.trim().isEmpty ||
-                        BodyController.text.trim().isEmpty) {
+                    if (BodyController.text.trim().isEmpty) {
                       Fluttertoast.showToast(msg: "All fields must be filled");
                       return;
                     }
@@ -167,7 +166,6 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                     // Build notification model
                     final model = NotificationModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      title: TitleController.text.trim(),
                       body: BodyController.text.trim(),
                       senderId: currentUid,        // requester UID
                       senderName: senderName,
@@ -182,7 +180,6 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
 
                     if (success) {
                       await NotificationService.display(
-                        title: model.title,
                         body: model.body,
                         payload: "food_alert_screen",
                         buildContext: context,
@@ -197,7 +194,7 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                       Fluttertoast.showToast(msg: "Failed to send notification");
                     }
                   },
-                  child: const Text("Send Notification"),
+                  child: Text("Send Notification"),
                 )
 
               ],

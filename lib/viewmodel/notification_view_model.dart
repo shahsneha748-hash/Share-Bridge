@@ -51,7 +51,6 @@ class NotificationViewModel extends ChangeNotifier {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final oneMonthAgo = now.subtract(const Duration(days: 30));
 
     final grouped = {
       "Urgent": <NotificationModel>[],
@@ -62,17 +61,26 @@ class NotificationViewModel extends ChangeNotifier {
 
     for (var n in _notifications) {
       final created = n.createdAt;
+      final age = now.difference(created);
 
+      // vanish rules
       if (n.type == NotificationType.alert) {
-        grouped["Urgent"]!.add(n);
-      } else if (created.isAfter(today)) {
-        grouped["Today"]!.add(n);
-      } else if (created.isAfter(yesterday) && created.isBefore(today)) {
-        grouped["Yesterday"]!.add(n);
-      } else if (created.isAfter(oneMonthAgo)) {
-        final key = "${created.day} ${_monthName(created.month)} ${created.year}";
-        grouped.putIfAbsent(key, () => []);
-        grouped[key]!.add(n);
+        if (age.inDays < 1) {
+          grouped["Urgent"]!.add(n);
+        }
+      } else {
+        if (age.inDays < 30) {
+          if (created.isAfter(today)) {
+            grouped["Today"]!.add(n);
+          } else if (created.isAfter(yesterday) && created.isBefore(today)) {
+            grouped["Yesterday"]!.add(n);
+          } else {
+            final key =
+                "${created.day} ${_monthName(created.month)} ${created.year}";
+            grouped.putIfAbsent(key, () => []);
+            grouped[key]!.add(n);
+          }
+        }
       }
     }
 
@@ -83,6 +91,7 @@ class NotificationViewModel extends ChangeNotifier {
 
     return grouped;
   }
+
 
   String _monthName(int month) {
     const months = [
@@ -121,11 +130,6 @@ class NotificationViewModel extends ChangeNotifier {
         _notifications[index] = current.copyWith(
           type: newType,
           isRead: false,
-          title: newType == NotificationType.accepted
-              ? "Request Accepted"
-              : newType == NotificationType.rejected
-              ? "Request Rejected"
-              : current.title ?? "Notification",
           body: newType == NotificationType.accepted
               ? "Donor has accepted your donation request."
               : newType == NotificationType.rejected
@@ -311,24 +315,23 @@ class NotificationViewModel extends ChangeNotifier {
   }
 
 
-
   Future<void> markAsRead(String id) async {
     try {
       await _repo.markAsRead(id);
 
-      // Update local list immediately
       final index = _notifications.indexWhere((n) => n.id == id);
       if (index != -1) {
         final current = _notifications[index];
         if (!current.isRead) {
           _notifications[index] = current.copyWith(isRead: true);
-          notifyListeners(); // refresh UI
+          notifyListeners(); // triggers rebuild of NotificationCard
         }
       }
     } catch (e) {
       setError(e.toString());
     }
   }
+
 
 
 }

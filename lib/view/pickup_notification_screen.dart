@@ -141,8 +141,7 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
 
                 ElevatedButton(
                   onPressed: () async {
-                    if (TitleController.text.trim().isEmpty ||
-                        BodyController.text.trim().isEmpty) {
+                    if (BodyController.text.trim().isEmpty) {
                       Fluttertoast.showToast(msg: "All fields must be filled");
                       return;
                     }
@@ -159,7 +158,6 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
 
                     final model = NotificationModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      title: TitleController.text.trim(),
                       body: BodyController.text.trim(),
                       senderId: currentUserId,          // donor UID
                       senderName: senderName,
@@ -174,7 +172,6 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
 
                     if (success) {
                       await NotificationService.display(
-                        title: model.title,
                         body: model.body,
                         payload: "pickup_notification_screen",
                         buildContext: context,
