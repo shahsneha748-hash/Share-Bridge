@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:sharebridge/view/chat_screen.dart';
 import 'package:sharebridge/view/create_donation_screen.dart';
 import 'package:sharebridge/view/dashboard_screen.dart';
-import 'package:sharebridge/view/my_item_screen.dart';
 import 'package:sharebridge/view/profile_screen.dart';
 import 'package:sharebridge/view/browse_screen.dart';
 
@@ -17,7 +17,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
   int currentIndex = 0;
   final PageController pageController = PageController();
 
-  // Category to pre-select when Dashboard sends user to Browse
   String? _browseInitialCategory;
 
   @override
@@ -34,7 +33,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  // Called by Dashboard: switches to Browse tab + applies category (optional)
   void _goToBrowse({String? category}) {
     setState(() {
       _browseInitialCategory = category;
@@ -61,7 +59,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           DashboardScreen(onGoToBrowse: _goToBrowse),
           BrowseScreen(initialCategory: _browseInitialCategory),
           const CreateDonationScreen(),
-          const MyItemScreen(),
+          const ChatScreen(),
           const ProfileScreen(),
         ],
       ),
@@ -79,7 +77,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           _navItem(Icons.home, 'Home', 0),
           _navItem(Icons.search, 'Browse', 1),
           _navItem(Icons.add, 'Post', 2),
-          _navItem(Icons.inventory_2, 'My Items', 3),
+          _navItem(Icons.chat, 'Chat', 3),
           _navItem(Icons.person, 'Profile', 4),
         ],
       ),

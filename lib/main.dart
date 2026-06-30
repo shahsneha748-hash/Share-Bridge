@@ -12,6 +12,7 @@ import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
 import 'package:sharebridge/view/navigation_screen.dart';
+import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/splash_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
@@ -26,12 +27,10 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Register repos first
         Provider<UserRepo>(create: (_) => UserRepoImpl()),
         Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
         Provider<SavedItemRepo>(create: (_) => SavedItemRepositoryImpl()),
 
-        // ViewModels depend on repos
         ChangeNotifierProvider(
           create: (context) =>
               UserViewModel(
@@ -64,7 +63,8 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: const NavigationScreen(),    );
+      home: const NavigationScreen(),
+    );
   }
 }
 
