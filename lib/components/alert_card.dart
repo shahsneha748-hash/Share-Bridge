@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-Widget _urgentAlertCard() {
+Widget UrgentAlertCard() {
   return Card(
     color: const Color(0XFFeed2d2),
     elevation: 6,

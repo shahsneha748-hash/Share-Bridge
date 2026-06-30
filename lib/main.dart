@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,11 +9,12 @@ import 'package:sharebridge/repo/saved_items_repo_impl.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:sharebridge/repo/user_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/dashboard_screen.dart';
-import 'package:sharebridge/view/item_detail_screen.dart';
-import 'package:sharebridge/view/navigation_screen.dart';
-import 'package:sharebridge/view/signup_screen.dart';
-import 'package:sharebridge/view/splash_screen.dart';
+// import 'package:sharebridge/view/homescreentest.dart';
+import 'package:sharebridge/view/login_screen.dart';
+import 'package:sharebridge/view/notification_screen.dart';
+// import 'package:sharebridge/view/dashboard_screen.dart';
+// import 'package:sharebridge/view/item_detail_screen.dart';
+// import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
@@ -27,10 +28,12 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        // Register repos first
         Provider<UserRepo>(create: (_) => UserRepoImpl()),
         Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
         Provider<SavedItemRepo>(create: (_) => SavedItemRepositoryImpl()),
 
+        // ViewModels depend on repos
         ChangeNotifierProvider(
           create: (context) =>
               UserViewModel(
@@ -44,6 +47,7 @@ Future<void> main() async {
                 repo: context.read<NotificationRepo>(),
                 userRepo: context.read<UserRepo>(),
               ),
+          child: const NotificationScreen(),
         ),
         ChangeNotifierProvider(
           create: (context) =>
@@ -63,7 +67,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: const NavigationScreen(),
+      home: LoginScreen(),
     );
   }
 }

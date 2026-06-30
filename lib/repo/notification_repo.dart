@@ -18,17 +18,33 @@ abstract class NotificationRepo {
   });
 
   Stream<List<NotificationModel>> getNotifications(String userId);
+
   // CRUD operations with Firestore
-  Future<bool> addNotification(NotificationModel notification);                  // The "NotificationModel notification" inside brackets is just the input your function needs.   //Basically the things in parentheses are requirements — they define what data the function needs to run successfully.
+  Future<bool> addNotification(NotificationModel notification);
+
   Future<List<NotificationModel>> getNotificationsByUser(String userId);
+
   Future<List<NotificationModel>> getNotificationsByType(String type);
+
   Future<NotificationModel> getNotificationById(String id);
+
   Future<void> editNotification(NotificationModel notification);                // So when you call this function, you must supply a NotificationModel object. That object contains all the data fields (id, title, body, donorId, timestamp, isRead) which/that the function will use to update the notification in Firestore.
-  Future<void> markAsRead(String id);
+
+  Future<void> markAllAsRead(String id);
+
   Future<void> deleteNotification(String id);
+
   Future<void> sendNotificationToUser(String token, String title, String body);
+
   Future<void> saveUserFcmToken();
+
   Future<String> getReceiverName(String receiverId);
+
+  Future<List<NotificationModel>> getAllNotifications();
+
+  Future<String?> getFcmTokenForUser(String receiverId);
+
+  Future<void> markAsRead(String id);
 }
 
 
