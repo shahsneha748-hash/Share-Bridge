@@ -53,7 +53,6 @@ class BrowseItemCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Bookmark icon — disabled with slash overlay when taken
                   GestureDetector(
                     onTap: available ? onFavoriteTap : null,
                     child: SizedBox(
@@ -66,30 +65,17 @@ class BrowseItemCard extends StatelessWidget {
                             ScaleTransition(scale: anim, child: child),
                         child: Icon(
                           isSaved
-                              ? Icons.bookmark
-                              : Icons.bookmark_border,
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                           key: ValueKey(isSaved),
                           size: 18,
                           color: AppColors.darkGreen,
                         ),
                       )
-                          : Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.bookmark_border,
-                            size: 18,
-                            color: Colors.grey.shade400,
-                          ),
-                          Transform.rotate(
-                            angle: -0.78, // ~ -45 degrees
-                            child: Container(
-                              width: 22,
-                              height: 1.6,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
+                          : Icon(
+                        Icons.favorite_border,
+                        size: 18,
+                        color: Colors.grey.shade400,
                       ),
                     ),
                   ),
