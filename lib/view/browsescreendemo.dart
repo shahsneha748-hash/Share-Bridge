@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,8 +9,11 @@ import 'package:sharebridge/components/filter_chip_button.dart';
 import 'package:sharebridge/components/category_pill.dart';
 import 'package:sharebridge/components/browse_item_card.dart';
 import 'package:sharebridge/repo/browse_repo_impl.dart';
-import 'package:sharebridge/view/item_detail_screen.dart';
+import 'package:sharebridge/repo/item_detail_repo_impl.dart';
+import 'package:sharebridge/view/item_detail_demo.dart';
+import 'package:sharebridge/view/saved_items.dart';
 import 'package:sharebridge/viewmodel/browse_view_model.dart';
+import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
 
 class BrowseScreen extends StatelessWidget {
   final String? initialCategory;
@@ -50,53 +55,81 @@ class _BrowseViewState extends State<_BrowseView> {
     super.dispose();
   }
 
-  Widget _heartIcon(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Wishlist — Coming Soon'),
-            backgroundColor: AppColors.darkGreen,
-            duration: Duration(seconds: 1),
-          ),
-        );
-      },
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: const BoxDecoration(
-          color: AppColors.cream,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.favorite_border,
-          color: AppColors.darkGreen,
-          size: 26,
-        ),
-      ),
-    );
-  }
-
   void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
-    final vm = context.read<BrowseViewModel>();
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
-    ).then((_) => vm.refresh());
-  }
-
-  void _toggleFavorite(BuildContext context, String title) {
-    final vm = context.read<BrowseViewModel>();
-    final wasSaved = vm.isFavorite(title);
-    vm.toggleFavorite(title);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(wasSaved ? 'Removed from wishlist' : 'Added to wishlist'),
-        backgroundColor: AppColors.darkGreen,
-        duration: const Duration(seconds: 1),
+      MaterialPageRoute(
+        builder: (context) => ItemDetailDemoScreen(
+          item: item,
+          uid: FirebaseAuth.instance.currentUser!.uid,
+        ),
       ),
     );
   }
+
+
+  void _toggleFavorite(BuildContext context, Map<String, dynamic> item) async {
+    final browseVm = context.read<BrowseViewModel>();
+    final wasSaved = browseVm.isFavorite(item["title"]);
+
+    // Toggle locally
+    browseVm.toggleFavorite(item["title"]);
+
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    if (!wasSaved) {
+      // Add to Firestore
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("saved_items")
+          .doc(item["id"])
+          .set({
+        "id": item["id"],
+        "title": item["title"],
+        "image": item["image"],
+        "category": item["category"],
+        "miles": item["miles"],
+        "addedTime": item["addedTime"],
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      // Show snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Added to saved'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      // 👉 Use root navigator and delay navigation
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
+        );
+      });
+
+    } else {
+      // Remove from Firestore
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("saved_items")
+          .doc(item["id"])
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed from saved'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+
 
   void _openFilterSheet(BuildContext context) {
     final vm = context.read<BrowseViewModel>();
@@ -313,7 +346,7 @@ class _BrowseViewState extends State<_BrowseView> {
         body: SafeArea(
           child: Column(
             children: [
-              AppHeader(title: 'Browse', trailing: _heartIcon(context)),
+              const AppHeader(title: 'Browse'),
               Expanded(
                 child: Container(
                   color: Colors.white,
@@ -329,21 +362,20 @@ class _BrowseViewState extends State<_BrowseView> {
                           decoration: BoxDecoration(
                             color: AppColors.inputBg,
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                                color: Colors.grey.shade300, width: 1.2),
+                            border:
+                            Border.all(color: Colors.grey.shade300, width: 1.2),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.search,
-                                  color: Colors.grey, size: 22),
+                              const Icon(Icons.search, color: Colors.grey, size: 22),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: TextField(
                                   controller: _searchController,
                                   decoration: const InputDecoration(
                                     hintText: 'Search all items',
-                                    hintStyle: TextStyle(
-                                        color: Colors.grey, fontSize: 15),
+                                    hintStyle:
+                                    TextStyle(color: Colors.grey, fontSize: 15),
                                     border: InputBorder.none,
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
@@ -413,7 +445,7 @@ class _BrowseViewState extends State<_BrowseView> {
                             'Food',
                             'Clothes',
                             'Stationery',
-                            'Others',
+                            'Others'
                           ].map((label) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -463,6 +495,7 @@ class _BrowseViewState extends State<_BrowseView> {
 
                       const SizedBox(height: 12),
 
+                     
                       Expanded(
                         child: items.isEmpty
                             ? const Center(
@@ -474,15 +507,14 @@ class _BrowseViewState extends State<_BrowseView> {
                               SizedBox(height: 10),
                               Text(
                                 'No items match your filters',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 15),
+                                style:
+                                TextStyle(color: Colors.grey, fontSize: 15),
                               ),
                             ],
                           ),
                         )
                             : Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: GridView.builder(
                             padding: EdgeInsets.zero,
                             itemCount: items.length,
@@ -499,10 +531,9 @@ class _BrowseViewState extends State<_BrowseView> {
                               return BrowseItemCard(
                                 item: item,
                                 isSaved: vm.isFavorite(title),
-                                onTap: () =>
-                                    _openItemDetail(context, item),
+                                onTap: () => _openItemDetail(context, item),
                                 onFavoriteTap: () =>
-                                    _toggleFavorite(context, title),
+                                    _toggleFavorite(context, item),
                               );
                             },
                           ),

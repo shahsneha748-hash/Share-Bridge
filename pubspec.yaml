@@ -59,6 +59,8 @@ dependencies:
   cloudinary_public: ^0.23.1
   url_launcher: ^6.3.2
   fl_chart: ^0.69.0
+  share_plus: ^10.1.4
+
 
 
 

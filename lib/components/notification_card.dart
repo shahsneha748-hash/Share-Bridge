@@ -1,110 +1,112 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:sharebridge/model/notification_model.dart';
 
-enum NotificationType { request, pickup, alert, normal_alert }
-
+/// Single card widget
 class NotificationCard extends StatelessWidget {
+  final NotificationModel notification;
   final NotificationType type;
-  final String? profilePicture;
-  final String title;          // comes from constructor
   final String body;
-  final String? numberField;
-  final VoidCallback? onAccept;
-  final VoidCallback? onReject;
+  final DateTime createdAt;
+  final String? profilePicture;
   final VoidCallback? onMarkAsRead;
 
   const NotificationCard({
-    required this.type,
-    this.profilePicture,
-    required this.title,
-    required this.body,
-    this.numberField,
-    this.onAccept,
-    this.onReject,
-    this.onMarkAsRead,
     super.key,
+    required this.notification,
+    required this.type,
+    required this.body,
+    required this.createdAt,
+    this.profilePicture,
+    this.onMarkAsRead,
   });
 
   @override
   Widget build(BuildContext context) {
-    Color? bgColor;
-    String cardTitle; // renamed to avoid shadowing
-    ShapeBorder? cardShape;
-    double? cardElevation;
+    Color bgColor = Colors.white;
+    ShapeBorder cardShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: Colors.grey),
+    );
+    double cardElevation = 2;
 
     switch (type) {
       case NotificationType.request:
-        bgColor = Colors.white;
-        cardTitle = "Donation Request";
-        cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
-        cardElevation = 2;
+        cardElevation = 5;
         break;
-
-      case NotificationType.pickup:
-        bgColor = Colors.white;
-        cardTitle = "Pickup Scheduled";
-        cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
-        cardElevation = 2;
-        break;
-
-      case NotificationType.alert:
+      case NotificationType.alert: // urgent
         bgColor = const Color(0xFFeed2d2);
-        cardTitle = "Alert!";
         cardShape = RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: Color(0xFFe8a4a4)),
         );
         cardElevation = 6;
         break;
-
-      case NotificationType.normal_alert:
-        bgColor = Colors.white;
-        cardTitle = "Normal Alert!";
-        cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
-        cardElevation = 2;
-        break;
-
       default:
-        bgColor = Colors.white;
-        cardTitle = "Notification";
-        cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
-        cardElevation = 2;
+        break;
     }
 
     Widget buildProfileImage(String? profilePicture) {
       if (profilePicture == null || profilePicture.isEmpty) {
-        return const CircleAvatar(radius: 25, child: Icon(Icons.person));
+        return const CircleAvatar(radius: 40, child: Icon(Icons.person));
       }
       if (profilePicture.startsWith("http")) {
-        return CircleAvatar(radius: 25, backgroundImage: NetworkImage(profilePicture));
-      } else if (profilePicture.startsWith("/")) {
-        return CircleAvatar(radius: 25, backgroundImage: FileImage(File(profilePicture)));
-      } else {
-        return CircleAvatar(radius: 25, backgroundImage: AssetImage(profilePicture));
+        return CircleAvatar(radius: 40, backgroundImage: NetworkImage(profilePicture));
       }
+      if (profilePicture.startsWith("/")) {
+        return CircleAvatar(radius: 40, backgroundImage: FileImage(File(profilePicture)));
+      }
+      return CircleAvatar(radius: 40, backgroundImage: AssetImage(profilePicture));
+    }
+
+    String formatRelativeTime(DateTime createdAt) {
+      final now = DateTime.now();
+      final diff = now.difference(createdAt);
+
+      if (diff.inMinutes < 60) return "${diff.inMinutes}m";
+      if (diff.inHours < 24) return "${diff.inHours}h";
+      if (diff.inDays < 30) return "${diff.inDays}d";
+      return "30d";
     }
 
     return Card(
       color: bgColor,
+      shape: cardShape,
+      elevation: cardElevation,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             buildProfileImage(profilePicture),
-            const SizedBox(height: 8),
-            Text(cardTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(body),
-            if (numberField != null) Text("Pickup Number: $numberField"),
-            Row(
-              children: [
-                if (onAccept != null)
-                  ElevatedButton(onPressed: onAccept, child: const Text("Accept")),
-                if (onReject != null)
-                  ElevatedButton(onPressed: onReject, child: const Text("Reject")),
-                if (onMarkAsRead != null)
-                  TextButton(onPressed: onMarkAsRead, child: const Text("Mark as read")),
-              ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(body),
+                  Text(
+                    formatRelativeTime(createdAt),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 5),
+                  if (onMarkAsRead != null)
+                    InkWell(
+                      onTap: notification.isRead ? null : onMarkAsRead,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          notification.isRead ? "Read" : "Mark as read",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: notification.isRead ? Colors.grey : Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -112,6 +114,87 @@ class NotificationCard extends StatelessWidget {
     );
   }
 }
+
+/// List widget with grouping + vanish rules
+class NotificationList extends StatelessWidget {
+  final List<NotificationCard> allCards;
+
+  const NotificationList({super.key, required this.allCards});
+
+  List<NotificationCard> _filterCards(List<NotificationCard> cards) {
+    final now = DateTime.now();
+
+    return cards.where((card) {
+      if (card.type == NotificationType.alert) {
+        // urgent → vanish after 1 day
+        return now.isBefore(card.createdAt.add(const Duration(days: 1)));
+      } else {
+        // normal → vanish after 30 days
+        return now.isBefore(card.createdAt.add(const Duration(days: 30)));
+      }
+    }).toList();
+  }
+
+  Map<String, List<NotificationCard>> _groupCards(List<NotificationCard> cards) {
+    final now = DateTime.now();
+    final Map<String, List<NotificationCard>> grouped = {};
+
+    for (var card in cards) {
+      final diff = now.difference(card.createdAt);
+
+      String sectionTitle;
+      if (diff.inDays == 0) {
+        sectionTitle = "Today";
+      } else if (diff.inDays == 1) {
+        sectionTitle = "Yesterday";
+      } else {
+        sectionTitle =
+        "${card.createdAt.day}-${card.createdAt.month}-${card.createdAt.year}";
+      }
+
+      grouped.putIfAbsent(sectionTitle, () => []).add(card);
+    }
+
+    return grouped;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleCards = _filterCards(allCards);
+    final groupedCards = _groupCards(visibleCards);
+    final sectionTitles = groupedCards.keys.toList();
+
+    return ListView.builder(
+      itemCount: sectionTitles.length,
+      itemBuilder: (context, index) {
+        final title = sectionTitles[index];
+        final cards = groupedCards[title]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            // Cards under this section
+            ...cards,
+          ],
+        );
+      },
+    );
+  }
+}
+
+
+
 
 
 

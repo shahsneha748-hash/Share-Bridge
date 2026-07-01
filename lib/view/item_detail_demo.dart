@@ -1,15 +1,23 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
+import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/saved_items.dart';
 import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
-class ItemDetailScreen extends StatelessWidget {
+class ItemDetailDemoScreen extends StatelessWidget {
   final Map<String, dynamic> item;
+  final String uid;
 
-  const ItemDetailScreen({super.key, required this.item});
+
+  const ItemDetailDemoScreen({super.key, required this.item, required this.uid});
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +30,8 @@ class ItemDetailScreen extends StatelessWidget {
 
 // ── View ──────────────────────────────────────────────────────────────────────
 
-class _ItemDetailView extends StatefulWidget {
+class _ItemDetailView extends StatelessWidget {
   const _ItemDetailView();
-
-  @override
-  State<_ItemDetailView> createState() => _ItemDetailViewState();
-}
-
-class _ItemDetailViewState extends State<_ItemDetailView> {
-  bool _isDonorBlocked = false;
 
   void _snack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -39,14 +40,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         backgroundColor: AppColors.darkGreen,
         duration: const Duration(seconds: 2),
       ),
-    );
-  }
-
-  void _shareItem(Map<String, dynamic> item) {
-    final title = item['title'] ?? 'an item';
-    final location = item['location'] ?? '';
-    Share.share(
-      'Check out "$title" on Share Bridge!${location.isNotEmpty ? '\n📍 $location' : ''}',
     );
   }
 
@@ -66,7 +59,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               ListTile(
                 leading: const Icon(Icons.flag_outlined,
                     color: AppColors.darkGreen),
-                title: const Text('Report'),
+                title: const Text('Report this item'),
                 onTap: () async {
                   Navigator.pop(ctx);
                   await vm.reportItem();
@@ -74,36 +67,46 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.bookmark_outline,
-                    color: AppColors.darkGreen),
+                leading: const Icon(Icons.bookmark_outline, color: AppColors.darkGreen),
                 title: const Text('Save for later'),
-                onTap: () {
-                  Navigator.pop(ctx);
+                onTap: () async {
+                  final vm = context.read<ItemDetailViewModel>();
+                  final item = vm.item; // <-- use the real item
+
+                  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+                  await FirebaseFirestore.instance
+                      .collection("users")
+                      .doc(uid)
+                      .collection("saved_items")
+                      .doc(item["id"]) // unique id from the item
+                      .set({
+                    "id": item["id"],
+                    "title": item["title"],
+                    "image": item["image"],
+                    "category": item["category"],
+                    "miles": item["miles"],
+                    "addedTime": item["addedTime"],
+                    "createdAt": FieldValue.serverTimestamp(),
+                  });
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
+                  );
+
                   _snack(context, 'Saved to your bookmarks');
                 },
               ),
+
               ListTile(
-                leading: Icon(
-                  Icons.block,
-                  color: _isDonorBlocked ? AppColors.darkGreen : Colors.redAccent,
-                ),
-                title: Text(
-                  _isDonorBlocked ? 'Unblock donor' : 'Block donor',
-                  style: TextStyle(
-                    color: _isDonorBlocked ? AppColors.darkGreen : Colors.redAccent,
-                  ),
-                ),
+                leading: const Icon(Icons.block, color: Colors.redAccent),
+                title: const Text('Block donor',
+                    style: TextStyle(color: Colors.redAccent)),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  if (_isDonorBlocked) {
-                    await vm.blockDonor();
-                    setState(() => _isDonorBlocked = false);
-                    _snack(context, 'Donor unblocked');
-                  } else {
-                    await vm.blockDonor();
-                    setState(() => _isDonorBlocked = true);
-                    _snack(context, 'Donor blocked');
-                  }
+                  await vm.blockDonor();
+                  _snack(context, 'Donor blocked');
                 },
               ),
               const SizedBox(height: 8),
@@ -130,8 +133,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.grey)),
+            child:
+            const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -185,7 +188,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         backgroundColor: Colors.white,
         body: Column(
           children: [
-
+            // ── Header ──────────────────────────────────────────────────────
             Container(
               width: double.infinity,
               color: AppColors.darkGreen,
@@ -220,7 +223,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => _shareItem(item),  // ← changed
+                        onPressed: () =>
+                            _snack(context, 'Sharing link copied!'),
                         icon: const Icon(Icons.share,
                             color: AppColors.cream, size: 22),
                       ),
@@ -256,7 +260,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                         child: _DonorCard(
                           item: item,
                           isFollowing: vm.isFollowing,
-                          isBlocked: _isDonorBlocked,
                           onFollowTap: () => _handleFollowTap(context),
                         ),
                       ),
@@ -267,6 +270,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Description
                           const _SectionHeader('Description'),
                           const SizedBox(height: 10),
                           Container(
@@ -291,11 +295,13 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
 
                           const SizedBox(height: 22),
 
+                          // Feature Grid
                           if (vm.features.isNotEmpty)
                             _FeatureGrid(features: vm.features),
 
                           const SizedBox(height: 22),
 
+                          // Pickup Location
                           Row(
                             mainAxisAlignment:
                             MainAxisAlignment.spaceBetween,
@@ -309,8 +315,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                                   color: AppColors.backgroundGreen,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: AppColors.paleGreen,
-                                      width: 1),
+                                      color: AppColors.paleGreen, width: 1),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -334,6 +339,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                           ),
                           const SizedBox(height: 10),
 
+                          // Address card
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
@@ -393,6 +399,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                           ),
                           const SizedBox(height: 12),
 
+                          // Map Preview
                           _MapPreview(
                               onTap: () => _handleOpenMaps(context)),
 
@@ -407,12 +414,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
 
             // ── Bottom Action Bar ────────────────────────────────────────────
             _BottomActionBar(
+              uid: FirebaseAuth.instance.currentUser!.uid,
               available: vm.available,
               onMessageTap: () =>
                   _snack(context, 'Messaging — Coming Soon'),
-              onRequestTap: vm.available && !_isDonorBlocked
-                  ? () => _showRequestDialog(context)
-                  : null,
+              onRequestTap: vm.available
+                  ? () => _showRequestDialog(context) : null,
             ),
           ],
         ),
@@ -493,7 +500,7 @@ class _HeroImage extends StatelessWidget {
           width: double.infinity,
           height: 320,
           child: Image.asset(
-            item['image'],
+            item['image']?? 'assets/images/placeholder.png',
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               color: AppColors.paleGreen,
@@ -599,127 +606,120 @@ class _HeroImage extends StatelessWidget {
 class _DonorCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final bool isFollowing;
-  final bool isBlocked;
   final VoidCallback onFollowTap;
 
   const _DonorCard({
     required this.item,
     required this.isFollowing,
-    required this.isBlocked,
     required this.onFollowTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: isBlocked ? 0.4 : 1.0,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundGreen,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.paleGreen, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.darkText.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.darkGreen,
-                  child: Text(
-                    (item['donorName'] ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 19),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundGreen,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.paleGreen, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.darkText.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.darkGreen,
+                child: Text(
+                  (item['donorName'] ?? 'U')[0].toUpperCase(),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 19),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: AppColors.onlineDot,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: AppColors.backgroundGreen, width: 2),
                   ),
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: AppColors.onlineDot,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.backgroundGreen, width: 2),
+              ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['donorName'] ?? 'Unknown',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: AppColors.darkText),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    const Icon(Icons.star,
+                        color: AppColors.ratingStar, size: 14),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${item['donorRating'] ?? 'N/A'}',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkText),
                     ),
-                  ),
+                    Text(
+                      '  ·  ${item['donorDonations'] ?? '0'} donations',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.lightGreen),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['donorName'] ?? 'Unknown',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: AppColors.darkText),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(Icons.star,
-                          color: AppColors.ratingStar, size: 14),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${item['donorRating'] ?? 'N/A'}',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkText),
-                      ),
-                      Text(
-                        '  ·  ${item['donorDonations'] ?? '0'} donations',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.lightGreen),
-                      ),
-                    ],
-                  ),
-                ],
+          ),
+          GestureDetector(
+            onTap: onFollowTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 18, vertical: 9),
+              decoration: BoxDecoration(
+                color: isFollowing ? Colors.white : AppColors.darkGreen,
+                borderRadius: BorderRadius.circular(20),
+                border:
+                Border.all(color: AppColors.darkGreen, width: 1.4),
               ),
-            ),
-            if (!isBlocked)
-              GestureDetector(
-                onTap: onFollowTap,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: isFollowing ? Colors.white : AppColors.darkGreen,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: AppColors.darkGreen, width: 1.4),
-                  ),
-                  child: Text(
-                    isFollowing ? 'Following' : 'Follow',
-                    style: TextStyle(
-                      color: isFollowing
-                          ? AppColors.darkGreen
-                          : Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              child: Text(
+                isFollowing ? 'Following' : 'Follow',
+                style: TextStyle(
+                  color:
+                  isFollowing ? AppColors.darkGreen : Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -922,11 +922,13 @@ class _MapDecorPainter extends CustomPainter {
 }
 
 class _BottomActionBar extends StatelessWidget {
+  final String uid;
   final bool available;
   final VoidCallback onMessageTap;
   final VoidCallback? onRequestTap;
 
   const _BottomActionBar({
+    required this.uid,
     required this.available,
     required this.onMessageTap,
     required this.onRequestTap,
@@ -992,7 +994,7 @@ class _BottomActionBar extends StatelessWidget {
                   height: _buttonHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    gradient: onRequestTap != null
+                    gradient: available
                         ? const LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -1002,11 +1004,9 @@ class _BottomActionBar extends StatelessWidget {
                       ],
                     )
                         : null,
-                    color: onRequestTap == null
-                        ? Colors.grey.shade400
-                        : null,
+                    color: available ? null : Colors.grey.shade400,
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: onRequestTap != null
+                    boxShadow: available
                         ? [
                       BoxShadow(
                         color: AppColors.darkText.withOpacity(0.3),
@@ -1019,17 +1019,50 @@ class _BottomActionBar extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.volunteer_activism,
-                          color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        onRequestTap != null
-                            ? 'Request Item'
-                            : 'Not Available',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold),
+                      Center(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.real_estate_agent_sharp),
+                          label: const Text("Request Item"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0XFF435944),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () async {
+                            final vm = context.read<NotificationViewModel>();
+                            final currentUid = uid;
+
+                            final senderInfo = await vm.getUserById(currentUid);
+
+                            // Replace with the UID of the post owner (the donor)
+                            final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
+
+                            final model = NotificationModel(
+                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                              senderId: currentUid,                 // requester
+                              senderName: senderInfo.fullName,
+                              profilePicture: senderInfo.profilePicture,
+                              receiverId: receiverId,               // donor
+                              type: NotificationType.request,
+                              body: "${senderInfo.fullName} has requested for your donation",
+                              createdAt: DateTime.now(),
+                              isRead: false,
+                            );
+
+                            final success = await vm.addNotification(model);
+
+                            if (success) {
+                              await NotificationService.display(
+                                body: model.body,
+                                createdAt: model.createdAt,
+                                payload: "request_system_screen",
+                                buildContext: context,
+                              );
+                              Fluttertoast.showToast(msg: "Notification sent successfully");
+                            } else {
+                              Fluttertoast.showToast(msg: "Failed to send notification");
+                            }
+                          },
+                        ),
                       ),
                     ],
                   ),

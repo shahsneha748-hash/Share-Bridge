@@ -7,7 +7,7 @@ abstract class NotificationRepo {
   Future<NotificationSettings> requestPermission();
 
   // Get FCM token
-  Future<String?> getFcmToken();
+  Future<String?> getFcmToken(String uid);
 
   // Send push notification
   Future<bool> sendPushNotification({
@@ -34,7 +34,7 @@ abstract class NotificationRepo {
 
   Future<void> deleteNotification(String id);
 
-  Future<void> sendNotificationToUser(String token, String title, String body);
+  Future<void> sendNotification(NotificationModel model);
 
   Future<void> saveUserFcmToken();
 
@@ -42,9 +42,9 @@ abstract class NotificationRepo {
 
   Future<List<NotificationModel>> getAllNotifications();
 
-  Future<String?> getFcmTokenForUser(String receiverId);
-
   Future<void> markAsRead(String id);
+
+  Future<void> updateType(String id, String typeString);
 }
 
 

@@ -10,6 +10,8 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../view/request_system_screen.dart';
+
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse response) {
   debugPrint("Background notification tapped: ${response.payload}");
@@ -23,7 +25,6 @@ class NotificationService {
 
   static BuildContext? context;
 
-  /// Download and save file (for big picture notifications)
   static Future<String> _downloadAndSaveFile(String url, String fileName) async {
     final Directory directory = await getApplicationDocumentsDirectory();
     final String filePath = '${directory.path}/$fileName';
@@ -33,26 +34,23 @@ class NotificationService {
     return filePath;
   }
 
-  /// Display FCM notification
   static Future<void> displayFcm({
     required RemoteNotification notification,
     BuildContext? buildContext,
     String? payload,
   }) async {
     try {
-      if (buildContext != null) {
-        context = buildContext;
-      }
+      if (buildContext != null) context = buildContext;
 
-      var styleinformationDesign;
+      BigPictureStyleInformation? styleinformationDesign;
       if (notification.android?.imageUrl != null) {
         final bigpicture = await _downloadAndSaveFile(
             notification.android!.imageUrl!, 'bigPicture');
         final smallpicture = await _downloadAndSaveFile(
             notification.android!.imageUrl!, 'smallIcon');
         styleinformationDesign = BigPictureStyleInformation(
-          FilePathAndroidBitmap(smallpicture),
-          largeIcon: FilePathAndroidBitmap(bigpicture),
+          FilePathAndroidBitmap(bigpicture),
+          largeIcon: FilePathAndroidBitmap(smallpicture),
         );
       }
 
@@ -76,37 +74,36 @@ class NotificationService {
         notificationDetails: notificationDetails,
         payload: payload,
       );
-    } on Exception catch (e) {
+    } catch (e) {
       print("Notification error: $e");
     }
   }
-// Initialize plugin only (no permission here)
-  static Future<void> initialize() async {
-    const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings("@mipmap/ic_launcher"),
+
+  static Future<void> initialize(GlobalKey<NavigatorState> navigatorKey) async {
+    const settings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
     );
+
     await _notificationsPlugin.initialize(
-      settings: initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print("Notification tapped: ${response.payload}");
-        if (response.payload != null && context != null) {
-          Navigator.of(context!).pushNamed(response.payload!);
+      settings: settings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        if (response.payload == "request_system_screen") {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(builder: (_) => RequestSystemScreen()),
+          );
         }
       },
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground, // use top-level function
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
+
   }
 
-  /// Request permission only once after login/signup
   static Future<void> requestPermissionOnce() async {
     final prefs = await SharedPreferences.getInstance();
     final asked = prefs.getBool("notificationsAsked") ?? false;
 
-    if (asked) {
-      print("Permission already requested before, skipping.");
-      return;
-    }
+    if (asked) return;
 
     final settings = await _firebaseMessaging.requestPermission(
       alert: true,
@@ -114,20 +111,12 @@ class NotificationService {
       sound: true,
     );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('Permission granted by user');
-    } else if (settings.authorizationStatus ==
-        AuthorizationStatus.provisional) {
-      print('Provisional permission granted');
-    } else {
+    if (settings.authorizationStatus == AuthorizationStatus.denied) {
       AppSettings.openAppSettings();
-      print('User denied the permission');
     }
 
-    // Save flag so we don’t ask again
     await prefs.setBool("notificationsAsked", true);
 
-    // Save initial token
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final token = await FirebaseMessaging.instance.getToken();
@@ -139,11 +128,9 @@ class NotificationService {
           "fcmToken": token,
           "updatedAt": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        print("Initial token saved for ${user.uid}: $token");
       }
     }
 
-    // Listen for token refresh
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -154,14 +141,10 @@ class NotificationService {
           "fcmToken": newToken,
           "updatedAt": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        print("Token refreshed for ${user.uid}: $newToken");
       }
     });
   }
 
-
-
-  /// Load image from assets
   static Future<String> getImageFilePathFromAssets(
       String asset, String filename) async {
     final byteData = await rootBundle.load(asset);
@@ -172,20 +155,17 @@ class NotificationService {
     return file.path;
   }
 
-  /// Display custom notification (with asset images)
   static Future<void> display({
-    required String title,
     required String body,
     String? payload,
     BuildContext? buildContext,
     String? image,
     String? logo,
+    required DateTime createdAt,
   }) async {
-    if (buildContext != null) {
-      context = buildContext;
-    }
+    if (buildContext != null) context = buildContext;
 
-    var styleinformationDesign;
+    BigPictureStyleInformation? styleinformationDesign;
     if (image != null && logo != null) {
       try {
         var imageLoader = await getImageFilePathFromAssets(image, 'bigpicture');
@@ -217,10 +197,18 @@ class NotificationService {
 
     await _notificationsPlugin.show(
       id: id,
-      title: title,
+      title: "Notification",
       body: body,
       notificationDetails: notificationDetails,
       payload: payload,
     );
   }
 }
+
+
+
+
+
+
+
+

@@ -1,100 +1,114 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sharebridge/components/notification_card.dart';
+import 'package:sharebridge/components/notification_card.dart'; // use the clean card
+import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/request_system_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
+import '../model/notification_model.dart'; // make sure this imports your enum
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get ViewModel from Provider
     final vm = context.watch<NotificationViewModel>();
     final grouped = vm.groupNotifications();
-    final sections = ["Urgent", "Today", "PastDates"];
+    final sections = ["Urgent", "Today", "Yesterday"];
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Notifications"),
-          backgroundColor: Color(0XFF435944),
-          actions: [
-          ElevatedButton(
-          onPressed: () {
-        // Call your ViewModel method to mark all as read
-        final vm = context.read<NotificationViewModel>();
-    vm.markAllAsRead();
-  },
-    style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white, // button color
-    foregroundColor: const Color(0XFF435944), // text color
-    ),
-    child: const Text("Mark as Read"),
-    ),
-    ],
-      ),
-      body: ListView.builder(
-        itemCount: sections.length,
-        itemBuilder: (context, sectionIndex) {
-          final section = sections[sectionIndex];
-          final items = grouped[section]!;
-
-          if (items.isEmpty) return const SizedBox.shrink();
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Section header
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  section == "PastDates" ? "Previous Days" : section,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: const Text(
+          "Notifications",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 28,
+          ),
+        ),
+        backgroundColor: const Color(0XFF435944),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0XFFb9c7b4),
+                foregroundColor: const Color(0XFF435944),
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              // Cards for this section
-              Column(
-                children: items.map((n) {
-                  NotificationType type;
-                  switch (n.type) {
-                    case "request":
-                      type = NotificationType.request;
-                      break;
-                    case "pickup":
-                      type = NotificationType.pickup;
-                      break;
-                    case "normal alert":
-                      type = NotificationType.normal_alert;
-                      break;
-                    case "alert":
-                      type = section == "Urgent"
-                          ? NotificationType.alert
-                          : NotificationType.normal_alert;
-                      break;
-                    default:
-                      type = NotificationType.request;
-                  }
-
-                  return NotificationCard(
-                    type: type,
-                    title: n.title ?? "Notification",   // required
-                    body: n.body,         // required
-                    profilePicture: n.profilePicture,   // optional
-                    numberField: n.pickupNumber,
-                    onAccept: () =>
-                        vm.sendNotification("accepted", n.receiverId),
-                    onReject: () =>
-                        vm.sendNotification("rejected", n.receiverId),
-                    onMarkAsRead: () => vm.markAsRead(n.id),
-                  );
-                }).toList(),
+              onPressed: () {
+                context.read<NotificationViewModel>().markAllAsRead();
+              },
+              child: const Text(
+                "Mark as Read",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(right: 10, left: 10),
+        child: ListView.builder(
+          itemCount: sections.length,
+          itemBuilder: (context, sectionIndex) {
+            final section = sections[sectionIndex];
+            final items = grouped[section] ?? [];
+
+            if (items.isEmpty) return const SizedBox.shrink();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Section header
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    section,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // Cards for this section
+                Column(
+                  children: items.map((n) {
+                    return InkWell(
+                      onTap: () {
+                        if (n.type == NotificationType.request) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RequestSystemScreen(),
+                            ),
+                          );
+                        }
+                      },
+                      child: NotificationCard(
+                        notification: n,
+                        type: n.type,
+                        body: n.body ?? "",
+                        createdAt: n.createdAt,
+                        profilePicture: n.profilePicture ?? "",
+                        onMarkAsRead: () => vm.markAsRead(n.id),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 }
+
+
 
 
 

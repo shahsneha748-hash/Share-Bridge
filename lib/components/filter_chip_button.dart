@@ -22,7 +22,7 @@ class FilterChipButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.darkGreen : AppColors.filterChipBg,
+          color: active ? AppColors.darkGreen : AppColors.backgroundGreen, // ← changed
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(

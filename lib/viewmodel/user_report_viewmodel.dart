@@ -120,8 +120,8 @@ class UserReportViewModel extends ChangeNotifier {
         return UserModel.fromMap(data);
       })
           .where((u) {
-        debugPrint('User id: ${u.id}, currentUid: $currentUid');
-        return u.id != currentUid;
+        debugPrint('User id: ${u.uid}, currentUid: $currentUid');
+        return u.uid != currentUid;
       })
           .toList();
 
@@ -233,7 +233,7 @@ class UserReportViewModel extends ChangeNotifier {
       await _repo.submitReport({
         'reporterId': isAnonymous ? 'anonymous' : uid,
         'reporterName': reporterName,
-        'reportedId': selectedUser?.id ?? '',
+        'reportedId': selectedUser?.uid ?? '',
         'reportedName': selectedUser?.fullName ?? '',
         'reportType': selectedType,
         'reason': selectedReason,
