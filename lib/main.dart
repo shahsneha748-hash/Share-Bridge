@@ -11,6 +11,7 @@ import 'package:sharebridge/repo/user_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
 // import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/login_screen.dart';
+import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 // import 'package:sharebridge/view/dashboard_screen.dart';
 // import 'package:sharebridge/view/item_detail_screen.dart';
@@ -67,7 +68,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
+      home: NavigationScreen(),
     );
   }
 }

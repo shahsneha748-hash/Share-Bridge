@@ -51,8 +51,14 @@ class _DashboardView extends StatelessWidget {
     final vm = context.read<DashboardViewModel>();
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
-    ).then((_) => vm.refresh());
+      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)
+      ),
+    );
+  }
+
+  void _openVolunteer(BuildContext context) {
+    // TODO: hook this up to teammate's Volunteer screen
+    _showSnackbar(context, 'Volunteer — Coming Soon');
   }
 
   Widget _notificationBell(BuildContext context) {
@@ -125,10 +131,8 @@ class _DashboardView extends StatelessWidget {
 
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _ImpactBanner(
-                            itemsShared: vm.communityItemsShared,
-                            progress: vm.communityProgress,
-                            weeklyGoal: vm.communityWeeklyGoal,
+                          child: _VolunteerBanner(
+                            onTap: () => _openVolunteer(context),
                           ),
                         ),
 
@@ -284,100 +288,86 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ── Impact Banner ─────────────────────────────────────────────────────────────
+// ── Volunteer Banner ─────────────────────────────────────────────────────────
 
-class _ImpactBanner extends StatelessWidget {
-  final int itemsShared;
-  final double progress;
-  final int weeklyGoal;
-
-  const _ImpactBanner({
-    required this.itemsShared,
-    required this.progress,
-    required this.weeklyGoal,
-  });
+class _VolunteerBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _VolunteerBanner({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.darkGreen,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Community Impact',
-                style: TextStyle(
-                  color: AppColors.paleGreen,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.darkGreen,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGreen,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Volunteer',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.lightGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'This Week',
+                const SizedBox(height: 1),
+                const Text(
+                  'Up for volunteering?',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$itemsShared',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: Text(
-                  'items shared nearby',
-                  style: TextStyle(color: AppColors.paleGreen, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: AppColors.lightGreen.withOpacity(0.5),
-              valueColor:
-              const AlwaysStoppedAnimation<Color>(AppColors.paleGreen),
+              ],
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Goal: $weeklyGoal items',
-            style: const TextStyle(color: AppColors.paleGreen, fontSize: 11),
-          ),
-        ],
+            const SizedBox(height: 10),
+            const Text(
+              'Lend a hand with pickups, deliveries, or donation drives in your community.',
+              style: TextStyle(
+                color: AppColors.paleGreen,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: const [
+                Text(
+                  'Get involved',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 6),
+                Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -393,7 +383,7 @@ class _FeaturedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool available = item['available'] == true;
+    final bool available = !(item['isDonated']) == true;
     return GestureDetector(
       onTap: onTap,
       child: Container(

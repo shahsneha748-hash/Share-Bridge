@@ -76,10 +76,10 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               ListTile(
                 leading: const Icon(Icons.bookmark_outline,
                     color: AppColors.darkGreen),
-                title: const Text('Save for later'),
+                title: const Text('Add to wishlist'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _snack(context, 'Saved to your bookmarks');
+                  _snack(context, 'Add to your wishlist');
                 },
               ),
               ListTile(
