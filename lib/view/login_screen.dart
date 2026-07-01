@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:sharebridge/view/adminnavigationscreen_demo.dart';
-import 'package:sharebridge/view/dashboard_screen.dart';
-import 'package:sharebridge/view/dashboardscreen_demo.dart';
 import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
@@ -242,18 +239,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               final role = userDoc.data()?['role'];
 
-                              // 🔑 Step 4: Navigate based on role
-                              if (role == 'admin') {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
-                                );
-                              } else {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const NavigationScreen()),
-                                );
-                              }
+                              // ✅ Navigate on success
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const Homescreentest(uid: '')),
+                              );
+
+
+                              // // 🔑 Step 4: Navigate based on role
+                              // if (role == 'admin') {
+                              //   Navigator.pushReplacement(
+                              //     context,
+                              //     MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
+                              //   );
+                              // } else {
+                              //   Navigator.pushReplacement(
+                              //     context,
+                              //     MaterialPageRoute(builder: (_) => const NavigationScreen()),
+                              //   );
+                              // }
 
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {
