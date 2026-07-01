@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/food_alert_screen.dart';
-import 'package:sharebridge/view/item_detail_demo.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/pickup_notification_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
@@ -158,7 +157,7 @@ class _HomescreentestState extends State<Homescreentest> {
                 senderId: currentUid,
                 senderName: senderInfo.fullName,
                 profilePicture: senderInfo.profilePicture,
-                receiverId: currentUid,
+                receiverId: 'BmbWYHtwszNrTbRiVgRovbKeEZk2',
                 type: NotificationType.alert,
                 body: "${senderInfo.fullName} says: Food item expires today",
                 createdAt: DateTime.now(),
@@ -254,9 +253,9 @@ class _HomescreentestState extends State<Homescreentest> {
           ),
           SizedBox(width: 20,),
 
-          ElevatedButton(onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ItemDetailDemoScreen(item: {}, uid: '',),));
-          }, child: Text("Item Detail")),
+          // ElevatedButton(onPressed: (){
+          //   Navigator.push(context, MaterialPageRoute(builder: (context) => ItemDetailDemoScreen(item: {}, uid: '',),));
+          // }, child: Text("Item Detail")),
 
         ],
       ),
