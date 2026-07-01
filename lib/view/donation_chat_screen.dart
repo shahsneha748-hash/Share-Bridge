@@ -5,7 +5,18 @@ import '../model/message_model.dart';
 import '../components/quick_chip.dart';
 
 class DonationChatScreen extends StatelessWidget {
-  const DonationChatScreen({super.key});
+  final String donorId;
+  final String donorName;
+  final String itemName;
+  final String chatId;
+
+  DonationChatScreen({
+    super.key,
+    required this.donorId,
+    required this.donorName,
+    required this.itemName,
+    required this.chatId,
+  });
 
   static const Color _topBarColor = Color(0xFF2D5A14);
   static const Color _bgColor = Color(0xFFEDF0E8);
@@ -15,7 +26,11 @@ class DonationChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ChatViewModel(),
+      create: (_) => ChatViewModel(
+        chatId: chatId,
+        donorId: donorId,
+        donorName: donorName,
+      ),
       child: Scaffold(
         backgroundColor: _bgColor,
         body: Column(

@@ -1,282 +1,183 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../model/create_donation_model.dart';
 import '../repo/create_donation_repo.dart';
+import '../repo/image_repo.dart';
 
 class CreateDonationViewModel extends ChangeNotifier {
-  final DonationRepo _repo;
+  final CreateDonationRepository _repo;
+  final ImageRepo _imageRepo;
 
-  CreateDonationViewModel(this._repo) {
-    // FIX: controllers notify the VM internally — no onChanged needed in UI
-    firstNameController.addListener(notifyListeners);
-    itemNameController.addListener(notifyListeners);
-    descriptionController.addListener(notifyListeners);
+  CreateDonationViewModel(this._repo, this._imageRepo) {
+    model.userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   }
 
-  // ── Text Controllers ──────────────────────────────────────
-  final firstNameController   = TextEditingController();
-  final lastNameController    = TextEditingController();
-  final locationController    = TextEditingController();
-  final itemNameController    = TextEditingController();
-  final descriptionController = TextEditingController();
-  final expiresController     = TextEditingController();
+  CreateDonationModel model = CreateDonationModel();
 
-  // ── State ─────────────────────────────────────────────────
-  String     _condition  = '';
-  String     _category   = '';
-  List<File> _photos     = [];
-  bool       _submitted  = false;
-  bool       _isDonated  = false;
-  bool       _confirmDel = false;
-  bool       _isLoading  = false;
-  bool       _isDisposed = false;
-  String?    _errorMessage;
-  Timer?     _deleteTimer;
+  List<String> get images => model.images;
 
-  // ── Getters ───────────────────────────────────────────────
-  String     get condition          => _condition;
-  String     get category           => _category;
-  List<File> get photos             => List.unmodifiable(_photos);
-  bool       get submitted          => _submitted;
-  bool       get isDonated          => _isDonated;
-  bool       get confirmDel         => _confirmDel;
-  bool       get isLoading          => _isLoading;
-  String?    get errorMessage       => _errorMessage;
+  bool loading = false;
+  bool uploadingImage = false;
 
-  // FIX: expose description length as a clean getter for the counter UI
-  int get descriptionLength => descriptionController.text.length;
+  // ================= CATEGORIES =================
+  final List<Map<String, dynamic>> categories = const [
+    {'id': 'food', 'label': 'Food', 'icon': Icons.restaurant},
+    {'id': 'stationery', 'label': 'Stationery', 'icon': Icons.edit},
+    {'id': 'clothes', 'label': 'Clothes', 'icon': Icons.checkroom},
+    {'id': 'other', 'label': 'Other', 'icon': Icons.category},
+  ];
 
-  // FIX: canSubmit guards against double-submit while loading
-  bool get canSubmit =>
-      firstNameController.text.isNotEmpty &&
-          itemNameController.text.isNotEmpty &&
-          _category.isNotEmpty &&
-          !_isLoading;
+  // ================= CONDITIONS =================
+  final List<String> conditions = const [
+    'New',
+    'Gently Used',
+    'Used'
+  ];
 
-  // ── Safe notify ───────────────────────────────────────────
-  void _notify() {
-    if (!_isDisposed) notifyListeners();
+  // ================= GETTERS =================
+  bool get isFood => model.category == 'food';
+
+  // ================= SETTERS =================
+
+  void setLocation(String value) {
+    model.location = value;
+    notifyListeners();
   }
 
-  // ── Setters ───────────────────────────────────────────────
-  void setCondition(String value) {
-    _condition = value;
-    _notify();
+  void setItemName(String value) {
+    model.itemName = value;
+    notifyListeners();
+  }
+
+  void setDescription(String value) {
+    model.description = value;
+    notifyListeners();
+  }
+
+  void setExpiry(String value) {
+    model.expiryDate = value;
+    notifyListeners();
   }
 
   void setCategory(String value) {
-    _category = value;
-    if (value != 'food') expiresController.clear();
-    _notify();
+    model.category = value;
+
+    // reset subcategory when category changes
+    model.subcategory = '';
+
+    notifyListeners();
   }
 
-  // FIX: toggleDonated kept for the Create screen (no doc id yet).
-  // Use markAsDonated(id) only after the document has been saved.
-  void toggleDonated() {
-    _isDonated = !_isDonated;
-    _notify();
+  void setSubcategory(String value) {
+    model.subcategory = value;
+    notifyListeners();
   }
 
-  void removePhoto(int index) {
-    _photos.removeAt(index);
-    _notify();
+  void setCondition(String value) {
+    model.condition = value;
+    notifyListeners();
   }
 
-  // ── Load existing donation (for Edit screen) ──────────────
-  // FIX: seeds _isDonated from real data, not a blind toggle
-  void loadDonation(DonationModel donation) {
-    firstNameController.text   = donation.firstName;
-    lastNameController.text    = donation.lastName;
-    locationController.text    = donation.location;
-    itemNameController.text    = donation.itemName;
-    descriptionController.text = donation.description;
-    expiresController.text     = donation.expiresAt ?? '';
-    _condition  = donation.condition;
-    _category   = donation.category;
-    _isDonated  = donation.isDonated;
-    _photos     = [];
-    _notify();
+  void setUnit(String value) {
+    model.unit = value;
+    notifyListeners();
   }
 
-  // ── Photo Picker ──────────────────────────────────────────
-  // FIX: appends to existing photos instead of replacing them
-  Future<void> pickPhotos() async {
-    final remaining = 5 - _photos.length;
-    if (remaining <= 0) return;
+  void setWeight(String value) {
+    model.weight = value;
+    notifyListeners();
+  }
 
-    final picked = await ImagePicker().pickMultiImage(imageQuality: 85);
-    if (picked.isNotEmpty) {
-      final newFiles = picked.take(remaining).map((x) => File(x.path));
-      _photos = [..._photos, ...newFiles];
-      _notify();
+  void setNote(String value) {
+    model.note = value;
+    notifyListeners();
+  }
+
+  void toggleDonation() {
+    model.isDonated = !model.isDonated;
+    notifyListeners();
+  }
+
+  // ================= PORTION =================
+
+  void incrementPortion() {
+    model.portionCount++;
+    notifyListeners();
+  }
+
+  void decrementPortion() {
+    if (model.portionCount > 1) {
+      model.portionCount--;
+      notifyListeners();
     }
   }
 
-  // ── Date Picker ───────────────────────────────────────────
-  Future<void> pickExpiry(BuildContext context) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now.add(const Duration(days: 7)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF3A6B1E),
-            onPrimary: Colors.white,
-          ),
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null) {
-      const months = ['Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'];
-      final day = picked.day.toString().padLeft(2, '0');
-      expiresController.text =
-      '${months[picked.month - 1]} $day, ${picked.year}';
-      _notify();
-    }
+  // ================= TAGS =================
+
+  void addTag(String tag) {
+    if (tag.trim().isEmpty) return;
+    model.tags = [...model.tags, tag.trim()];
+    notifyListeners();
   }
 
-  // ── Delete double-tap confirmation ────────────────────────
-  // FIX: uses cancelable Timer to prevent post-dispose notifyListeners crash
-  /// Returns true when confirmed — caller should Navigator.pop()
-  bool handleDelete() {
-    if (!_confirmDel) {
-      _confirmDel = true;
-      _notify();
-      _deleteTimer?.cancel();
-      _deleteTimer = Timer(const Duration(seconds: 3), () {
-        _confirmDel = false;
-        _notify();
-      });
-      return false;
-    }
-    _deleteTimer?.cancel();
-    return true;
+  void removeTag(String tag) {
+    model.tags = model.tags.where((t) => t != tag).toList();
+    notifyListeners();
   }
 
-  // ── Mark as donated (after doc exists — Edit screen) ─────
-  // FIX: takes currentValue so toggle is always based on real Firestore state
-  Future<void> markAsDonated(String id, {required bool currentValue}) async {
-    final newValue = !currentValue;
-    _isDonated = newValue;
-    _notify();
-    try {
-      await _repo.markAsDonated(id, newValue);
-    } catch (e) {
-      _isDonated = currentValue;
-      _errorMessage = 'Failed to update donation status.';
-      _notify();
-    }
-  }
+  // ================= IMAGE UPLOAD =================
 
-  // ── Submit (Create) ───────────────────────────────────────
-  Future<void> submit() async {
-    if (!canSubmit) return;
+  Future<void> addImage(String filePath) async {
+    if (model.images.length >= 5) return;
 
-    _isLoading    = true;
-    _errorMessage = null;
-    _notify();
+    uploadingImage = true;
+    notifyListeners();
 
     try {
-      final List<String> uploadedUrls = await _uploadPhotos(_photos);
-
-      final donation = DonationModel(
-        // FIX: no client-side UUID — repo.createDonation uses Firestore .add()
-        id:          '',
-        firstName:   firstNameController.text.trim(),
-        lastName:    lastNameController.text.trim(),
-        location:    locationController.text.trim(),
-        itemName:    itemNameController.text.trim(),
-        condition:   _condition,
-        category:    _category,
-        description: descriptionController.text.trim(),
-        photoUrls:   uploadedUrls,
-        isDonated:   _isDonated,
-        createdAt:   DateTime.now(),
-        expiresAt:   expiresController.text.isEmpty
-            ? null
-            : expiresController.text,
-      );
-
-      await _repo.createDonation(donation);
-      _submitted = true;
+      final url = await _imageRepo.uploadImage(filePath);
+      model.images.add(url);
     } catch (e) {
-      _errorMessage = 'Failed to post donation. Please try again.';
-    } finally {
-      _isLoading = false;
-      _notify();
+      debugPrint("Image upload error: $e");
     }
+
+    uploadingImage = false;
+    notifyListeners();
   }
 
-  // ── Photo Upload Helper ───────────────────────────────────
-  Future<List<String>> _uploadPhotos(List<File> photos) async {
-    if (photos.isEmpty) return [];
+  void removeImage(String imageUrl) {
+    model.images =
+        model.images.where((img) => img != imageUrl).toList();
+    notifyListeners();
+  }
+
+  // ================= VALIDATION =================
+
+  bool get canSubmit {
+    return model.location.isNotEmpty &&
+        model.itemName.isNotEmpty &&
+        model.category.isNotEmpty &&
+        model.condition.isNotEmpty;
+  }
+
+  // ================= SUBMIT =================
+
+  Future<bool> submit() async {
+    loading = true;
+    notifyListeners();
+
+    bool success = false;
+
     try {
-      // TODO: implement Firebase Storage upload, e.g.:
-      // final urls = <String>[];
-      // for (var i = 0; i < photos.length; i++) {
-      //   final ref = FirebaseStorage.instance
-      //       .ref('donations/${DateTime.now().millisecondsSinceEpoch}/$i');
-      //   await ref.putFile(photos[i]);
-      //   urls.add(await ref.getDownloadURL());
-      // }
-      // return urls;
-      throw UnimplementedError('Photo upload not yet implemented.');
+      success = await _repo.submitDonation(model);
     } catch (e) {
-      throw Exception('Photo upload failed: $e');
+      debugPrint("Submit error: $e");
+      success = false;
     }
-  }
 
-  // ── Delete existing donation ──────────────────────────────
-  Future<void> deleteDonation(String id) async {
-    try {
-      await _repo.deleteDonation(id);
-    } catch (e) {
-      _errorMessage = 'Failed to delete donation.';
-      _notify();
-    }
-  }
+    loading = false;
+    notifyListeners();
 
-  // ── Reset (Create Another) ────────────────────────────────
-  void reset() {
-    firstNameController.clear();
-    lastNameController.clear();
-    locationController.clear();
-    itemNameController.clear();
-    descriptionController.clear();
-    expiresController.clear();
-    _condition    = '';
-    _category     = '';
-    _photos       = [];
-    _submitted    = false;
-    _isDonated    = false;
-    _confirmDel   = false;
-    _isLoading    = false;
-    _errorMessage = null;
-    _deleteTimer?.cancel();
-    _notify();
-  }
-
-  // ── Dispose ───────────────────────────────────────────────
-  @override
-  void dispose() {
-    _isDisposed = true;
-    _deleteTimer?.cancel();
-    firstNameController.removeListener(notifyListeners);
-    itemNameController.removeListener(notifyListeners);
-    descriptionController.removeListener(notifyListeners);
-    firstNameController.dispose();
-    lastNameController.dispose();
-    locationController.dispose();
-    itemNameController.dispose();
-    descriptionController.dispose();
-    expiresController.dispose();
-    super.dispose();
+    return success;
   }
 }

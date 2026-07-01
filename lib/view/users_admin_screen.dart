@@ -263,6 +263,7 @@ class _UserCard extends StatelessWidget {
       case UserRole.donor:     return AppColors.blueText;
       case UserRole.receiver:  return AppColors.amberText;
       case UserRole.volunteer: return AppColors.successText;
+      case UserRole.user:      return AppColors.textMuted;
     }
   }
 
@@ -271,6 +272,7 @@ class _UserCard extends StatelessWidget {
       case UserRole.donor:     return AppColors.blueBg;
       case UserRole.receiver:  return AppColors.amberBg;
       case UserRole.volunteer: return AppColors.successBg;
+      case UserRole.user:      return AppColors.light2;
     }
   }
 

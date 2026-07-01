@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../model/donation_admin_model.dart';
+import '../repo/donation_admin_repo.dart';
+import '../repo/donation_admin_repo_impl.dart';
 
 class DonationAdminViewModel extends ChangeNotifier {
+  final DonationAdminRepo _repo = DonationAdminRepoImpl();
+
   bool _isLoading = true;
   String _searchQuery = '';
   DonationCategory? _filterCategory;
@@ -12,8 +16,7 @@ class DonationAdminViewModel extends ChangeNotifier {
   DonationCategory? get filterCategory => _filterCategory;
   DonationStatus? get filterStatus => _filterStatus;
 
-  int get totalDonations =>
-      _allDonations.length;
+  int get totalDonations => _allDonations.length;
   int get availableCount =>
       _allDonations.where((d) => d.status == DonationStatus.available).length;
   int get takenCount =>
@@ -27,11 +30,9 @@ class DonationAdminViewModel extends ChangeNotifier {
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
       final matchesCategory =
-          _filterCategory == null ||
-              donation.category == _filterCategory;
+          _filterCategory == null || donation.category == _filterCategory;
       final matchesStatus =
-          _filterStatus == null ||
-              donation.status == _filterStatus;
+          _filterStatus == null || donation.status == _filterStatus;
       return matchesSearch && matchesCategory && matchesStatus;
     }).toList();
   }
@@ -40,95 +41,12 @@ class DonationAdminViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Replace with Firestore later:
-    // final snapshot = await FirebaseFirestore.instance
-    //     .collection('donations').get();
-    // _allDonations = snapshot.docs
-    //     .map((d) => AdminDonation.fromMap(d.data())).toList();
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    _allDonations = [
-      AdminDonation(
-        id: '1',
-        title: 'Grocery Essentials Bundle',
-        donorName: 'Sita Poudel',
-        donorInitials: 'SP',
-        category: DonationCategory.food,
-        status: DonationStatus.available,
-        location: 'Kathmandu',
-        postedTime: '2 hrs ago',
-      ),
-      AdminDonation(
-        id: '2',
-        title: 'Cooked Meal',
-        donorName: 'Mohan Rai',
-        donorInitials: 'MR',
-        category: DonationCategory.food,
-        status: DonationStatus.available,
-        location: 'Lalitpur',
-        postedTime: '3 hrs ago',
-      ),
-      AdminDonation(
-        id: '3',
-        title: 'Winter Clothes Bundle',
-        donorName: 'Bina KC',
-        donorInitials: 'BK',
-        category: DonationCategory.clothes,
-        status: DonationStatus.taken,
-        location: 'Bhaktapur',
-        postedTime: '1 day ago',
-      ),
-      AdminDonation(
-        id: '4',
-        title: 'Warm Cardigan',
-        donorName: 'Ram Thapa',
-        donorInitials: 'RT',
-        category: DonationCategory.clothes,
-        status: DonationStatus.available,
-        location: 'Kathmandu',
-        postedTime: '5 hrs ago',
-      ),
-      AdminDonation(
-        id: '5',
-        title: 'Books for Students',
-        donorName: 'Sita Sharma',
-        donorInitials: 'SS',
-        category: DonationCategory.stationery,
-        status: DonationStatus.available,
-        location: 'Lalitpur',
-        postedTime: '2 days ago',
-      ),
-      AdminDonation(
-        id: '6',
-        title: 'Office Stationery Set',
-        donorName: 'Bikash Thapa',
-        donorInitials: 'BT',
-        category: DonationCategory.stationery,
-        status: DonationStatus.taken,
-        location: 'Kathmandu',
-        postedTime: '3 days ago',
-      ),
-      AdminDonation(
-        id: '7',
-        title: 'Household Items',
-        donorName: 'Anita N',
-        donorInitials: 'AN',
-        category: DonationCategory.others,
-        status: DonationStatus.available,
-        location: 'Bhaktapur',
-        postedTime: '6 hrs ago',
-      ),
-      AdminDonation(
-        id: '8',
-        title: 'Rice and Lentils',
-        donorName: 'Rahul K',
-        donorInitials: 'RK',
-        category: DonationCategory.food,
-        status: DonationStatus.taken,
-        location: 'Kathmandu',
-        postedTime: '4 days ago',
-      ),
-    ];
+    try {
+      final data = await _repo.fetchDonations();
+      _allDonations = data.map(AdminDonation.fromMap).toList();
+    } catch (e) {
+      debugPrint('Error loading donations: $e');
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -141,19 +59,23 @@ class DonationAdminViewModel extends ChangeNotifier {
 
   void setCategoryFilter(DonationCategory? category) {
     _filterCategory = category;
+    _filterStatus = null; // reset status when category selected
     notifyListeners();
   }
 
   void setStatusFilter(DonationStatus? status) {
     _filterStatus = status;
+    _filterCategory = null; // reset category when status selected
     notifyListeners();
   }
 
-  void removePost(String donationId) {
-    _allDonations.removeWhere((d) => d.id == donationId);
-    notifyListeners();
-    // Replace with Firestore later:
-    // await FirebaseFirestore.instance
-    //     .collection('donations').doc(donationId).delete();
+  Future<void> removePost(String donationId) async {
+    try {
+      await _repo.removeDonation(donationId);
+      _allDonations.removeWhere((d) => d.id == donationId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error removing donation: $e');
+    }
   }
 }

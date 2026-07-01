@@ -1,17 +1,18 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:sharebridge/model/pickup_notification_model.dart';
+import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/homescreentest.dart';
-import 'package:sharebridge/viewmodel/pickup_notification_view_model.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
 class PickupNotificationScreen extends StatefulWidget {
+  final String receiverUid; // volunteer's UID passed in
 
-  const PickupNotificationScreen({super.key});
+  const PickupNotificationScreen({super.key, required this.receiverUid});
 
   @override
   State<PickupNotificationScreen> createState() => _PickupNotificationScreenState();
@@ -19,178 +20,173 @@ class PickupNotificationScreen extends StatefulWidget {
 
 class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
   final TitleController = TextEditingController();
-  final DescriptionController = TextEditingController();
-  final PhoneController = TextEditingController();
-
+  final BodyController = TextEditingController();
 
   NotificationService notificationService = NotificationService();
+
 
   @override
   void initState() {
     super.initState();
 
-    // When app is launched from terminated state
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) {
         print("Terminated launch: $message");
-        // Navigate if needed
       }
     });
 
-    // Get FCM token
     FirebaseMessaging.instance.getToken().then((value) {
       print("📱 FCM Token: $value");
     });
 
-    // Foreground messages
     FirebaseMessaging.onMessage.listen((message) {
       if (message.notification != null) {
         print("Foreground: ${message.notification!.title}");
         print("Foreground: ${message.notification!.body}");
-
       }
 
-      // Show local popup
       NotificationService.displayFcm(
         notification: message.notification!,
         buildContext: context,
       );
     });
 
-    // Background (when user taps notification)
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       print("Background tap: $message");
-      // Navigate if needed
     });
   }
 
+  Widget buildProfileImage(String? profilePicture) {
+    if (profilePicture == null || profilePicture.isEmpty) {
+      return const CircleAvatar(radius: 40, child: Icon(Icons.person));
+    }
+    if (profilePicture.startsWith("http")) {
+      return CircleAvatar(radius: 40, backgroundImage: NetworkImage(profilePicture));
+    }
+    if (profilePicture.startsWith("/")) {
+      return CircleAvatar(radius: 40, backgroundImage: FileImage(File(profilePicture)));
+    }
+    return CircleAvatar(radius: 40, backgroundImage: AssetImage(profilePicture));
+  }
+
+  Future<String?> _getProfilePictureFromFirestore(String userId) async {
+    final doc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
+    if (!doc.exists) return null;
+    return doc.data()?["profilePicture"];
+  }
+
+  String formatRelativeTime(DateTime createdAt) {
+    final now = DateTime.now();
+    final diff = now.difference(createdAt);
+
+    if (diff.inMinutes < 60) {
+      return "${diff.inMinutes}m"; // minutes
+    } else if (diff.inHours < 24) {
+      return "${diff.inHours}h"; // hours
+    } else if (diff.inDays < 30) {
+      return "${diff.inDays}d"; // days
+    } else {
+      return "30d"; // cap at 30 days
+    }
+  }
 
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid; // logged-in user (donor)
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Pickup Notification"),
-      ),
+      appBar: AppBar(title: const Text("Pickup Notification")),
       body: Column(
         children: [
           Expanded(
             child: Column(
               children: [
-                // CachedNetworkImage(
-                //   height: 100,width: 100,
-                //   imageUrl: data.imageUrl.toString(),
-                //   placeholder: (context, url) =>
-                //   const Center(child: CircularProgressIndicator()),
-                //   errorWidget: (context, url, error) =>
-                //   const Icon(Icons.error),
-                // ),
-                Image.asset("assets/images/Mila1.png"),   // here we must add profile picture from sneha
+                FutureBuilder<String?>(
+                  future: _getProfilePictureFromFirestore(currentUserId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircleAvatar(radius: 40, child: CircularProgressIndicator());
+                    }
+                    return buildProfileImage(snapshot.data);
+                  },
+                ),
+
+                const SizedBox(width: 10),
+                // Title field
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
                     controller: TitleController,
                     decoration: InputDecoration(
-                        hint: Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: Text("Title", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500, fontSize: 18)),
-                        ),
-                        fillColor: Colors.white,
-                        filled: true,
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+                      hintText: "Title",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
                     ),
                   ),
                 ),
+
+                // Body field
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
-                    controller: DescriptionController,
+                    controller: BodyController,
                     decoration: InputDecoration(
-                        hint: Padding(
-                          padding: const EdgeInsets.only(left: 5),
-                          child: Text("Description", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500, fontSize: 18)),
-                        ),
-                        fillColor: Colors.white,
-                        filled: true,
-                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
-                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
-
+                      hintText: "Description",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
                     ),
                   ),
                 ),
-                  Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: TextFormField(
-              controller: PhoneController,
-              decoration: InputDecoration(
-                  hint: Padding(
-                    padding: const EdgeInsets.only(left: 5),
-                    child: Text("Reciever's Number", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500, fontSize: 18)),
-                  ),
-                  fillColor: Colors.white,
-                  filled: true,
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(25)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(25))
 
-              ),
-            ),
-                  ),
-
-                SizedBox(height: 20,),
+                const SizedBox(height: 20),
 
                 ElevatedButton(
                   onPressed: () async {
-                    if (TitleController.text.trim().isEmpty ||
-                        DescriptionController.text.trim().isEmpty ||
-                        PhoneController.text.trim().isEmpty) {
+                    if (BodyController.text.trim().isEmpty) {
                       Fluttertoast.showToast(msg: "All fields must be filled");
                       return;
                     }
 
-                    // 1. Build model
-                    final model = PickupNotificationModel(
-                      id: FirebaseAuth.instance.currentUser!.uid,
-                      title: TitleController.text.trim(),
-                      description: DescriptionController.text.trim(),
-                      targetRole: "volunteer",
-                      senderId: FirebaseAuth.instance.currentUser!.uid,
-                      receiverId: PhoneController.text.trim(),
-                      senderName: FirebaseAuth.instance.currentUser!.displayName,
-                      profilePicture: "assets/images/Mila1.png",
+                    final vm = context.read<NotificationViewModel>();
+
+                    // Sender = logged-in user (donor)
+                    final senderInfo = await vm.getUserById(currentUserId);
+                    final senderName = senderInfo.fullName;
+                    final senderPic = senderInfo.profilePicture;
+
+                    // Receiver = volunteer (UID passed into this screen)
+                    final receiverId = widget.receiverUid;                // "BmbWYHtwszNrTbRiVgRovbKeEZk2";    //widget.receiverUid;
+
+                    final model = NotificationModel(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      body: BodyController.text.trim(),
+                      senderId: currentUserId,          // donor UID
+                      senderName: senderName,
+                      profilePicture: senderPic,
+                      receiverId: widget.receiverUid,          // final replace with --> widget.receiverUid,         // volunteer UID
                       createdAt: DateTime.now(),
-                      isRead: false, // ✅ start unread so badge increases
+                      isRead: false,
+                      type: NotificationType.pickup,
                     );
 
-                    final vm = context.read<PickupNotificationViewModel>();
-
-                    // 2. Save to Firestore
-                    final success = await vm.addPickupNotification(model);
+                    final success = await vm.sendNotification(model);
 
                     if (success) {
-                      // 3. Show popup notification
                       await NotificationService.display(
-                        title: model.title,
-                        body: model.description,
+                        body: model.body,
                         payload: "pickup_notification_screen",
                         buildContext: context,
+                        createdAt: model.createdAt,
                       );
 
-                      // 4. Navigate to HomeScreen (optional)
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Homescreentest()),
-                      );
+                      Navigator.pop(context);
 
                       Fluttertoast.showToast(msg: "Notification sent successfully");
                     } else {
-                      Fluttertoast.showToast(msg: "Notification failed to send");
+                      Fluttertoast.showToast(msg: "Failed to send notification");
                     }
                   },
                   child: const Text("Send Notification"),
-                )
-
+                ),
               ],
             ),
           ),
