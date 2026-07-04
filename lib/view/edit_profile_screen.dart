@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -21,25 +23,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // ── Form Key ─────────────────────────────────────────────────
   final _formKey = GlobalKey<FormState>();
 
-  // ── Controllers ──────────────────────────────────────────────
-  final TextEditingController _nameController =
-  TextEditingController(text: "Daty Friend");
-
-  final TextEditingController _emailController =
-  TextEditingController(text: "datyfriend@gmail.com");
-
-  final TextEditingController _phoneController =
-  TextEditingController(text: "+977 9800000000");
-
-  final TextEditingController _locationController =
-  TextEditingController(text: "Kathmandu, Nepal");
-
-  final TextEditingController _bioController =
-  TextEditingController(
-    text: "Helping the community by sharing unused items.",
-  );
+  // ── Controllers (start empty, filled once real data loads) ───
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
 
   bool _isSaving = false;
+  bool _isLoading = true;
+  String? _uid;
+  String? _initial; // avatar letter
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  // ── Load real data from Firestore, same doc profile screen uses ──
+  Future<void> _loadProfile() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    _uid = uid;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .get();
+      final data = doc.data();
+
+      if (data != null) {
+        _nameController.text = data['fullName'] as String? ?? '';
+        _emailController.text = data['email'] as String? ??
+            FirebaseAuth.instance.currentUser?.email ?? '';
+        _phoneController.text = data['phone'] as String? ?? '';
+        _locationController.text = data['address'] as String? ?? '';
+        _bioController.text = data['bio'] as String? ?? '';
+      }
+    } catch (e) {
+      debugPrint("Error loading profile: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _initial = _nameController.text.trim().isNotEmpty
+              ? _nameController.text.trim()[0].toUpperCase()
+              : 'U';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   // ── Dispose Controllers ──────────────────────────────────────
   @override
@@ -52,31 +90,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // ── Save Profile ─────────────────────────────────────────────
+  // ── Save Profile (writes straight to Firestore) ───────────────
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_uid == null) return;
 
     setState(() {
       _isSaving = true;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await FirebaseFirestore.instance.collection("users").doc(_uid).update({
+        'fullName': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'address': _locationController.text.trim(),
+        'bio': _bioController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-    setState(() {
-      _isSaving = false;
-    });
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Profile Updated Successfully"),
-      ),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile Updated Successfully")),
+      );
+      // Tell the profile screen a save happened so it can refetch.
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Update failed: $e")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: kLight,
+        appBar: AppBar(
+          backgroundColor: kPrimary,
+          elevation: 0,
+          title: const Text("Edit Profile",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: kPrimary)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: kLight,
       resizeToAvoidBottomInset: true,
@@ -147,10 +213,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               width: 4,
                             ),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              "D",
-                              style: TextStyle(
+                              _initial ?? 'U',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 42,
                                 fontWeight: FontWeight.bold,
@@ -232,23 +298,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Email
+                    // Email (read-only — changing email requires re-auth,
+                    // so it's shown but disabled here)
                     _buildTextField(
                       label: "Email Address",
                       icon: Icons.email_outlined,
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter your email";
-                        }
-
-                        if (!value.contains("@")) {
-                          return "Enter a valid email";
-                        }
-
-                        return null;
-                      },
+                      enabled: false,
                     ),
 
                     const SizedBox(height: 16),
@@ -340,6 +397,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,9 +421,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           maxLines: maxLines,
           keyboardType: keyboardType,
           validator: validator,
+          enabled: enabled,
           textInputAction: TextInputAction.next,
-          style: const TextStyle(
-            color: kTextDark,
+          style: TextStyle(
+            color: enabled ? kTextDark : kTextGrey,
             fontSize: 14,
           ),
 
