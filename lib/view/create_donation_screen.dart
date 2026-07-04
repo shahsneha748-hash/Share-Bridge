@@ -27,7 +27,7 @@ class _CreateDonationViewState extends State<CreateDonationScreen> {
   Future<void> _pickImage(CreateDonationViewModel vm, ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source);
-    if (picked != nullG) {
+    if (picked != null) {
       await vm.addImage(picked.path);
     }
   }
