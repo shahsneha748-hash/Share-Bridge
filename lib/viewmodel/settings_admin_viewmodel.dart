@@ -31,7 +31,7 @@ class SettingsAdminViewModel extends ChangeNotifier {
             .get();
 
         final data = doc.data();
-        final name = data?['fullName'] as String? ?? 'Admin User';
+        final name = data?['fullName'] as String? ?? data?['fullname'] as String? ?? 'Admin User';
         final email = data?['email'] as String? ??
             currentUser.email ?? 'admin@sharebridge.com';
 

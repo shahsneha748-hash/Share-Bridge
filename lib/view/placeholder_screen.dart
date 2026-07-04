@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'admin_dashboard_view.dart'; // for AppColors
+import '../constants/colors.dart';
 
 class PlaceholderScreen extends StatelessWidget {
   final String title;

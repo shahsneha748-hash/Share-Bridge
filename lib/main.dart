@@ -17,6 +17,7 @@ import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/request_system_screen_demo.dart';
 import 'package:sharebridge/view/signup_screen.dart';
+import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
@@ -57,6 +58,9 @@ Future<void> main() async {
             repo: context.read<SavedItemRepo>(),
             uid: FirebaseAuth.instance.currentUser?.uid ?? '',
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AdminDashboardViewModel(),
         ),
       ],
       child: const MyHomePage(),
