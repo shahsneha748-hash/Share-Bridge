@@ -48,6 +48,14 @@ class AppColors {
   static const Color ratingStar     = Color(0xFFE5B83A);
   static const Color mapGridLine    = Color(0xFFCFC9B2);
   static const Color mapRoadLine    = Color(0xFFA8A083);
+
+  // Added for Profile screen
+  static const Color profilePrimary  = Color(0xFF2D5A27);
+  static const Color profileDark     = Color(0xFF1A3A15);
+  static const Color profileLight    = Color(0xFFF5F7F4);
+  static const Color profileTextDark = Color(0xFF1C2B1A);
+  static const Color profileTextGrey = Color(0xFF7A8A78);
+  static const Color profileDivider  = Color(0xFFE8EDE7);
 }
 
 
