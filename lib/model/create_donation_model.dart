@@ -1,98 +1,93 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-class DonationModel {
-  final String id;
-  final String firstName;
-  final String lastName;
-  final String location;
-  final String itemName;
-  final String condition;
-  final String category;
-  final String description;
-  final List<String> photoUrls;
-  final bool isDonated;
-  final DateTime createdAt;
-  final String? expiresAt;
-  final String donorId;
+class CreateDonationModel {
 
-  DonationModel({
-    required this.id,
-    required this.firstName,
-    required this.lastName,
-    required this.location,
-    required this.itemName,
-    required this.condition,
-    required this.category,
-    required this.description,
-    this.photoUrls = const [],
+  String userId;
+  String location;
+  String itemName;
+  String description;
+  String expiryDate;
+  String unit;
+  String category;
+  String subcategory;
+  String condition;
+  String note;
+  String portion;
+  String weight;
+
+  int portionCount;
+  bool isDonated;
+
+  List<String> tags;
+  List<String> images;
+
+  CreateDonationModel({
+
+    this.userId = '',
+    this.location = '',
+    this.itemName = '',
+    this.description = '',
+    this.expiryDate = '',
+    this.unit = '',
+    this.category = '',
+    this.subcategory = '',
+    this.condition = '',
+    this.note = '',
+    this.portion = '',
+    this.weight = '',
+
+    this.portionCount = 1,
     this.isDonated = false,
-    required this.createdAt,
-    this.expiresAt,
-    required this.donorId,
-  });
 
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'firstName': firstName,
-    'lastName': lastName,
-    'location': location,
-    'itemName': itemName,
-    'condition': condition,
-    'category': category,
-    'description': description,
-    'photoUrls': photoUrls,
-    'isDonated': isDonated,
-    'createdAt': createdAt.toIso8601String(),
-    'expiresAt': expiresAt,
-    'donorId': donorId,
-  };
+    List<String>? tags,
+    List<String>? images,
+  })  : tags = tags ?? [],
+        images = images ?? [];
 
-  factory DonationModel.fromMap(Map<String, dynamic> map) => DonationModel(
-    id:          map['id'] ?? '',
-    firstName:   map['firstName'] ?? '',
-    lastName:    map['lastName'] ?? '',
-    location:    map['location'] ?? '',
-    itemName:    map['itemName'] ?? '',
-    condition:   map['condition'] ?? '',
-    category:    map['category'] ?? '',
-    description: map['description'] ?? '',
-    photoUrls:   List<String>.from(map['photoUrls'] ?? []),
-    isDonated:   map['isDonated'] ?? false,
-    createdAt: map['createdAt'] is String
-        ? DateTime.parse(map['createdAt'])
-        : (map['createdAt'] as Timestamp).toDate(),
-    expiresAt:   map['expiresAt'],
-    donorId: map['donorId'] ?? '',
-  );
+  // ================= FROM MAP =================
+  factory CreateDonationModel.fromMap(Map<String, dynamic> map) {
+    return CreateDonationModel(
 
-  DonationModel copyWith({
-    String? id,
-    String? firstName,
-    String? lastName,
-    String? location,
-    String? itemName,
-    String? condition,
-    String? category,
-    String? description,
-    List<String>? photoUrls,
-    bool? isDonated,
-    DateTime? createdAt,
-    String? expiresAt,
-    String? donorId,
-  }) {
-    return DonationModel(
-      id:          id          ?? this.id,
-      firstName:   firstName   ?? this.firstName,
-      lastName:    lastName    ?? this.lastName,
-      location:    location    ?? this.location,
-      itemName:    itemName    ?? this.itemName,
-      condition:   condition   ?? this.condition,
-      category:    category    ?? this.category,
-      description: description ?? this.description,
-      photoUrls:   photoUrls   ?? this.photoUrls,
-      isDonated:   isDonated   ?? this.isDonated,
-      createdAt:   createdAt   ?? this.createdAt,
-      expiresAt:   expiresAt   ?? this.expiresAt,
-      donorId: donorId ?? this.donorId,
+      userId: map['userId'] ?? '',
+      location: map['location'] ?? '',
+      itemName: map['itemName'] ?? '',
+      description: map['description'] ?? '',
+      expiryDate: map['expiryDate'] ?? '',
+      unit: map['unit'] ?? '',
+      category: map['category'] ?? '',
+      subcategory: map['subcategory'] ?? '',
+      condition: map['condition'] ?? '',
+      note: map['note'] ?? '',
+      portion: map['portion'] ?? '',
+      weight: map['weight'] ?? '',
+
+      portionCount: map['portionCount'] ?? 1,
+      isDonated: map['isDonated'] ?? false,
+
+      tags: List<String>.from(map['tags'] ?? []),
+      images: List<String>.from(map['images'] ?? []),
     );
+  }
+
+  // ================= TO MAP =================
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'location': location,
+      'itemName': itemName,
+      'description': description,
+      'expiryDate': expiryDate,
+      'unit': unit,
+      'category': category,
+      'subcategory': subcategory,
+      'condition': condition,
+      'note': note,
+      'portion': portion,
+      'weight': weight,
+
+      'portionCount': portionCount,
+      'isDonated': isDonated,
+
+      'tags': tags,
+      'images': images,
+    };
   }
 }

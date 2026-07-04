@@ -40,4 +40,28 @@ class AppColors {
   static const Color amberText    = Color(0xFF854F0B);
   static const Color blueBg       = Color(0xFFE6F1FB);
   static const Color blueText     = Color(0xFF185FA5);
+
+  // ── Added for Create Donation ──────────────────────────────────────
+  static const Color white           = Colors.white;
+  static const Color cardShadow      = Color(0x0D000000);
+  static const Color subtitleGrey    = Colors.black54;
+  static const Color borderGrey      = Colors.black26;
+  static const Color border          = Color(0xFFCCCCCC);
+  static const Color borderLight     = Color(0xFFE0E0E0);
+  static const Color textSecondary   = Color(0xFF555555);
+
+  // ── Added for Success Screen ───────────────────────────────────────
+  static const Color acceptedBg      = Color(0xFFE8F8EE);
+  static const Color accepted        = Color(0xFF27AE60);
+  static const Color acceptedBorder  = Color(0xFFA5D6A7);
+
+  // ── Added Status — Pending ─────────────────────────────────────────
+  static const Color pendingText     = Color(0xFFE65100);
+  static const Color pendingBg       = Color(0xFFFFF3E0);
+  static const Color pendingBorder   = Color(0xFFFFCC80);
+
+  // ── Added Status — Rejected ────────────────────────────────────────
+  static const Color rejectedText    = Color(0xFFC62828);
+  static const Color rejectedBg      = Color(0xFFFCE4EC);
+  static const Color rejectedBorder  = Color(0xFFF48FB1);
 }

@@ -1,38 +1,44 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sharebridge/model/dashboard_model.dart';
 import 'package:sharebridge/repo/dashboard_repo.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   final DashboardRepo _repo;
-  late DashboardModel _model;
+
+  DashboardModel _model = DashboardModel(donations: []);
+  StreamSubscription? _subscription;
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
 
   DashboardViewModel(this._repo) {
-    _load();
+    _listenToDonations();
   }
 
-  void _load() {
-    _model = _repo.fetchDashboardData();
+  void _listenToDonations() {
+    _subscription = _repo.getDashboardData().listen((data) {
+      _model = data;
+      _isLoading = false;
+      notifyListeners();
+    }, onError: (error) {
+      debugPrint('Dashboard stream error: $error');
+      _isLoading = false;
+      notifyListeners();
+    });
   }
 
   List<Map<String, dynamic>> get featuredItems {
-    final sorted = List<Map<String, dynamic>>.from(_model.availableItems);
-    sorted.sort((a, b) =>
-        _parseDistance(a['distance']).compareTo(_parseDistance(b['distance'])));
-    return sorted.take(4).toList();
+    return _model.donations
+        .where((e) => e['status'] == 'pending')
+        .take(5)
+        .toList();
   }
 
-  int    get communityItemsShared => _model.communityItemsShared;
-  double get communityProgress    => _model.communityProgress;
-  int    get communityWeeklyGoal  => _model.communityWeeklyGoal;
+  List<Map<String, dynamic>> get donations => _model.donations;
 
-  double _parseDistance(dynamic d) {
-    if (d == null) return 999;
-    final s = d.toString().replaceAll(RegExp(r'[^0-9.]'), '');
-    return double.tryParse(s) ?? 999;
-  }
-
-  void refresh() {
-    _load();
-    notifyListeners();
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

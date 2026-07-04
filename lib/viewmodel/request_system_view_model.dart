@@ -2,94 +2,81 @@ import 'package:flutter/material.dart';
 import '../model/request_system_model.dart';
 import '../repo/request_system_repo.dart';
 
+enum RequestFilter { all, pending, accepted, rejected }
+
 class RequestSystemViewModel extends ChangeNotifier {
-  final RequestSystemRepo repo;
+  final DonationRequestRepository _repository;
 
-  RequestSystemViewModel(this.repo);
-
-  // controllers
-  TextEditingController nameController = TextEditingController();
-  TextEditingController titleController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-  TextEditingController locationController = TextEditingController();
-
-  String category = "food";
-  bool isCompleted = false;
-  bool isLoading = false;
-  bool submitted = false;
-  bool confirmDelete = false;
-
-  List<RequestSystemModel> requests = [];
-
-  final categories = const [
-    {'id': 'food', 'label': 'Food', 'icon': Icons.restaurant},
-    {'id': 'stationery', 'label': 'Stationery', 'icon': Icons.edit},
-    {'id': 'clothes', 'label': 'Clothes', 'icon': Icons.checkroom},
-    {'id': 'other', 'label': 'Other', 'icon': Icons.apps_rounded},
-  ];
-
-  void setCategory(String val) {
-    category = val;
-    notifyListeners();
+  RequestSystemViewModel({required DonationRequestRepository repository})
+      : _repository = repository {
+    _listenToRequests();
   }
 
-  void toggleCompleted() {
-    isCompleted = !isCompleted;
-    notifyListeners();
+  List<DonationRequestModel> _allRequests = [];
+  RequestFilter _filter = RequestFilter.all;
+  String _searchQuery = '';
+  bool isLoading = true;
+  String? errorMessage;
+
+  RequestFilter get filter => _filter;
+  String get searchQuery => _searchQuery;
+
+  List<DonationRequestModel> get filteredRequests {
+    List<DonationRequestModel> result = _allRequests;
+
+    if (_filter != RequestFilter.all) {
+      result = result.where((r) => r.status == _filter.name).toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result.where((r) =>
+      r.itemName.toLowerCase().contains(q) ||
+          r.category.toLowerCase().contains(q) ||
+          r.location.toLowerCase().contains(q) ||
+          r.description.toLowerCase().contains(q)
+      ).toList();
+    }
+
+    return result;
   }
 
-  bool get canSubmit =>
-      nameController.text.isNotEmpty &&
-          titleController.text.isNotEmpty &&
-          descriptionController.text.isNotEmpty &&
-          locationController.text.isNotEmpty;
+  int get pendingCount  => _allRequests.where((r) => r.status == 'pending').length;
+  int get acceptedCount => _allRequests.where((r) => r.status == 'accepted').length;
+  int get rejectedCount => _allRequests.where((r) => r.status == 'rejected').length;
 
-  void handleDelete() {
-    confirmDelete = !confirmDelete;
-    notifyListeners();
-  }
-
-  Future<void> submit() async {
-    if (!canSubmit) return;
-
-    isLoading = true;
-    notifyListeners();
-
-    final model = RequestSystemModel(
-      id: "",
-      name: nameController.text,
-      title: titleController.text,
-      description: descriptionController.text,
-      location: locationController.text,
-      category: category,
-      isCompleted: isCompleted,
+  void _listenToRequests() {
+    _repository.getRequests().listen(
+          (requests) {
+        _allRequests = requests;
+        isLoading = false;
+        errorMessage = null;
+        notifyListeners();
+      },
+      onError: (e) {
+        errorMessage = 'Failed to load requests.';
+        isLoading = false;
+        notifyListeners();
+      },
     );
+  }
 
-    await repo.add(model);
-
-    isLoading = false;
-    submitted = true;
+  void setFilter(RequestFilter filter) {
+    _filter = filter;
     notifyListeners();
   }
 
-  void reset() {
-    nameController.clear();
-    titleController.clear();
-    descriptionController.clear();
-    locationController.clear();
-    category = "food";
-    isCompleted = false;
-    submitted = false;
-    confirmDelete = false;
+  void setSearchQuery(String query) {
+    _searchQuery = query;
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    titleController.dispose();
-    descriptionController.dispose();
-    locationController.dispose();
-    super.dispose();
+  Future<void> updateStatus(String requestId, String status) async {
+    try {
+      await _repository.updateStatus(requestId, status);
+    } catch (e) {
+      errorMessage = 'Failed to update status.';
+      notifyListeners();
+    }
   }
 }
