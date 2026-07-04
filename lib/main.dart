@@ -86,8 +86,8 @@ Future<void> main() async {
 
         // Request System ViewModel
         ChangeNotifierProvider(
-          create: (context) => RequestSystemViewModel(
-            repository: context.read<DonationRequestRepository>(),
+          create: (_) => RequestSystemViewModel(
+            repository: DonationRequestRepositoryImpl(),
           ),
         ),
       ],

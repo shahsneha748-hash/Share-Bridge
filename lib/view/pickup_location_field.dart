@@ -87,9 +87,10 @@ class _PickupLocationFieldState extends State<PickupLocationField> {
       setState(() => _controller.text = address);
       widget.onChanged(address);
     } catch (e) {
+      debugPrint('Current location error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not get current location.')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
