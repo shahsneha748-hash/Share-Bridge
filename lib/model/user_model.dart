@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {               // UserModel is the blueprint of what gets stored/retrieved from the database.
-  final String id;              // unique identifier (UUID or Firebase UID)
+  final String uid;              // unique identifier (UUID or Firebase UID)
   final String fullName;        // user's name
   final String email;           // login credential
   final String phone;           // contact number
@@ -13,7 +15,7 @@ class UserModel {               // UserModel is the blueprint of what gets store
   final int totalDonations; // donor/volunteer impact metric. Eg: Donor profile: “Bunny — Verified ✅ — Rating: 4.7 — Total Donations: 35”.     Another eg: Volunteer profile: “Julie — Rating: 4.9 — Deliveries: 20” (could reuse the same field if you extend logic).       Another eg: Receiver profile: "Alisa — Rating: 4.2 — Total Donations: 0”
 
   const UserModel({
-    required this.id,
+    required this.uid,
     required this.fullName,
     required this.email,
     required this.phone,
@@ -29,7 +31,7 @@ class UserModel {               // UserModel is the blueprint of what gets store
 
   Map<String, dynamic> toMap() {
     return {
-      'id': this.id,
+      'id': this.uid,
       'fullName': this.fullName,
       'email': this.email,
       'phone': this.phone,
@@ -46,18 +48,22 @@ class UserModel {               // UserModel is the blueprint of what gets store
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      id: map['id'] as String,
-      fullName: map['fullName'] as String,
-      email: map['email'] as String,
-      phone: map['phone'] as String,
-      address: map['address'] as String,
-      role: map['role'] as String,
-      profilePicture: map['profilePicture'] as String,
-      isVerified: map['isVerified'] as bool,
-      createdAt: map['createdAt'] as DateTime,
-      updatedAt: map['updatedAt'] as DateTime,
-      rating: map['rating'] as double,
-      totalDonations: map['totalDonations'] as int,
+      uid: map['uid'] ?? '',
+      fullName: map['fullName'] ?? 'Unknown User',
+      email: map['email'] ?? '',
+      phone: map['phone'] ?? '',
+      address: map['address'] ?? '',
+      role: map['role'] ?? '',
+      profilePicture: map['profilePicture'] ?? '',
+      isVerified: map['isVerified'] ?? false,
+      createdAt: (map['createdAt'] is Timestamp)
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: (map['updatedAt'] is Timestamp)
+          ? (map['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      rating: (map['rating'] is num) ? (map['rating'] as num).toDouble() : 0.0,
+      totalDonations: (map['totalDonations'] is int) ? map['totalDonations'] : 0,
     );
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/donation_admin_viewmodel.dart';
 import '../model/donation_admin_model.dart';
-import '../components/quick_chip.dart';
 import 'admin_dashboard_view.dart';
 
 class DonationAdminScreen extends StatelessWidget {
@@ -55,10 +54,7 @@ class _DonationBody extends StatelessWidget {
     );
   }
 
-  // ── TOP BAR ────────────────────────────────────────────────────────────────
-
-  Widget _buildTopBar(
-      BuildContext context, DonationAdminViewModel vm) {
+  Widget _buildTopBar(BuildContext context, DonationAdminViewModel vm) {
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
@@ -97,8 +93,6 @@ class _DonationBody extends StatelessWidget {
     );
   }
 
-  // ── SUMMARY ROW ────────────────────────────────────────────────────────────
-
   Widget _buildSummaryRow(DonationAdminViewModel vm) {
     final stats = {
       'Total':     vm.totalDonations,
@@ -109,8 +103,8 @@ class _DonationBody extends StatelessWidget {
     final colors = {
       'Total':     AppColors.primary,
       'Available': AppColors.successText,
-      'Taken':     AppColors.amberText,
-      'Food':      AppColors.blueText,
+      'Taken':     AppColors.primary,
+      'Food':      AppColors.successText,
     };
 
     return Container(
@@ -148,10 +142,7 @@ class _DonationBody extends StatelessWidget {
     );
   }
 
-  // ── SEARCH BAR ─────────────────────────────────────────────────────────────
-
-  Widget _buildSearchBar(
-      BuildContext context, DonationAdminViewModel vm) {
+  Widget _buildSearchBar(BuildContext context, DonationAdminViewModel vm) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
@@ -165,8 +156,7 @@ class _DonationBody extends StatelessWidget {
               color: AppColors.textMuted, size: 20),
           filled: true,
           fillColor: AppColors.background,
-          contentPadding:
-          const EdgeInsets.symmetric(vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
@@ -175,8 +165,6 @@ class _DonationBody extends StatelessWidget {
       ),
     );
   }
-
-  // ── FILTER ROW — uses your QuickChip component ─────────────────────────────
 
   Widget _buildFilterRow(DonationAdminViewModel vm) {
     return Container(
@@ -187,66 +175,57 @@ class _DonationBody extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
-            // Status filters
             _ActiveChip(
               label: 'Available',
               isActive: vm.filterStatus == DonationStatus.available,
-              activeColor: AppColors.successText,
-              activeBg: AppColors.successBg,
               onTap: () => vm.setStatusFilter(
                 vm.filterStatus == DonationStatus.available
-                    ? null
-                    : DonationStatus.available,
+                    ? null : DonationStatus.available,
               ),
             ),
             const SizedBox(width: 8),
             _ActiveChip(
               label: 'Taken',
               isActive: vm.filterStatus == DonationStatus.taken,
-              activeColor: AppColors.amberText,
-              activeBg: AppColors.amberBg,
               onTap: () => vm.setStatusFilter(
                 vm.filterStatus == DonationStatus.taken
-                    ? null
-                    : DonationStatus.taken,
+                    ? null : DonationStatus.taken,
               ),
             ),
             const SizedBox(width: 8),
-
-            // Category filters using your QuickChip component
-            QuickChip(
-              text: 'Food',
+            _ActiveChip(
+              label: 'Food',
+              isActive: vm.filterCategory == DonationCategory.food,
               onTap: () => vm.setCategoryFilter(
                 vm.filterCategory == DonationCategory.food
-                    ? null
-                    : DonationCategory.food,
+                    ? null : DonationCategory.food,
               ),
             ),
             const SizedBox(width: 8),
-            QuickChip(
-              text: 'Clothes',
+            _ActiveChip(
+              label: 'Clothes',
+              isActive: vm.filterCategory == DonationCategory.clothes,
               onTap: () => vm.setCategoryFilter(
                 vm.filterCategory == DonationCategory.clothes
-                    ? null
-                    : DonationCategory.clothes,
+                    ? null : DonationCategory.clothes,
               ),
             ),
             const SizedBox(width: 8),
-            QuickChip(
-              text: 'Stationery',
+            _ActiveChip(
+              label: 'Stationery',
+              isActive: vm.filterCategory == DonationCategory.stationery,
               onTap: () => vm.setCategoryFilter(
                 vm.filterCategory == DonationCategory.stationery
-                    ? null
-                    : DonationCategory.stationery,
+                    ? null : DonationCategory.stationery,
               ),
             ),
             const SizedBox(width: 8),
-            QuickChip(
-              text: 'Others',
+            _ActiveChip(
+              label: 'Others',
+              isActive: vm.filterCategory == DonationCategory.others,
               onTap: () => vm.setCategoryFilter(
                 vm.filterCategory == DonationCategory.others
-                    ? null
-                    : DonationCategory.others,
+                    ? null : DonationCategory.others,
               ),
             ),
           ],
@@ -254,8 +233,6 @@ class _DonationBody extends StatelessWidget {
       ),
     );
   }
-
-  // ── EMPTY STATE ────────────────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
     return Center(
@@ -287,41 +264,21 @@ class _DonationBody extends StatelessWidget {
   }
 }
 
-// ── DONATION CARD ─────────────────────────────────────────────────────────────
-
 class _DonationCard extends StatelessWidget {
   final AdminDonation donation;
   const _DonationCard({required this.donation});
 
-  Color get _categoryColor {
-    switch (donation.category) {
-      case DonationCategory.food:       return AppColors.blueText;
-      case DonationCategory.clothes:    return AppColors.amberText;
-      case DonationCategory.stationery: return AppColors.successText;
-      case DonationCategory.others:     return AppColors.textMuted;
-    }
-  }
-
-  Color get _categoryBg {
-    switch (donation.category) {
-      case DonationCategory.food:       return AppColors.blueBg;
-      case DonationCategory.clothes:    return AppColors.amberBg;
-      case DonationCategory.stationery: return AppColors.successBg;
-      case DonationCategory.others:     return const Color(0xFFF1EFE8);
-    }
-  }
-
   Color get _statusColor {
     switch (donation.status) {
       case DonationStatus.available: return AppColors.successText;
-      case DonationStatus.taken:     return AppColors.amberText;
+      case DonationStatus.taken:     return AppColors.primary;
     }
   }
 
   Color get _statusBg {
     switch (donation.status) {
       case DonationStatus.available: return AppColors.successBg;
-      case DonationStatus.taken:     return AppColors.amberBg;
+      case DonationStatus.taken:     return AppColors.light2;
     }
   }
 
@@ -339,10 +296,8 @@ class _DonationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header row ────────────────────────────────────────
           Row(
             children: [
-              // Donor avatar
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.light1,
@@ -371,7 +326,6 @@ class _DonationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Status badge
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 4),
@@ -388,27 +342,23 @@ class _DonationCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 10),
           const Divider(height: 1, color: Color(0xFFEDF2E7)),
           const SizedBox(height: 10),
-
-          // ── Details row ───────────────────────────────────────
           Row(
             children: [
-              // Category badge
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _categoryBg,
+                  color: AppColors.successBg,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(donation.categoryLabel,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: _categoryColor,
+                      color: AppColors.successText,
                     )),
               ),
               const SizedBox(width: 10),
@@ -427,10 +377,7 @@ class _DonationCard extends StatelessWidget {
                       fontSize: 11, color: AppColors.textMuted)),
             ],
           ),
-
           const SizedBox(height: 10),
-
-          // ── Remove button ─────────────────────────────────────
           SizedBox(
             width: double.infinity,
             child: Material(
@@ -439,11 +386,11 @@ class _DonationCard extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => _confirmRemove(context, vm),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.delete_outline,
                           size: 16, color: AppColors.dangerText),
                       SizedBox(width: 6),
@@ -464,10 +411,7 @@ class _DonationCard extends StatelessWidget {
     );
   }
 
-  // ── CONFIRMATION DIALOG ───────────────────────────────────────────────────
-
-  void _confirmRemove(
-      BuildContext context, DonationAdminViewModel vm) {
+  void _confirmRemove(BuildContext context, DonationAdminViewModel vm) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -477,7 +421,7 @@ class _DonationCard extends StatelessWidget {
             style: TextStyle(
                 fontSize: 16, fontWeight: FontWeight.w600)),
         content: Text(
-          '"${donation.title}" will be permanently removed from the platform.',
+          '"${donation.title}" will be permanently removed.',
           style: const TextStyle(
               fontSize: 13, color: AppColors.textMuted),
         ),
@@ -526,19 +470,14 @@ class _DonationCard extends StatelessWidget {
   }
 }
 
-// ── ACTIVE CHIP (for status filters with color) ───────────────────────────────
-
 class _ActiveChip extends StatelessWidget {
   final String label;
   final bool isActive;
-  final Color activeColor, activeBg;
   final VoidCallback onTap;
 
   const _ActiveChip({
     required this.label,
     required this.isActive,
-    required this.activeColor,
-    required this.activeBg,
     required this.onTap,
   });
 
@@ -550,11 +489,11 @@ class _ActiveChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? activeBg : Colors.white,
+          color: isActive ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive
-                ? activeColor
+                ? AppColors.primary
                 : const Color(0xFFB8C8B0),
           ),
         ),
@@ -562,7 +501,7 @@ class _ActiveChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: isActive ? activeColor : AppColors.textDark,
+              color: isActive ? Colors.white : AppColors.textDark,
             )),
       ),
     );

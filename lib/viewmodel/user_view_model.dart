@@ -159,6 +159,10 @@ class UserViewModel extends ChangeNotifier {
       setLoading(false);
     }
   }
+  Future<String> getReceiverName(String receiverId) async {
+    return await _userRepo.getReceiverName(receiverId);
+  }
+
 }
 
 

@@ -57,3 +57,5 @@ class AppColors {
   static const Color profileTextGrey = Color(0xFF7A8A78);
   static const Color profileDivider  = Color(0xFFE8EDE7);
 }
+
+

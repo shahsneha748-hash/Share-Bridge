@@ -1,14 +1,26 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../model/message_model.dart';
+import '../repo/chat_repo.dart';
+import '../repo/chat_repo_impl.dart';
 
 class ChatViewModel extends ChangeNotifier {
+  final String chatId;
+  final String donorId;
+  final String donorName;
+
+  final ChatRepo _repo = ChatRepoImpl();
+
   final TextEditingController inputController = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
+  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  final List<Message> messages = [];
+
+  StreamSubscription? _messageSubscription;
+
   bool isTyping = false;
-  int _idCounter = 5;
 
   final List<String> quickReplies = [
     "I'm on my way",
@@ -17,97 +29,35 @@ class ChatViewModel extends ChangeNotifier {
     "Got it",
   ];
 
-  final List<String> _botReplies = [
-    "Sure! See you then 😊",
-    "Great! I'll have everything ready.",
-    "Perfect, looking forward to it!",
-    "Sounds good! 👍",
-    "Okay, I'll be here waiting.",
-    "No problem at all! See you soon.",
-  ];
-
-  // Replace with FirebaseAuth.instance.currentUser!.uid when Firebase ready
-  final String currentUserId = 'user_me';
-
-  final List<Message> messages = [
-    Message(
-      id: '0',
-      text: "Hi! I saw you requested my Grocery Essentials Bundle 😊",
-      senderId: 'user_ram',
-      isSender: false,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-    ),
-    Message(
-      id: '1',
-      text: "Are you still interested in picking it up?",
-      senderId: 'user_ram',
-      isSender: false,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 29)),
-    ),
-    Message(
-      id: '2',
-      text: "Yes! I'm very interested. Thank you so much for donating 🙏",
-      senderId: 'user_me',
-      isSender: true,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 27)),
-    ),
-    Message(
-      id: '3',
-      text: "When and where can I come to collect it?",
-      senderId: 'user_me',
-      isSender: true,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 27)),
-    ),
-    Message(
-      id: '4',
-      text: "You can pick it up today before 6pm at Imadol 5, near ABC Tol gate.",
-      senderId: 'user_ram',
-      isSender: false,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
-    ),
-    Message(
-      id: '5',
-      text: "Perfect! I'll be there around 4pm. See you then! 😊",
-      senderId: 'user_me',
-      isSender: true,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 23)),
-      status: MessageStatus.read,
-    ),
-  ];
-
-  void sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-    messages.add(Message(
-      id: (++_idCounter).toString(),
-      text: text.trim(),
-      senderId: currentUserId,
-      isSender: true,
-      timestamp: DateTime.now(),
-      status: MessageStatus.sent,
-    ));
-    inputController.clear();
-    notifyListeners();
-    scrollToBottom();
-    simulateBotReply();
+  ChatViewModel({
+    required this.chatId,
+    required this.donorId,
+    required this.donorName,
+  }) {
+    listenToMessages();
   }
 
-  void simulateBotReply() {
-    Timer(const Duration(milliseconds: 900), () {
-      isTyping = true;
-      notifyListeners();
-      scrollToBottom();
-      Timer(const Duration(milliseconds: 1400), () {
-        isTyping = false;
-        messages.add(Message(
-          id: (++_idCounter).toString(),
-          text: _botReplies[Random().nextInt(_botReplies.length)],
-          senderId: 'user_ram',
-          isSender: false,
-          timestamp: DateTime.now(),
-        ));
-        notifyListeners();
-        scrollToBottom();
-      });
+  void listenToMessages() {
+    _messageSubscription =
+        _repo.listenToMessages(chatId).listen((messageMaps) {
+          messages.clear();
+          for (var map in messageMaps) {
+            messages.add(Message.fromMap(map, map['id'], currentUserId));
+          }
+          notifyListeners();
+          scrollToBottom();
+        });
+  }
+
+  void sendMessage(String text) async {
+    if (text.trim().isEmpty) return;
+    inputController.clear();
+
+    await _repo.sendMessage(chatId, {
+      'text': text.trim(),
+      'senderId': currentUserId,
+      'timestamp': DateTime.now(),
+      'status': 'sent',
     });
   }
 
@@ -125,6 +75,7 @@ class ChatViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _messageSubscription?.cancel();
     inputController.dispose();
     scrollController.dispose();
     super.dispose();

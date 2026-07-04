@@ -2,35 +2,28 @@ import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../service/notification_service.dart'; // import your NotificationService
 
 class UserRepoImpl implements UserRepo {
-
-  final auth = FirebaseAuth.instance;                            // instance sabai function ko lagi banaunu parcha
+  final auth = FirebaseAuth.instance;
   final firestore = FirebaseFirestore.instance;
 
-//firestore create code
   @override
   Future<void> addUser(UserModel userModel) {
     return firestore
         .collection("users")
-        .doc(userModel.id)
+        .doc(userModel.uid)
         .set(userModel.toMap());
   }
 
   @override
   Future<void> deleteUser(String id) {
-    return firestore
-        .collection("users")
-        .doc(id)
-        .delete();
+    return firestore.collection("users").doc(id).delete();
   }
 
   @override
   Future<void> editProfile(UserModel userModel) {
-    return firestore
-        .collection("users")
-        .doc(userModel.id)
-        .update(userModel.toMap());
+    return firestore.collection("users").doc(userModel.uid).update(userModel.toMap());
   }
 
   @override
@@ -39,58 +32,50 @@ class UserRepoImpl implements UserRepo {
   }
 
   @override
-  Future<List<UserModel>> getAllUsers() async {            // backend sanga interact garnu lai function garnu paracha. Note: database sanga connect garnu lai repo_impl banako. (parameter not passed here because for all u dont need to do it)
-    final users = await firestore
-        .collection("users")
-        .get();
-    List<UserModel> data = [];      // empty list banako
+  Future<List<UserModel>> getAllUsers() async {
+    final users = await firestore.collection("users").get();
+    List<UserModel> data = [];
 
-    for (int i = 0; i <= users.docs.length; i++) {            // derai data (list of data) .docs bhaneh object ma auncha ani euta matrai data ho bhaneh .data ma auncha
-      data.add(UserModel.fromMap(users.docs[i].data()));      // yo for loop ma document ko length jati cha teti samma for loop run huncha. ani everytime for loop use hunda hamro data yo data bhanneh variable ma bascha.
+    // FIX: use < instead of <= to avoid out-of-range error
+    for (int i = 0; i < users.docs.length; i++) {
+      data.add(UserModel.fromMap(users.docs[i].data()));
     }
     return data;
   }
 
   @override
-  Future<UserModel> getUserById(String id) async {   // repo leh fetch gareko data usermodel ma rakhcha (passes in parameter string id) (parameter selective cha so specific userid pathako)
-    final users = await firestore
-        .collection("users")
-        .doc(id)                                // yo id parameter pass bata ako hamro parameter ma just id cha. so id lekheko
-        .get();
-    final data = users.data();                  // database bata ako data yo data bhitra auncha
+  Future<UserModel> getUserById(String id) async {
+    final users = await firestore.collection("users").doc(id).get();
+    final data = users.data();
 
     if (data == null) {
-      throw Exception("unable to fetch data");
+      throw Exception("Unable to fetch data");
     }
-    return UserModel.fromMap(data);             // database bata ako data yo data bhitra auncha ani tyo data lai chai fetch gareko data bata access gareko
+    return UserModel.fromMap(data);
   }
 
-  // Login ko backend code ho yo
   @override
-  Future<String> login(String email, String password) async {    // yesma parameter email ra password huncha after writing auth.signInWithEmailAndPassword ehich is we are using authentication ko signInWithEmailAndPassword function
-    // 1. Authenticate with FirebaseAuth using email + password
-    final user = await auth.signInWithEmailAndPassword(          // final user = await auth.signInWithEmailAndPassword, yo firebaseauth ko function automatically auncha                   // auth is authentication ko instance ho                                        // signInWithEmailAndPassword yo firebaseauth ko function automatically auncha
-        email: email, password: password);    // email ma parameter bata ako email pass garneh
+  Future<String> login(String email, String password) async {
+    final user = await auth.signInWithEmailAndPassword(email: email, password: password);
+    final userId = user.user?.uid;
 
-    // 2. Get the UID (unique user ID) from the authenticated user
-    final userId = user.user?.uid;            // after login .user variable ma sabai login ko data is stored inside it.       //(user ko pichadi "?" symbol rakheko so it becomes nullable. userid ma value aunu pani sakcha naaunu pani sakcha)        Note: before we didn't add "?" symbol garyp bhaneh error auncha yo userid lai nullable bana bhanera so we added "?" symbol
-
-    // 3. If UID is null → login failed
-    if (userId == null || userId != userId) {                // id userid ma value ayena bhane throw login failed else if userid ma value cha bhaneh login successful huncha
+    if (userId == null) {
       throw Exception("Login failed");
-    } else if (password != password){
-      throw Exception("Password Incorrect");
-    } else if (email != email){
-      throw Exception("Email Incorrect");
-    } else if (email != email && password != password) {
-      throw Exception("Email and Password both Incorrect");
     }
-    // 4. Otherwise return the UID string → login successful
-    return userId;                 // yesleh userId return garyo bhaneh login successful huncha
+
+    // ✅ Check Firestore flag for notification permission
+    final doc = await firestore.collection("users").doc(userId).get();
+    final asked = doc.data()?["notificationsAsked"] ?? false;
+
+    if (!asked) {
+      await NotificationService.requestPermissionOnce();
+      await firestore.collection("users").doc(userId).set({
+        "notificationsAsked": true,
+      }, SetOptions(merge: true));
+    }
+
+    return userId;
   }
-
-  // after login sabai data login ma bhako will store in this variable (.user) ma store gareko. Login bhaisakehpachi user ko sabai details (.user) bhanne variable bhitra store bhako huncha. login bhaisakeh pachi user ko instance yo user bhanneh variable auncha. for now just logic ko lagi userid matrai chaheko so userid rakheko (user id bhaneko primary key so rakheko) login ko lagi userid chahincha so userid(uid) rakheko
-
 
   @override
   Future<void> logout() {
@@ -98,45 +83,44 @@ class UserRepoImpl implements UserRepo {
   }
 
   @override
-  Future<String> signup(String email, String password) async {     // jaba register button thicha hamro 2 function call huncha auth and firestore database . auth function leh email and password lancha ani register gardincha register garera usleh tyo user chai kun userid ma register bhayo tyo response ma dincah hamilai eg: abc123 . aba yo userid lai chai hami database ma as a primary key rakhchau ani usko associated details haru(eg: name, email etc) tyo bhitra rakhchau
-    final user = await auth.createUserWithEmailAndPassword(            // auth.createUserWithEmailAndPassword leh email ra password matrai lancha ani response ma euta userid dincha. now yo email bhako user kun userid ma register bhayo bhanera tesko userid cha hami sanga.
-        email: email, password: password);
-    final userId = user.user?.uid;                     // yo userid lai hami as a primary key liyera ani database ma primary key rakhinchau ani tyo primary key bhitra baki ko details eg: name etc
+  Future<String> signup(String email, String password) async {
+    final user = await auth.createUserWithEmailAndPassword(email: email, password: password);
+    final userId = user.user?.uid;
 
     if (userId == null) {
       throw Exception("Registration failed");
     }
+
+    // ✅ Create Firestore doc with notificationsAsked = false
+    await firestore.collection("users").doc(userId).set({
+      "email": email,
+      "notificationsAsked": false,
+      "createdAt": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
     return userId;
   }
 
   @override
   Future<String> getReceiverName(String receiverId) async {
-    final doc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(receiverId)
-        .get();
-
+    final doc = await firestore.collection("users").doc(receiverId).get();
     return doc.data()?['name'] ?? "Unknown User";
   }
 
   @override
   Future<String?> getProfilePicture(String senderId) async {
     try {
-      final doc = await firestore
-          .collection("users")
-          .doc(senderId)
-          .get();
+      final doc = await firestore.collection("users").doc(senderId).get();
       if (doc.exists) {
-        // Assuming you store profile picture under "profilePicture" field
         return doc.data()?["profilePicture"] as String?;
       }
-      return null; // no picture stored
+      return null;
     } catch (e) {
-      // Log error or handle gracefully
       print("Error fetching profile picture: $e");
       return null;
     }
   }
+
 }
 
 // register garda createUserWithEmailAndPassword (login garda signin, register garda create account ho similar ho just copy paste gareko code logic and then just added createUserWithEmailAndPassword )

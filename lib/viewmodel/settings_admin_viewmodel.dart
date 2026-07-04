@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../model/settings_admin_model.dart';
 
@@ -19,19 +21,47 @@ class SettingsAdminViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Replace with Firestore later:
-    // final doc = await FirebaseFirestore.instance
-    //     .collection('admins').doc(currentUserId).get();
-    // _profile = AdminProfile.fromMap(doc.data()!);
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
 
-    _profile = AdminProfile(
-      name: 'Admin User',
-      email: 'admin@sharebridge.com',
-      initials: 'AU',
-      role: 'Super Admin',
-      joinDate: 'Jan 2024',
-    );
+      if (currentUser != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+
+        final data = doc.data();
+        final name = data?['fullName'] as String? ?? 'Admin User';
+        final email = data?['email'] as String? ??
+            currentUser.email ?? 'admin@sharebridge.com';
+
+        _profile = AdminProfile(
+          name: name,
+          email: email,
+          initials: name.isNotEmpty ? name[0].toUpperCase() : 'A',
+          role: 'Super Admin',
+          joinDate: 'Jan 2024',
+        );
+      } else {
+        // Fallback if not logged in (for testing)
+        _profile = AdminProfile(
+          name: 'Admin User',
+          email: 'admin@sharebridge.com',
+          initials: 'AU',
+          role: 'Super Admin',
+          joinDate: 'Jan 2024',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error loading admin profile: $e');
+      _profile = AdminProfile(
+        name: 'Admin User',
+        email: 'admin@sharebridge.com',
+        initials: 'AU',
+        role: 'Super Admin',
+        joinDate: 'Jan 2024',
+      );
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -53,8 +83,6 @@ class SettingsAdminViewModel extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    // Replace with Firebase Auth later:
-    // await FirebaseAuth.instance.signOut();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await FirebaseAuth.instance.signOut();
   }
 }

@@ -18,6 +18,10 @@ class BrowseItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool available = item['available'] == true;
+    final List images = item['images'] ?? [];
+    final String? imageUrl = images.isNotEmpty
+        ? images[0]
+        : (item['image'] as String?);
 
     return GestureDetector(
       onTap: onTap,
@@ -53,7 +57,6 @@ class BrowseItemCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Bookmark icon — disabled with slash overlay when taken
                   GestureDetector(
                     onTap: available ? onFavoriteTap : null,
                     child: SizedBox(
@@ -66,30 +69,17 @@ class BrowseItemCard extends StatelessWidget {
                             ScaleTransition(scale: anim, child: child),
                         child: Icon(
                           isSaved
-                              ? Icons.bookmark
-                              : Icons.bookmark_border,
+                              ? Icons.favorite
+                              : Icons.favorite_border,
                           key: ValueKey(isSaved),
                           size: 18,
                           color: AppColors.darkGreen,
                         ),
                       )
-                          : Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.bookmark_border,
-                            size: 18,
-                            color: Colors.grey.shade400,
-                          ),
-                          Transform.rotate(
-                            angle: -0.78, // ~ -45 degrees
-                            child: Container(
-                              width: 22,
-                              height: 1.6,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
+                          : Icon(
+                        Icons.favorite_border,
+                        size: 18,
+                        color: Colors.grey.shade400,
                       ),
                     ),
                   ),
@@ -105,8 +95,9 @@ class BrowseItemCard extends StatelessWidget {
                   child: Container(
                     width: double.infinity,
                     color: AppColors.paleGreen,
-                    child: Image.asset(
-                      item['image'],
+                    child: imageUrl != null
+                        ? Image.network(
+                      imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Center(
                         child: Icon(
@@ -114,6 +105,13 @@ class BrowseItemCard extends StatelessWidget {
                           color: AppColors.darkGreen,
                           size: 36,
                         ),
+                      ),
+                    )
+                        : const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: AppColors.darkGreen,
+                        size: 36,
                       ),
                     ),
                   ),

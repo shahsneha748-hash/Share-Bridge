@@ -12,6 +12,14 @@ import 'notification_repo.dart';
 class NotificationRepoImpl implements NotificationRepo {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseMessaging messaging = FirebaseMessaging.instance;
+  // final FirebaseFirestore firestore;
+  // final FirebaseMessaging messaging;
+  //
+  // NotificationRepoImpl({
+  //   required this.firestore,
+  //   FirebaseMessaging? messaging,
+  // }) : messaging = messaging ?? FirebaseMessaging.instance;
+
 
   /// Request Firebase Messaging permissions
   @override
@@ -46,13 +54,9 @@ class NotificationRepoImpl implements NotificationRepo {
 
   /// Get FCM token for this device
   @override
-  Future<String?> getFcmToken() async {
-    try {
-      return await messaging.getToken();
-    } catch (e) {
-      print("Failed to get FCM token: $e");
-      return null;
-    }
+  Future<String?> getFcmToken(String uid) async {
+    final doc = await firestore.collection("users").doc(uid).get();
+    return doc.data()?["fcmToken"];
   }
 
   /// Send push notification using FCM HTTP v1 API
@@ -82,7 +86,6 @@ class NotificationRepoImpl implements NotificationRepo {
         'message': {
           'token': deviceToken,
           'notification': {
-            'title': notification.title,
             'body': notification.body,
           },
           'data': notification.data ?? {},
@@ -107,30 +110,40 @@ class NotificationRepoImpl implements NotificationRepo {
 
   /// Stream notifications for a user (real-time updates)
   @override
-  Stream<List<NotificationModel>> getNotifications(String userId) {
+  Stream<List<NotificationModel>> getNotifications(String uid) {
     return firestore
         .collection("notifications")
-        .where("receiverId", isEqualTo: userId) // ✅ always receiverId
+        .where("receiverId", isEqualTo: uid)
         .orderBy("createdAt", descending: true)
         .snapshots()
-        .map((snapshot) =>
-        snapshot.docs
-            .map((doc) =>
-            NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
-            .toList());
+        .map((snapshot) {
+      print("Fetched ${snapshot.docs.length} notifications");
+      return snapshot.docs.map((doc) =>
+          NotificationModel.fromMap(doc.data() as Map<String, dynamic>)
+      ).toList();
+    });
   }
+
 
   /// Add a new notification
   @override
   Future<bool> addNotification(NotificationModel notification) async {
     try {
-      final ref = firestore.collection("notifications").doc();
+      // Always create a new notification object with updated fields
       final newNotification = notification.copyWith(
-        id: ref.id,
+        id: notification.id.isEmpty
+            ? DateTime.now().millisecondsSinceEpoch.toString()
+            : notification.id,
         createdAt: DateTime.now(),
-        isRead: false, // ✅ always start unread
+        isRead: false, // always start unread
       );
-      await ref.set(newNotification.toMap());
+
+      // Save to Firestore
+      await firestore
+          .collection("notifications")
+          .doc(newNotification.id)
+          .set(newNotification.toMap());
+
       return true;
     } catch (e) {
       print("Failed to add notification: $e");
@@ -138,20 +151,21 @@ class NotificationRepoImpl implements NotificationRepo {
     }
   }
 
+
   /// Get notifications by userId
   @override
   Future<List<NotificationModel>> getNotificationsByUser(String userId) async {
     final snapshot = await firestore
         .collection("notifications")
-        .where("userId", isEqualTo: userId)
+        .where("receiverId", isEqualTo: userId)
         .orderBy("createdAt", descending: true)
         .get();
 
     return snapshot.docs
-        .map((doc) =>
-        NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
+        .map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
         .toList();
   }
+
 
   /// Get notifications by type
   @override
@@ -171,7 +185,10 @@ class NotificationRepoImpl implements NotificationRepo {
   /// Get a single notification by ID
   @override
   Future<NotificationModel> getNotificationById(String id) async {
-    final doc = await firestore.collection("notifications").doc(id).get();
+    final doc = await firestore
+        .collection("notifications")
+        .doc(id)
+        .get();
     if (!doc.exists) throw Exception("Notification not found");
     return NotificationModel.fromMap(doc.data()!);
   }
@@ -189,7 +206,10 @@ class NotificationRepoImpl implements NotificationRepo {
   @override
   Future<void> deleteNotification(String id) async {
     try {
-      await firestore.collection("notifications").doc(id).delete();
+      await firestore
+          .collection("notifications")
+          .doc(id)
+          .delete();
       print("Notification $id deleted");
     } catch (e) {
       print("Failed to delete notification: $e");
@@ -216,14 +236,36 @@ class NotificationRepoImpl implements NotificationRepo {
 
 
   @override
-  Future<void> sendNotificationToUser(String token, String title,
-      String body) async {
-    await FCMService.sendPushMessage(
-      token,
-      {"title": title, "body": body}, // data payload
-      {"title": title, "body": body}, // notification payload
-    );
+  Future<bool> sendNotification(NotificationModel model) async {
+    try {
+      // Save notification to Firestore
+      await FirebaseFirestore.instance
+          .collection("notifications")
+          .doc(model.id)
+          .set(model.toMap());
+
+      // Get receiver's FCM token
+      final token = await getFcmTokenForUser(model.receiverId);
+      if (token == null) {
+        print("No FCM token for receiver");
+        return false;
+      }
+
+      // Send push notification
+      await FCMService.sendPushMessage(
+        token,
+        {"body": model.body}, // data payload
+        {"body": model.body}, // notification payload
+      );
+
+      return true; // success
+    } catch (e) {
+      print("Error sending notification: $e");
+      return false; //  failure
+    }
   }
+
+
 
   @override
   Future<String> getReceiverName(String receiverId) async {
@@ -280,6 +322,15 @@ class NotificationRepoImpl implements NotificationRepo {
       print("Error marking notification as read: $e");
     }
   }
+
+  @override
+  Future<void> updateType(String id, String typeString) async {
+    await FirebaseFirestore.instance
+        .collection('notifications')
+        .doc(id)
+        .update({'type': typeString});
+  }
+
 
 }
 

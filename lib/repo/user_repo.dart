@@ -12,4 +12,5 @@ abstract class UserRepo {
   Future<void> editProfile(UserModel userModel);
   Future<String> getReceiverName(String receiverId);
   Future<String?> getProfilePicture(String senderId);
+
 }

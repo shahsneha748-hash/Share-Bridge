@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../model/admin_model.dart';
 
 class AdminDashboardViewModel extends ChangeNotifier {
+  final _db = FirebaseFirestore.instance;
 
   DashboardStats? _stats;
   List<FlaggedPost> _flaggedPosts = [];
@@ -10,7 +12,6 @@ class AdminDashboardViewModel extends ChangeNotifier {
   List<CategoryStat> _categories = [];
   bool _isLoading = true;
 
-  // Getters — view reads these, cannot write directly
   DashboardStats? get stats => _stats;
   List<FlaggedPost> get flaggedPosts => _flaggedPosts;
   List<ActivityItem> get activityFeed => _activityFeed;
@@ -22,37 +23,54 @@ class AdminDashboardViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Simulated delay — replace with Firestore calls later
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      // Real data from Firestore
+      final usersSnapshot = await _db.collection('users').get();
+      final totalUsers = usersSnapshot.docs.length;
 
-    _stats = DashboardStats(
-      totalDonations: 248,
-      activeUsers: 1043,
-      pendingRequests: 34,
-      flaggedPosts: 5,
-    );
+      final reportsSnapshot = await _db
+          .collection('reports')
+          .where('status', isEqualTo: 'pending')
+          .get();
+      final flaggedCount = reportsSnapshot.docs.length;
 
-    _flaggedPosts = [
-      FlaggedPost(
-        id: '1',
-        initials: 'RK',
-        title: 'Selling item as free donation',
-        reason: 'Misuse',
-        postedBy: 'Rahul K',
-        reportCount: 2,
-        timeAgo: '1hr ago',
-      ),
-      FlaggedPost(
-        id: '2',
-        initials: 'AN',
-        title: 'Expired food listed as fresh',
-        reason: 'Safety',
-        postedBy: 'Anita N',
-        reportCount: 4,
-        timeAgo: '3hr ago',
-      ),
-    ];
+      _stats = DashboardStats(
+        totalDonations: 0, // ⏳ teammates' data
+        activeUsers: totalUsers,
+        pendingRequests: 0, // ⏳ teammates' data
+        flaggedPosts: flaggedCount,
+      );
 
+      // Flagged posts from reports collection
+      _flaggedPosts = reportsSnapshot.docs.map((doc) {
+        final data = doc.data();
+        final name = data['reportedName'] as String? ?? 'Unknown';
+        return FlaggedPost(
+          id: doc.id,
+          initials: name.isNotEmpty ? name[0].toUpperCase() : '?',
+          title: name,
+          reason: data['reason'] as String? ?? '',
+          postedBy: data['isAnonymous'] == true
+              ? 'Anonymous'
+              : data['reporterName'] as String? ?? 'Unknown',
+          reportCount: 1,
+          timeAgo: _timeAgo(data['createdAt']),
+        );
+      }).toList();
+
+    } catch (e) {
+      debugPrint('Error loading dashboard: $e');
+
+      // Fallback dummy data if Firestore fails
+      _stats = DashboardStats(
+        totalDonations: 0,
+        activeUsers: 0,
+        pendingRequests: 0,
+        flaggedPosts: 0,
+      );
+    }
+
+    // Keep dummy data for things we can't get yet
     _activityFeed = [
       ActivityItem(
         description: 'New food donation posted by Sita Poudel',
@@ -95,6 +113,20 @@ class AdminDashboardViewModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  String _timeAgo(dynamic createdAt) {
+    if (createdAt == null) return '';
+    DateTime dt;
+    if (createdAt is Timestamp) {
+      dt = createdAt.toDate();
+    } else {
+      return '';
+    }
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    return '${diff.inDays} day ago';
   }
 
   void removePost(String postId) {

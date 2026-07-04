@@ -1,11 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/view/homescreentest.dart';
+import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
+import 'package:sharebridge/view/admin_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(0),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -78,14 +82,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       Text(
-                        "Login",
-                        style: TextStyle(
-                          color: Color(0XFF435944),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 40,
-                        ),
-                      ),
+                       Row(
+                         children: [
+                           Text(
+                            "Login",
+                            style: TextStyle(
+                              color: Color(0XFF435944),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 40,
+                            ),
+                           ),
+                           SizedBox(width: 15),
+                           Image.asset('assets/images/loogo1.png', height: 70, width: 75),
+                         ],
+                       ),
 
                        SizedBox(height: 20),
 
@@ -171,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Forgot password link
                       Align(
                         alignment: Alignment.centerRight,
-                        child: GestureDetector(
+                        child: InkWell(
                           onTap: () {
                             Navigator.push(
                               context,
@@ -199,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 57,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:  Color(0XFF435944),
+                            backgroundColor: const Color(0XFF435944),
                             foregroundColor: Colors.white,
                           ),
                           onPressed: () async {
@@ -212,12 +222,45 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
 
                             try {
+                              // 🔑 Step 1: Login with FirebaseAuth
                               await FirebaseAuth.instance.signInWithEmailAndPassword(
                                 email: email,
                                 password: password,
                               );
+
                               Fluttertoast.showToast(msg: "Login successful");
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Homescreentest()));
+
+                              // 🔑 Step 2: Get the logged-in user's UID
+                              final uid = FirebaseAuth.instance.currentUser!.uid;
+
+                              // 🔑 Step 3: Fetch user document from Firestore
+                              final userDoc = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(uid)
+                                  .get();
+
+                              final role = userDoc.data()?['role'];
+
+                              // ✅ Navigate on success
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const Homescreentest(uid: '')),
+                              );
+
+
+                              // // 🔑 Step 4: Navigate based on role
+                              // if (role == 'admin') {
+                              //   Navigator.pushReplacement(
+                              //     context,
+                              //     MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
+                              //   );
+                              // } else {
+                              //   Navigator.pushReplacement(
+                              //     context,
+                              //     MaterialPageRoute(builder: (_) => const NavigationScreen()),
+                              //   );
+                              // }
+
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {
                                 Fluttertoast.showToast(msg: "Incorrect email");
@@ -229,12 +272,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
                           },
                           child: viewModel.loading
-                              ? CircularProgressIndicator()
-                              : Text("Login", style: TextStyle(fontSize: 20)),
+                              ? const CircularProgressIndicator()
+                              : const Text("Login", style: TextStyle(fontSize: 20)),
                         ),
                       ),
 
-                      SizedBox(height: 30),
+
+                          SizedBox(height: 30),
 
                       // Signup link
                       Row(

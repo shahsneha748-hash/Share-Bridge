@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected }
+
 class NotificationModel {
   final String id;
   final String senderId;
   final String receiverId;
-  final String type;
-  final String title;
+  final NotificationType type;
   final String body;
   final String? profilePicture;
   final String? targetId;
@@ -16,13 +17,16 @@ class NotificationModel {
   final String? pickupNumber;
   final String? assetImage;
   final String? filePath;
+  final String? imageUrl;
+  final String? senderName;
+  final String? receiverName;
+
 
   NotificationModel({
     required this.id,
     required this.senderId,
     required this.receiverId,
     required this.type,
-    required this.title,
     required this.body,
     this.profilePicture,
     this.targetId,
@@ -33,6 +37,9 @@ class NotificationModel {
     this.pickupNumber,
     this.assetImage,
     this.filePath,
+    this.imageUrl,
+    this.senderName,
+    this.receiverName,
   });
 
   /// Convert to Firestore map
@@ -41,8 +48,7 @@ class NotificationModel {
       "id": id,
       "senderId": senderId,
       "receiverId": receiverId,
-      "type": type,
-      "title": title,
+      "type": type.toString().split('.').last,
       "body": body,
       "profilePicture": profilePicture,
       "targetId": targetId,
@@ -53,6 +59,9 @@ class NotificationModel {
       "pickupNumber": pickupNumber,
       "assetImage": assetImage,
       "filePath": filePath,
+      "imageUrl": imageUrl,
+      "senderName": senderName,
+      "receiverName": receiverName,
     };
   }
 
@@ -62,8 +71,7 @@ class NotificationModel {
       id: map["id"] ?? "",
       senderId: map["senderId"] ?? "",
       receiverId: map["receiverId"] ?? "",
-      type: map["type"] ?? "",
-      title: map["title"] ?? "",
+      type: _mapStringToType(map["type"]),
       body: map["body"] ?? "",
       profilePicture: map["profilePicture"],
       targetId: map["targetId"],
@@ -76,7 +84,23 @@ class NotificationModel {
       pickupNumber: map["pickupNumber"],
       assetImage: map["assetImage"],
       filePath: map["filePath"],
+      imageUrl: map["imageUrl"],
+      senderName: map["senderName"],
+      receiverName: map["receiverName"],
     );
+  }
+
+  /// Helper to map Firestore string to enum
+  static NotificationType _mapStringToType(String? type) {
+    switch (type) {
+      case 'request': return NotificationType.request;
+      case 'pickup': return NotificationType.pickup;
+      case 'alert': return NotificationType.alert;
+      case 'normal_alert': return NotificationType.normal_alert;
+      case 'accepted': return NotificationType.accepted;
+      case 'rejected': return NotificationType.rejected;
+      default: return NotificationType.alert;
+    }
   }
 
   /// Copy with new values
@@ -84,8 +108,7 @@ class NotificationModel {
     String? id,
     String? senderId,
     String? receiverId,
-    String? type,
-    String? title,
+    NotificationType? type,
     String? body,
     String? profilePicture,
     String? targetId,
@@ -95,15 +118,16 @@ class NotificationModel {
     Map<String, dynamic>? data,
     String? pickupNumber,
     String? assetImage,
-    String? imageUrl,
     String? filePath,
+    String? imageUrl,
+    String? senderName,
+    String? receiverName,
   }) {
     return NotificationModel(
       id: id ?? this.id,
       senderId: senderId ?? this.senderId,
       receiverId: receiverId ?? this.receiverId,
       type: type ?? this.type,
-      title: title ?? this.title,
       body: body ?? this.body,
       profilePicture: profilePicture ?? this.profilePicture,
       targetId: targetId ?? this.targetId,
@@ -114,9 +138,14 @@ class NotificationModel {
       pickupNumber: pickupNumber ?? this.pickupNumber,
       assetImage: assetImage ?? this.assetImage,
       filePath: filePath ?? this.filePath,
+      imageUrl: imageUrl ?? this.imageUrl,
+      senderName: senderName ?? this.senderName,
+      receiverName: receiverName ?? this.receiverName,
+
     );
   }
 }
+
 
 
 // Note: Model = raw data only (like a database row).

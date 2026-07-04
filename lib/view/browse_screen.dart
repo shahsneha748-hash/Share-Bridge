@@ -50,6 +50,33 @@ class _BrowseViewState extends State<_BrowseView> {
     super.dispose();
   }
 
+  Widget _heartIcon(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Wishlist — Coming Soon'),
+            backgroundColor: AppColors.darkGreen,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      },
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          color: AppColors.cream,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.favorite_border,
+          color: AppColors.darkGreen,
+          size: 26,
+        ),
+      ),
+    );
+  }
+
   void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
     final vm = context.read<BrowseViewModel>();
     Navigator.push(
@@ -64,7 +91,7 @@ class _BrowseViewState extends State<_BrowseView> {
     vm.toggleFavorite(title);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(wasSaved ? 'Removed from saved' : 'Added to saved'),
+        content: Text(wasSaved ? 'Removed from wishlist' : 'Added to wishlist'),
         backgroundColor: AppColors.darkGreen,
         duration: const Duration(seconds: 1),
       ),
@@ -286,7 +313,7 @@ class _BrowseViewState extends State<_BrowseView> {
         body: SafeArea(
           child: Column(
             children: [
-              const AppHeader(title: 'Browse'),
+              AppHeader(title: 'Browse', trailing: _heartIcon(context)),
               Expanded(
                 child: Container(
                   color: Colors.white,
@@ -302,20 +329,21 @@ class _BrowseViewState extends State<_BrowseView> {
                           decoration: BoxDecoration(
                             color: AppColors.inputBg,
                             borderRadius: BorderRadius.circular(30),
-                            border:
-                            Border.all(color: Colors.grey.shade300, width: 1.2),
+                            border: Border.all(
+                                color: Colors.grey.shade300, width: 1.2),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.search, color: Colors.grey, size: 22),
+                              const Icon(Icons.search,
+                                  color: Colors.grey, size: 22),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: TextField(
                                   controller: _searchController,
                                   decoration: const InputDecoration(
                                     hintText: 'Search all items',
-                                    hintStyle:
-                                    TextStyle(color: Colors.grey, fontSize: 15),
+                                    hintStyle: TextStyle(
+                                        color: Colors.grey, fontSize: 15),
                                     border: InputBorder.none,
                                     isDense: true,
                                     contentPadding: EdgeInsets.zero,
@@ -385,7 +413,7 @@ class _BrowseViewState extends State<_BrowseView> {
                             'Food',
                             'Clothes',
                             'Stationery',
-                            'Others'
+                            'Others',
                           ].map((label) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -436,7 +464,12 @@ class _BrowseViewState extends State<_BrowseView> {
                       const SizedBox(height: 12),
 
                       Expanded(
-                        child: items.isEmpty
+                        child: vm.isLoading
+                            ? const Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.darkGreen),
+                        )
+                            : items.isEmpty
                             ? const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -446,14 +479,15 @@ class _BrowseViewState extends State<_BrowseView> {
                               SizedBox(height: 10),
                               Text(
                                 'No items match your filters',
-                                style:
-                                TextStyle(color: Colors.grey, fontSize: 15),
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 15),
                               ),
                             ],
                           ),
                         )
                             : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 20),
                           child: GridView.builder(
                             padding: EdgeInsets.zero,
                             itemCount: items.length,
@@ -470,7 +504,8 @@ class _BrowseViewState extends State<_BrowseView> {
                               return BrowseItemCard(
                                 item: item,
                                 isSaved: vm.isFavorite(title),
-                                onTap: () => _openItemDetail(context, item),
+                                onTap: () =>
+                                    _openItemDetail(context, item),
                                 onFavoriteTap: () =>
                                     _toggleFavorite(context, title),
                               );
