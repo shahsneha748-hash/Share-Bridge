@@ -11,12 +11,12 @@ class ItemDetailViewModel extends ChangeNotifier {
   bool _isFollowing = false;
   bool get isFollowing => _isFollowing;
 
-  bool get available => item['available'] == true;
+  bool get available => item['isDonated'] != true;
 
   bool get showExpiry =>
-      item['category'] == 'Food' &&
-          item['expires'] != null &&
-          item['expires'].toString().isNotEmpty;
+      item['category']?.toString().toLowerCase() == 'food' &&
+          item['expiryDate'] != null &&
+          item['expiryDate'].toString().isNotEmpty;
 
   String get donorInitial => (item['donorName'] ?? 'U')[0].toString().toUpperCase();
 
@@ -30,7 +30,7 @@ class ItemDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> reportItem() async {
-    await _repo.reportItem(item['title'] ?? '');
+    await _repo.reportItem(item['itemName'] ?? '');
   }
 
   Future<void> blockDonor() async {
@@ -38,22 +38,32 @@ class ItemDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> sendRequest() async {
-    await _repo.sendRequest(item['title'] ?? '', item['donorName'] ?? '');
+    await _repo.sendRequest(item['itemName'] ?? '', item['donorName'] ?? '');
   }
 
-  /// Returns null if location is missing, otherwise opens Maps.
-  /// Caller handles the null case to show a snackbar.
+  /// Opens Maps using lat/lng if available, otherwise falls back to
+  /// searching by the text location string.
   Future<bool> openInMaps() async {
     final double? lat = (item['mapLat'] as num?)?.toDouble();
     final double? lng = (item['mapLng'] as num?)?.toDouble();
 
-    if (lat == null || lng == null) {
-      return false;
-    }
+    Uri googleMapsApp;
+    Uri geoUri;
 
-    final Uri googleMapsApp = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
-    final Uri geoUri = Uri.parse('geo:$lat,$lng?q=$lat,$lng');
+    if (lat != null && lng != null) {
+      googleMapsApp = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+      geoUri = Uri.parse('geo:$lat,$lng?q=$lat,$lng');
+    } else {
+      final location = item['location']?.toString();
+      if (location == null || location.isEmpty) {
+        return false;
+      }
+      final encoded = Uri.encodeComponent(location);
+      googleMapsApp = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$encoded');
+      geoUri = Uri.parse('geo:0,0?q=$encoded');
+    }
 
     try {
       if (await canLaunchUrl(googleMapsApp)) {
@@ -72,14 +82,16 @@ class ItemDetailViewModel extends ChangeNotifier {
   /// Builds the feature list (portion/weight/tag/condition) for the grid.
   List<Map<String, dynamic>> get features {
     final list = <Map<String, dynamic>>[];
-    if (item['portion'] != null) {
+    if (item['portion'] != null && item['portion'].toString().isNotEmpty) {
       list.add({'icon': Icons.group, 'label': 'Portion', 'value': item['portion']});
+    } else if (item['portionCount'] != null) {
+      list.add({'icon': Icons.group, 'label': 'Portion', 'value': '${item['portionCount']} portions'});
     }
     if (item['weight'] != null) {
       list.add({'icon': Icons.scale, 'label': 'Weight', 'value': item['weight']});
     }
-    if (item['tag'] != null) {
-      list.add({'icon': Icons.local_offer_outlined, 'label': 'Tag', 'value': item['tag']});
+    if (item['tags'] != null && (item['tags'] as List).isNotEmpty) {
+      list.add({'icon': Icons.local_offer_outlined, 'label': 'Tag', 'value': (item['tags'] as List).join(', ')});
     }
     if (item['condition'] != null) {
       list.add({'icon': Icons.verified_outlined, 'label': 'Condition', 'value': item['condition']});

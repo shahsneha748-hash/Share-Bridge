@@ -105,7 +105,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: ChatListScreen(),
+      home: NavigationScreen(),
     );
   }
 }

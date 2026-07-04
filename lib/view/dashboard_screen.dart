@@ -48,7 +48,6 @@ class _DashboardView extends StatelessWidget {
   }
 
   void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
-    final vm = context.read<DashboardViewModel>();
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)
@@ -193,7 +192,7 @@ class _DashboardView extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'Featured Nearby',
+                                'New Arrivals',
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
@@ -215,30 +214,43 @@ class _DashboardView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-
                         SizedBox(
                           height: 220,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: vm.featuredItems.length,
-                            itemBuilder: (context, index) {
-                              final item = vm.featuredItems[index];
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  right: index == vm.featuredItems.length - 1
-                                      ? 0
-                                      : 12,
-                                ),
-                                child: _FeaturedCard(
-                                  item: item,
-                                  onTap: () => _openItemDetail(context, item),
+                          child: Builder(builder: (context) {
+                            if (vm.isLoading) {
+                              return const Center(
+                                child: CircularProgressIndicator(color: AppColors.darkGreen),
+                              );
+                            }
+                            if (vm.featuredItems.isEmpty) {
+                              return const Center(
+                                child: Text(
+                                  'No items available.',
+                                  style: TextStyle(color: Colors.grey, fontSize: 13),
                                 ),
                               );
-                            },
-                          ),
+                            }
+                            return ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: vm.featuredItems.length,
+                              itemBuilder: (context, index) {
+                                final item = vm.featuredItems[index];
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    right: index == vm.featuredItems.length - 1 ? 0 : 12,
+                                  ),
+                                  child: _FeaturedCard(
+                                    item: item,
+                                    onTap: () => _openItemDetail(context, item),
+                                  ),
+                                );
+                              },
+                            );
+                          }),
                         ),
+
+
                       ],
                     ),
                   ),
@@ -383,7 +395,9 @@ class _FeaturedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool available = !(item['isDonated']) == true;
+    final List images = item['images'] ?? [];
+    final bool available = item['isDonated'] != true;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -408,20 +422,37 @@ class _FeaturedCard extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(13)),
+                      top: Radius.circular(13),
+                    ),
                     child: SizedBox(
                       width: double.infinity,
-                      child: Image.asset(
-                        item['image'],
+                      height: double.infinity,
+                      child: images.isNotEmpty
+                          ? Image.network(
+                        images[0],
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: AppColors.paleGreen,
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppColors.darkGreen,
-                              size: 36,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (_, __, ___) {
+                          return Container(
+                            color: AppColors.paleGreen,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: AppColors.darkGreen,
+                                size: 36,
+                              ),
                             ),
+                          );
+                        },
+                      )
+                          : Container(
+                        color: AppColors.paleGreen,
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: AppColors.darkGreen,
+                            size: 36,
                           ),
                         ),
                       ),
@@ -458,7 +489,7 @@ class _FeaturedCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['title'],
+                    item['itemName'],
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -473,10 +504,14 @@ class _FeaturedCard extends StatelessWidget {
                       const Icon(Icons.location_on,
                           size: 12, color: Colors.grey),
                       const SizedBox(width: 2),
-                      Text(
-                        item['distance'] ?? '—',
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.grey),
+                      Expanded(
+                        child: Text(
+                          item['location'] ?? 'No location',
+                          style: const TextStyle(
+                              fontSize: 11, color: Colors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
