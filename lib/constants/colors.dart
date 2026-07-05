@@ -12,6 +12,8 @@ class AppColors {
   static const Color filterChipBg     = Color(0xFFEFE9D5);
   static const Color takenBg          = Color(0xFFFDD7D7);
   static const Color availableText    = Color(0xFF2D5016);
+
+  // ── Item Detail ────────────────────────────────────────────────────
   static const Color expiryBg         = Color(0xFFFFE9E9);
   static const Color expiryText       = Color(0xFFD64545);
   static const Color descriptionText  = Color(0xFF3D4A35);
@@ -64,4 +66,12 @@ class AppColors {
   static const Color rejectedText    = Color(0xFFC62828);
   static const Color rejectedBg      = Color(0xFFFCE4EC);
   static const Color rejectedBorder  = Color(0xFFF48FB1);
+
+  // ── Added for Profile screen ───────────────────────────────────────
+  static const Color profilePrimary  = Color(0xFF2D5A27);
+  static const Color profileDark     = Color(0xFF1A3A15);
+  static const Color profileLight    = Color(0xFFF5F7F4);
+  static const Color profileTextDark = Color(0xFF1C2B1A);
+  static const Color profileTextGrey = Color(0xFF7A8A78);
+  static const Color profileDivider  = Color(0xFFE8EDE7);
 }

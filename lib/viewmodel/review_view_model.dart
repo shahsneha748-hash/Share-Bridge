@@ -1,11 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../model/review_model.dart';
 import '../repo/review_repo.dart';
 
 class ReviewViewModel extends ChangeNotifier {
-
-  final ReviewRepository repository;
+  final ReviewRepo repository;
 
   ReviewViewModel({
     required this.repository,
@@ -15,37 +15,43 @@ class ReviewViewModel extends ChangeNotifier {
 
   bool isLoading = false;
 
-  Future<void> getAllReviews() async {
+  StreamSubscription<List<ReviewModel>>? _subscription;
 
+  void getReviewsForUser(String targetUserId) {
     isLoading = true;
     notifyListeners();
 
-    reviews = await repository.getAllReviews();
+    _subscription?.cancel();
 
-    isLoading = false;
-    notifyListeners();
+    _subscription = repository.getReviewsForUser(targetUserId).listen(
+          (data) {
+        reviews = data;
+        isLoading = false;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint("Error fetching reviews: $error");
+        reviews = [];
+        isLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> addReview(ReviewModel review) async {
     await repository.addReview(review);
-    await getAllReviews();
-  }
-
-  Future<void> deleteReview(String id) async {
-    await repository.deleteReview(id);
-    await getAllReviews();
   }
 
   Future<void> updateReview(ReviewModel review) async {
     await repository.updateReview(review);
-    await getAllReviews();
+  }
+
+  Future<void> deleteReview(String reviewId) async {
+    await repository.deleteReview(reviewId);
   }
 
   double get averageRating {
-
-    if (reviews.isEmpty) {
-      return 0;
-    }
+    if (reviews.isEmpty) return 0;
 
     double total = reviews.fold(
       0,
@@ -56,13 +62,16 @@ class ReviewViewModel extends ChangeNotifier {
   }
 
   List<ReviewModel> filterByRating(int rating) {
+    if (rating == 0) return reviews;
 
-    if (rating == 0) {
-      return reviews;
-    }
+    return reviews.where((review) {
+      return review.rating.toInt() == rating;
+    }).toList();
+  }
 
-    return reviews.where(
-          (review) => review.rating == rating,
-    ).toList();
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

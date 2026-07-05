@@ -9,12 +9,18 @@ import 'package:sharebridge/repo/image_repo.dart';
 import 'package:sharebridge/repo/image_repo_impl.dart';
 import 'package:sharebridge/repo/notification_repo.dart';
 import 'package:sharebridge/repo/notification_repo_impl.dart';
+import 'package:sharebridge/repo/profile_repo_impl.dart';
 import 'package:sharebridge/repo/request_system_repo.dart';
 import 'package:sharebridge/repo/request_system_repo_impl.dart';
+import 'package:sharebridge/repo/review_repo_impl.dart';
 import 'package:sharebridge/repo/saved_items_repo.dart';
 import 'package:sharebridge/repo/saved_items_repo_impl.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:sharebridge/repo/user_repo_impl.dart';
+import 'package:sharebridge/repo/volunteer_repo.dart';
+import 'package:sharebridge/repo/volunteer_repo_impl.dart';
+import 'package:sharebridge/repo/volunteer_task_repo.dart';
+import 'package:sharebridge/repo/volunteer_task_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/admin_dashboard_view.dart';
 import 'package:sharebridge/view/admin_navigation_screen.dart';
@@ -29,10 +35,14 @@ import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
+import 'package:sharebridge/viewmodel/my_profile_viewmodel.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/request_system_view_model.dart';
+import 'package:sharebridge/viewmodel/review_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
+import 'package:sharebridge/viewmodel/volunteer_task_viewmodel.dart';
+import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
 import 'firebase_options.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -99,6 +109,36 @@ Future<void> main() async {
           create: (context) => RequestSystemViewModel(
             repository: context.read<DonationRequestRepository>(),
           ),
+        ),
+
+        Provider<VolunteerRepo>(
+          create: (_) => VolunteerRepoImpl(),
+        ),
+
+        Provider<VolunteerTaskRepo>(
+          create: (_) => VolunteerTaskRepoImpl(),
+        ),
+
+        ChangeNotifierProvider(
+          create: (context) => VolunteerViewModel(
+            context.read<VolunteerRepo>(),
+          ),
+        ),
+
+        ChangeNotifierProvider(
+          create: (context) => VolunteerTaskViewModel(
+            context.read<VolunteerTaskRepo>(),
+          ),
+        ),
+
+        ChangeNotifierProvider(
+          create: (_) => ReviewViewModel(
+            repository: ReviewRepoImpl(),
+          ),
+        ),
+
+        ChangeNotifierProvider(
+          create: (_) => MyProfileViewModel(profileRepo: ProfileRepoImpl()),
         ),
       ],
       child: const MyHomePage(),
