@@ -6,7 +6,7 @@ import 'package:sharebridge/repo/dashboard_repo.dart';
 class DashboardViewModel extends ChangeNotifier {
   final DashboardRepo _repo;
 
-  DashboardModel _model = DashboardModel(donations: []);
+  DashboardModel _model = DashboardModel(donations: [], id: '');
   StreamSubscription? _subscription;
   bool _isLoading = true;
   bool get isLoading => _isLoading;

@@ -6,18 +6,39 @@ import 'package:sharebridge/repo/dashboard_repo_impl.dart';
 import 'package:sharebridge/components/app_header.dart';
 import 'package:sharebridge/components/category_card.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
+import 'package:sharebridge/view/notification_screen.dart';
+import 'package:sharebridge/view/volunteer_intro_screen.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import '../viewmodel/dashboard_view_model.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final void Function({String? category})? onGoToBrowse;
 
   const DashboardScreen({super.key, this.onGoToBrowse});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // One-time setup on first load goes here (e.g. mark notifications
+    // as seen, fetch a badge count, log analytics, etc.)
+  }
+
+  @override
+  void dispose() {
+    // Clean up any controllers/subscriptions started in initState here.
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => DashboardViewModel(DashboardRepoImpl()),
-      child: _DashboardView(onGoToBrowse: onGoToBrowse),
+      child: _DashboardView(onGoToBrowse: widget.onGoToBrowse),
     );
   }
 }
@@ -56,43 +77,65 @@ class _DashboardView extends StatelessWidget {
   }
 
   void _openVolunteer(BuildContext context) {
-    // TODO: hook this up to teammate's Volunteer screen
-    _showSnackbar(context, 'Volunteer — Coming Soon');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const VolunteerIntroScreen()),
+    );
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+    );
   }
 
   Widget _notificationBell(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showSnackbar(context, 'Notifications — Coming Soon'),
-      child: Stack(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.cream,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.notifications,
-              color: AppColors.darkGreen,
-              size: 26,
-            ),
-          ),
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: Colors.redAccent,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.cream, width: 2),
+    return Consumer<NotificationViewModel>(
+      builder: (context, vm, child) {
+        return GestureDetector(
+          onTap: () => _openNotifications(context),
+          child: Stack(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: AppColors.cream,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.notifications,
+                  color: AppColors.darkGreen,
+                  size: 26,
+                ),
               ),
-            ),
+              // Show badge only if unreadCount > 0
+              if (vm.unreadCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.cream, width: 2),
+                    ),
+                    child: Text(
+                      vm.unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
