@@ -1,34 +1,47 @@
-class VolunteerTaskModel {
-  final String id;
-  final String title;
-  final String pickupLocation;
-  final String dropoffLocation;
-  final bool needsVolunteer;
-  final String status;
-  final String? volunteerId;
+class VolunteerModel {
+  final String userId;
+  final String citizenshipNumber;
+  final String citizenshipImage;
+  final String selfieImage;
+  final String vehicle;
+  final String availability;
+  final String status; // Pending / Approved / Rejected
+  final DateTime submittedAt;
 
-  VolunteerTaskModel({
-    required this.id,
-    required this.title,
-    required this.pickupLocation,
-    required this.dropoffLocation,
-    required this.needsVolunteer,
+  VolunteerModel({
+    required this.userId,
+    required this.citizenshipNumber,
+    required this.citizenshipImage,
+    required this.selfieImage,
+    required this.vehicle,
+    required this.availability,
     required this.status,
-    this.volunteerId,
+    required this.submittedAt,
   });
 
-  factory VolunteerTaskModel.fromJson(
-      Map<String, dynamic> json,
-      String id,
-      ) {
-    return VolunteerTaskModel(
-      id: id,
-      title: json['title'] ?? '',
-      pickupLocation: json['pickupLocation'] ?? '',
-      dropoffLocation: json['dropoffLocation'] ?? '',
-      needsVolunteer: json['needsVolunteer'] ?? false,
-      status: json['status'] ?? '',
-      volunteerId: json['volunteerId'],
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'citizenshipNumber': citizenshipNumber,
+      'citizenshipImage': citizenshipImage,
+      'selfieImage': selfieImage,
+      'vehicle': vehicle,
+      'availability': availability,
+      'status': status,
+      'submittedAt': submittedAt.toIso8601String(),
+    };
+  }
+
+  factory VolunteerModel.fromMap(Map<String, dynamic> map) {
+    return VolunteerModel(
+      userId: map['userId'],
+      citizenshipNumber: map['citizenshipNumber'],
+      citizenshipImage: map['citizenshipImage'],
+      selfieImage: map['selfieImage'],
+      vehicle: map['vehicle'],
+      availability: map['availability'],
+      status: map['status'],
+      submittedAt: DateTime.parse(map['submittedAt']),
     );
   }
 }

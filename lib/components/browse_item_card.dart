@@ -18,6 +18,10 @@ class BrowseItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool available = item['available'] == true;
+    final List images = item['images'] ?? [];
+    final String? imageUrl = images.isNotEmpty
+        ? images[0]
+        : (item['image'] as String?);
 
     return GestureDetector(
       onTap: onTap,
@@ -91,8 +95,9 @@ class BrowseItemCard extends StatelessWidget {
                   child: Container(
                     width: double.infinity,
                     color: AppColors.paleGreen,
-                    child: Image.asset(
-                      item['image'],
+                    child: imageUrl != null
+                        ? Image.network(
+                      imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Center(
                         child: Icon(
@@ -100,6 +105,13 @@ class BrowseItemCard extends StatelessWidget {
                           color: AppColors.darkGreen,
                           size: 36,
                         ),
+                      ),
+                    )
+                        : const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: AppColors.darkGreen,
+                        size: 36,
                       ),
                     ),
                   ),

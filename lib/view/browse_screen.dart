@@ -464,7 +464,12 @@ class _BrowseViewState extends State<_BrowseView> {
                       const SizedBox(height: 12),
 
                       Expanded(
-                        child: items.isEmpty
+                        child: vm.isLoading
+                            ? const Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.darkGreen),
+                        )
+                            : items.isEmpty
                             ? const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,

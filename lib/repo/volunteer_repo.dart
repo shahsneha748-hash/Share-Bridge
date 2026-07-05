@@ -1,14 +1,10 @@
 import '../model/volunteer_model.dart';
+import '../model/volunteer_task_model.dart';
 
 abstract class VolunteerRepo {
+  Future<void> submitVolunteer(VolunteerModel model);
+  Future<String> getStatus(String userId);
 
-  Stream<List<VolunteerTaskModel>> getAvailableTasks();
+  Stream<String> getStatusStream(String userId);
 
-  Stream<List<VolunteerTaskModel>> getMyTasks(
-      String volunteerId);
-
-  Future<void> acceptTask({
-    required String donationId,
-    required String volunteerId,
-  });
 }

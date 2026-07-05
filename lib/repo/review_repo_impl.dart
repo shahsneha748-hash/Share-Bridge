@@ -1,36 +1,48 @@
-import 'package:sharebridge/repo/review_repo.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/review_model.dart';
+import 'review_repo.dart';
 
-class ReviewRepositoryImpl implements ReviewRepository {
+class ReviewRepoImpl implements ReviewRepo {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  final List<ReviewModel> _reviews = [];
+  // 🔥 COLLECTION NAME
+  final String collection = "reviews";
 
   @override
-  Future<List<ReviewModel>> getAllReviews() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    return _reviews;
+  Stream<List<ReviewModel>> getReviewsForUser(String targetUserId) {
+    return firestore
+        .collection(collection)
+        .where("targetUserId", isEqualTo: targetUserId)
+        .orderBy("createdAt", descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return ReviewModel.fromJson(doc.data());
+      }).toList();
+    });
   }
 
   @override
   Future<void> addReview(ReviewModel review) async {
-    _reviews.add(review);
-  }
-
-  @override
-  Future<void> deleteReview(String id) async {
-    _reviews.removeWhere((review) => review.id == id);
+    await firestore
+        .collection(collection)
+        .doc(review.id)
+        .set(review.toJson());
   }
 
   @override
   Future<void> updateReview(ReviewModel review) async {
+    await firestore
+        .collection(collection)
+        .doc(review.id)
+        .update(review.toJson());
+  }
 
-    final index =
-    _reviews.indexWhere((element) => element.id == review.id);
-
-    if (index != -1) {
-      _reviews[index] = review;
-    }
+  @override
+  Future<void> deleteReview(String reviewId) async {
+    await firestore
+        .collection(collection)
+        .doc(reviewId)
+        .delete();
   }
 }
