@@ -170,8 +170,8 @@ class _ChatListView extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => DonationChatScreen(
                             chatId: room.chatId,
-                            donorId: room.donorId,
-                            donorName: room.otherUserName,
+                            otherUserId: room.otherUserId,
+                            otherUserName: room.otherUserName,
                             itemName: room.donationTitle,
                           ),
                         ),

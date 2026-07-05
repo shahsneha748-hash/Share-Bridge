@@ -9,28 +9,9 @@ import 'donation_admin_screen.dart';
 import 'settings_admin_screen.dart';
 import 'stats_admin_screen.dart';
 import 'admin_notification_screen.dart';
+import '../constants/colors.dart';
 
-class AppColors {
-  static const primary      = Color(0xFF6B9757);
-  static const light1       = Color(0xFFAECDA3);
-  static const light2       = Color(0xFFD1E8BF);
-  static const light3       = Color(0xFFC7DBA8);
-  static const accent       = Color(0xFF9FCD8F);
-  static const dark         = Color(0xFF839A71);
-  static const background   = Color(0xFFF4F6F0);
-  static const cardBg       = Colors.white;
-  static const textDark     = Color(0xFF2C2C2A);
-  static const textMuted    = Color(0xFF888780);
-  static const dangerBg     = Color(0xFFFCEBEB);
-  static const dangerText   = Color(0xFFA32D2D);
-  static const dangerBorder = Color(0xFFF09595);
-  static const successBg    = Color(0xFFEAF3DE);
-  static const successText  = Color(0xFF3B6D11);
-  static const amberBg      = Color(0xFFFAEEDA);
-  static const amberText    = Color(0xFF854F0B);
-  static const blueBg       = Color(0xFFE6F1FB);
-  static const blueText     = Color(0xFF185FA5);
-}
+
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});

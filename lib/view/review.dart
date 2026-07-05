@@ -3,9 +3,18 @@ import 'package:provider/provider.dart';
 
 import '../model/review_model.dart';
 import '../viewmodel/review_view_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RatingsReviewsPage extends StatefulWidget {
-  const RatingsReviewsPage({super.key});
+  final String donationId;
+  final String targetUserId; // donor/volunteer id
+  final String reviewType;
+  const RatingsReviewsPage({
+    super.key,
+    required this.donationId,
+    required this.targetUserId,
+    required this.reviewType,
+  });
 
   @override
   State<RatingsReviewsPage> createState() => _RatingsReviewsPageState();
@@ -22,8 +31,9 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
     super.initState();
     Future.microtask(() {
       if (!mounted) return;
-      context.read<ReviewViewModel>().getAllReviews();
-    });
+      context
+          .read<ReviewViewModel>()
+          .getReviewsForUser(widget.targetUserId);    });
   }
 
   @override
@@ -32,8 +42,9 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
     super.dispose();
   }
 
-  // ✅ Fixed: takes vm as parameter
   void submitReview(ReviewViewModel vm) async {
+    final user = FirebaseAuth.instance.currentUser!;
+
     if (selectedRating == 0 || reviewController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please add rating and review")),
@@ -43,14 +54,20 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
 
     final model = ReviewModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      donationId: "donationId_here",
-      userId: "userId_here",
-      name: "You",
-      initials: "YU",
+
+      donationId: widget.donationId,
+      targetUserId: widget.targetUserId,
+      reviewType: widget.reviewType,
+
+      reviewerId: user.uid,
+      reviewerName: user.displayName ?? "User",
+      reviewerInitials: "U",
+
       rating: selectedRating.toDouble(),
       review: reviewController.text,
-      time: "Just now",
-      date: "Today",
+
+      createdAt: DateTime.now(),
+
       likes: 0,
       liked: false,
     );
@@ -367,7 +384,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
     );
   }
 
-  // ✅ Dynamic bar from real data
+  // Dynamic bar from real data
   Widget _buildRatingBar(ReviewViewModel vm, int star, Color color) {
     final total = vm.reviews.length;
     final count = vm.reviews.where((r) => r.rating.toInt() == star).length;
@@ -424,7 +441,6 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
     );
   }
 
-  // ✅ Fixed: ReviewModel + vm, no Map<String, dynamic>
   Widget reviewCard(ReviewModel review, ReviewViewModel vm) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -442,31 +458,31 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
               CircleAvatar(
                 backgroundColor: Colors.green.shade100,
                 child: Text(
-                  review.initials,
+                  review.reviewerInitials,
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.black),
                 ),
               ),
               const SizedBox(width: 10),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(review.name,
-                        style:
-                        const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(review.time,
-                        style: const TextStyle(
-                            color: Colors.grey, fontSize: 12)),
-                    Text(review.date,
-                        style: const TextStyle(
-                            color: Colors.grey, fontSize: 11)),
+                    Text(
+                      review.reviewerName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      review.createdAt.toString(),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
+
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(20),
@@ -503,29 +519,32 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
               color: const Color(0xfff4f6f3),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(review.review,
-                style: const TextStyle(height: 1.5)),
+            child: Text(review.review, style: const TextStyle(height: 1.5)),
           ),
 
           const SizedBox(height: 12),
 
-          // ✅ Like toggle via vm.updateReview
           GestureDetector(
             onTap: () {
               vm.updateReview(
                 ReviewModel(
                   id: review.id,
                   donationId: review.donationId,
-                  userId: review.userId,
-                  name: review.name,
-                  initials: review.initials,
+                  targetUserId: review.targetUserId,
+                  reviewType: review.reviewType,
+
+
+
+                  reviewerId: review.reviewerId,
+                  reviewerName: review.reviewerName,
+                  reviewerInitials: review.reviewerInitials,
+
                   rating: review.rating,
                   review: review.review,
-                  time: review.time,
-                  date: review.date,
-                  likes: review.liked
-                      ? review.likes - 1
-                      : review.likes + 1,
+
+                  createdAt: review.createdAt,
+
+                  likes: review.liked ? review.likes - 1 : review.likes + 1,
                   liked: !review.liked,
                 ),
               );
@@ -540,8 +559,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 const SizedBox(width: 6),
                 Text(
                   "${review.likes} people found this helpful",
-                  style: TextStyle(
-                      color: Colors.grey.shade700, fontSize: 12),
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                 ),
               ],
             ),

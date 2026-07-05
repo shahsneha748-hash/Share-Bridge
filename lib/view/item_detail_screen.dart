@@ -8,6 +8,7 @@ import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
 import 'package:sharebridge/view/donation_chat_screen.dart';
 import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
+import 'package:sharebridge/utils/chat_helper.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -70,26 +71,23 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     final donationId = item['id'] ?? '';
     final donationTitle = item['title'] ?? '';
 
-    final chatId = '${donorId}_${currentUser.uid}_$donationId';
-
-    final chatRef = FirebaseFirestore.instance
-        .collection('chats')
-        .doc(chatId);
-
-    final existing = await chatRef.get();
-    if (!existing.exists) {
-      await chatRef.set({
-        'donationId': donationId,
-        'donationTitle': donationTitle,
-        'donorId': donorId,
-        'receiverId': currentUser.uid,
-        'otherUserName': donorName,
-        'otherUserInitial': donorName.isNotEmpty ? donorName[0] : '?',
-        'lastMessage': '',
-        'lastMessageTime': FieldValue.serverTimestamp(),
-        'isOnline': false,
-      });
+    if (donorId.isEmpty) {
+      _snack(context, 'Donor information not available');
+      return;
     }
+
+    // Don't let donor chat with themselves
+    if (donorId == currentUser.uid) {
+      _snack(context, 'This is your own donation');
+      return;
+    }
+
+    final chatId = await ChatHelper.openChat(
+      otherUserId: donorId,
+      otherUserName: donorName,
+      donationId: donationId,
+      donationTitle: donationTitle,
+    );
 
     if (context.mounted) {
       Navigator.push(
@@ -97,14 +95,15 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         MaterialPageRoute(
           builder: (_) => DonationChatScreen(
             chatId: chatId,
-            donorId: donorId,
-            donorName: donorName,
+            otherUserId: donorId,
+            otherUserName: donorName,
             itemName: donationTitle,
           ),
         ),
       );
     }
   }
+
 
   void _showMoreMenu(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
