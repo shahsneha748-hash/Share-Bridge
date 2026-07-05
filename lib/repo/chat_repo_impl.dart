@@ -24,4 +24,12 @@ class ChatRepoImpl implements ChatRepo {
         .collection('messages')
         .add(message);
   }
+
+  @override
+  Future<void> updateChatRoom(String chatId, Map<String, dynamic> data) async {
+    await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .set(data, SetOptions(merge: true));
+  }
 }
