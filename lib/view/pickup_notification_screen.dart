@@ -154,7 +154,8 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                     final senderPic = senderInfo.profilePicture;
 
                     // Receiver = volunteer (UID passed into this screen)
-                    final receiverId = widget.receiverUid;                // "BmbWYHtwszNrTbRiVgRovbKeEZk2";    //widget.receiverUid;
+                    final receiverId = "TGkOS5JmBsXMgGVtA1RaifvNKXl2";                // "BmbWYHtwszNrTbRiVgRovbKeEZk2";    //widget.receiverUid;
+                    final receiverInfo = await vm.getUserById(receiverId);
 
                     final model = NotificationModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -162,10 +163,12 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                       senderId: currentUserId,          // donor UID
                       senderName: senderName,
                       profilePicture: senderPic,
-                      receiverId: widget.receiverUid,          // final replace with --> widget.receiverUid,         // volunteer UID
+                      receiverId: receiverId,          // final replace with --> widget.receiverUid,         // volunteer UID
+                      receiverName: receiverInfo.fullName,
                       createdAt: DateTime.now(),
                       isRead: false,
                       type: NotificationType.pickup,
+                      postId: "",
                     );
 
                     final success = await vm.sendNotification(model);
