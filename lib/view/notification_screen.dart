@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:sharebridge/components/notification_card.dart'; // use the clean card
 import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
-import 'package:sharebridge/view/profile_screen.dart' show ProfileScreen;
 import 'package:sharebridge/view/request_system_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import '../model/notification_model.dart'; // make sure this imports your enum
