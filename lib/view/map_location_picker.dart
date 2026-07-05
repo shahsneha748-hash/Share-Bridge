@@ -21,11 +21,13 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   String _address = 'Move the map to select location';
   bool _isLoading = false;
   bool _isFetchingAddress = false;
+  bool _mapReady = false;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    // Do NOT call _getCurrentLocation() here — map controller isn't
+    // attached yet. We wait for onMapReady instead.
   }
 
   @override
@@ -34,31 +36,63 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     super.dispose();
   }
 
+  // ── Called once FlutterMap has finished initializing ──
+  void _onMapReady() {
+    _mapReady = true;
+    _getCurrentLocation();
+  }
+
   // ── Get current GPS location ──
   Future<void> _getCurrentLocation() async {
+    if (!_mapReady) return;
+
     setState(() => _isLoading = true);
     try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location services are OFF. Please enable GPS.')),
+          );
+        }
+        return;
+      }
+
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.deniedForever) return;
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permission denied. Enable it in app settings.')),
+          );
+        }
+        return;
+      }
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
       );
       final latLng = LatLng(position.latitude, position.longitude);
       _moveCamera(latLng);
       await _getAddressFromLatLng(latLng);
     } catch (e) {
       debugPrint('Location error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location error: $e')), // TEMP: shows real error
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   // ── Move map camera ──
   void _moveCamera(LatLng latLng) {
+    if (!_mapReady) return;
     _mapController.move(latLng, 16);
     setState(() => _pickedLocation = latLng);
   }
@@ -86,10 +120,11 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         });
       }
     } catch (e) {
+      debugPrint('Reverse geocode error: $e');
       setState(() => _address =
       'Lat: ${latLng.latitude.toStringAsFixed(4)}, Lng: ${latLng.longitude.toStringAsFixed(4)}');
     } finally {
-      setState(() => _isFetchingAddress = false);
+      if (mounted) setState(() => _isFetchingAddress = false);
     }
   }
 
@@ -101,11 +136,15 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
       List<Location> locations = [];
       try {
         locations = await locationFromAddress('$query, Nepal');
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Search attempt 1 failed: $e');
+      }
       if (locations.isEmpty) {
         try {
           locations = await locationFromAddress(query);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Search attempt 2 failed: $e');
+        }
       }
 
       if (locations.isNotEmpty) {
@@ -121,18 +160,23 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         }
       }
     } catch (e) {
+      debugPrint('Search failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Search failed. Try again.')),
+          SnackBar(content: Text('Search error: $e')), // TEMP: shows real error
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _confirmLocation() {
-    Navigator.pop(context, _address);
+    Navigator.pop(context, {
+      'address': _address,
+      'lat': _pickedLocation.latitude,
+      'lng': _pickedLocation.longitude,
+    });
   }
 
   @override
@@ -155,6 +199,10 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             options: MapOptions(
               initialCenter: _pickedLocation,
               initialZoom: 14,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
+              onMapReady: _onMapReady,
               onPositionChanged: (position, hasGesture) {
                 if (hasGesture) {
                   setState(() => _pickedLocation = position.center!);
@@ -204,15 +252,10 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                   hintText: 'Search location...',
                   hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {});
-                    },
-                  )
-                      : null,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward, color: AppColors.darkGreen, size: 20),
+                    onPressed: () => _searchLocation(_searchController.text),
+                  ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 13),
                 ),
@@ -224,11 +267,14 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           // ── My Location Button ──
           Positioned(
             right: 12,
-            bottom: 140,
+            bottom: 220, // raised higher so it can't overlap the card
             child: FloatingActionButton.small(
               heroTag: 'myLocation',
               backgroundColor: Colors.white,
-              onPressed: _getCurrentLocation,
+              onPressed: () {
+                debugPrint('Location button tapped'); //
+                _getCurrentLocation();
+              },
               child: const Icon(Icons.my_location, color: AppColors.darkGreen),
             ),
           ),

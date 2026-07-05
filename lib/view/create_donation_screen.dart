@@ -4,26 +4,44 @@ import 'package:image_picker/image_picker.dart';
 import '../components/category_chip.dart';
 import '../components/custom_section.dart';
 import '../components/custom_text_field.dart';
-import '../components/donation_status_section.dart';
 import '../components/portion_section.dart';
 import '../components/radio_chip.dart';
-import 'confirmation_screen.dart';
 import '../components/tag_section.dart';
 import '../components/upload_photos_section.dart';
 import '../constants/colors.dart';
+import '../repo/create_donation_repo.dart';
+import '../repo/image_repo.dart';
 import '../viewmodel/create_donation_view_model.dart';
-import 'dashboard_screen.dart';
 import 'navigation_screen.dart';
 import 'pickup_location_field.dart';
 
-class CreateDonationScreen extends StatefulWidget {
+// ── Screen (creates a fresh ViewModel every time it's opened) ───────────────
+
+class CreateDonationScreen extends StatelessWidget {
   const CreateDonationScreen({super.key});
 
   @override
-  State<CreateDonationScreen> createState() => _CreateDonationViewState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => CreateDonationViewModel(
+        context.read<CreateDonationRepository>(),
+        context.read<ImageRepo>(),
+      ),
+      child: const _CreateDonationView(),
+    );
+  }
 }
 
-class _CreateDonationViewState extends State<CreateDonationScreen> {
+// ── View ──────────────────────────────────────────────────────────────────
+
+class _CreateDonationView extends StatefulWidget {
+  const _CreateDonationView();
+
+  @override
+  State<_CreateDonationView> createState() => _CreateDonationViewState();
+}
+
+class _CreateDonationViewState extends State<_CreateDonationView> {
   Future<void> _pickImage(CreateDonationViewModel vm, ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source);
@@ -178,6 +196,7 @@ class _CreateDonationViewState extends State<CreateDonationScreen> {
               child: PickupLocationField(
                 value: vm.model.location,
                 onChanged: vm.setLocation,
+                onCoordinatesPicked: vm.setCoordinates, // add this line
               ),
             ),
 
@@ -267,14 +286,6 @@ class _CreateDonationViewState extends State<CreateDonationScreen> {
               onRemoveTag: vm.removeTag,
             ),
 
-            const SizedBox(height: 12),
-
-            // ================= STATUS =================
-            DonationStatusSection(
-              isDonated: vm.model.isDonated,
-              onToggle: vm.toggleDonation,
-            ),
-
             const SizedBox(height: 20),
 
             // ================= SUBMIT =================
@@ -292,26 +303,23 @@ class _CreateDonationViewState extends State<CreateDonationScreen> {
                 onPressed: vm.canSubmit
                     ? () async {
                   final success = await vm.submit();
-                  if(context.mounted) {
-                    if (success){
-                      Navigator.pushReplacement(
+                  if (context.mounted) {
+                    if (success) {
+                      Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const NavigationScreen(),
                         ),
-                        result: (route) => false,
+                            (route) => false,
                       );
-
-                    }else{
+                    } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Failed to post donation. Try again."),
                         ),
                       );
-
                     }
                   }
-
                 }
                     : null,
                 child: const Text(
