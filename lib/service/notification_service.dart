@@ -63,6 +63,9 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.high,
           styleInformation: styleinformationDesign,
+          ongoing: true,              // 👈 keeps it until user dismisses
+          autoCancel: true,           // 👈 removes only when tapped
+          playSound: true,
         ),
         iOS: const DarwinNotificationDetails(),
       );
@@ -191,6 +194,9 @@ class NotificationService {
         importance: Importance.max,
         priority: Priority.high,
         styleInformation: styleinformationDesign,
+        ongoing: true,              // 👈 keeps it until user dismisses
+        autoCancel: true,           // 👈 removes only when tapped
+        playSound: true,
       ),
       iOS: const DarwinNotificationDetails(),
     );

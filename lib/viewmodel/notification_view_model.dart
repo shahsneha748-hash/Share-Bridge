@@ -5,9 +5,22 @@ import '../model/notification_model.dart';
 import '../model/user_model.dart';
 import '../repo/notification_repo.dart';
 
+/// Tracks the decision state for volunteer requests
+enum VolunteerDecision {
+  none,       // no action yet
+  accepted,   // accepted by donor
+  rejected,   // rejected by donor
+}
+
 class NotificationViewModel extends ChangeNotifier {
   final NotificationRepo _repo;
   final UserRepo _userRepo;
+  final Map<String, VolunteerDecision> _decisions = {};
+
+  VolunteerDecision getDecision(String notificationId) {
+    return _decisions[notificationId] ?? VolunteerDecision.none;
+  }
+
 
   NotificationViewModel({
     required NotificationRepo repo,
@@ -332,6 +345,51 @@ class NotificationViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> acceptVolunteer(NotificationModel notification) async {
+    final currentUid = FirebaseAuth.instance.currentUser!.uid;
+    final senderInfo = await getUserById(currentUid);
+
+    final acceptNotification = notification.copyWith(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      senderId: currentUid,
+      senderName: senderInfo.fullName,
+      type: NotificationType.accepted,
+      body: "${senderInfo.fullName} has accepted your volunteering request for donation delivery.",
+      createdAt: DateTime.now(),
+      isRead: false,
+      receiverId: notification.senderId,
+    );
+
+    final success = await sendNotification(acceptNotification);
+    if (success) {
+      _decisions[notification.id] = VolunteerDecision.accepted;
+      notifyListeners();
+    }
+    return success; // 👈 return a bool
+  }
+
+  Future<bool> rejectVolunteer(NotificationModel notification) async {
+    final currentUid = FirebaseAuth.instance.currentUser!.uid;
+    final senderInfo = await getUserById(currentUid);
+
+    final rejectNotification = notification.copyWith(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      senderId: currentUid,
+      senderName: senderInfo.fullName,
+      type: NotificationType.rejected,
+      body: "${senderInfo.fullName} has rejected your volunteering request for donation delivery.",
+      createdAt: DateTime.now(),
+      isRead: false,
+      receiverId: notification.senderId,
+    );
+
+    final success = await sendNotification(rejectNotification);
+    if (success) {
+      _decisions[notification.id] = VolunteerDecision.rejected;
+      notifyListeners();
+    }
+    return success; // 👈 return a bool
+  }
 
 
 }

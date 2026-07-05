@@ -107,7 +107,7 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: const CreateDonationScreen(),
+      home: const LoginScreen(),
     );
   }
 }

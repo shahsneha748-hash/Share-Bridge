@@ -162,6 +162,7 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
 
                     // 🔑 Receiver = the post owner (donor)
                     final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
+                    final receiverInfo = await vm.getUserById(receiverId);
 
                     // Build notification model
                     final model = NotificationModel(
@@ -170,10 +171,12 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                       senderId: currentUid,        // requester UID
                       senderName: senderName,
                       profilePicture: senderPic,
-                      receiverId: "BmbWYHtwszNrTbRiVgRovbKeEZk2",      // donor UID
+                      receiverId: receiverId,      // donor UID
+                      receiverName: receiverInfo.fullName,
                       createdAt: DateTime.now(),
                       isRead: false,
                       type: NotificationType.normal_alert,
+                      postId: "",
                     );
 
                     final success = await vm.sendNotification(model);

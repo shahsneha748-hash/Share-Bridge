@@ -1,6 +1,11 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:sharebridge/model/notification_model.dart';
+import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
+import 'package:provider/provider.dart';
 
 /// Single card widget
 class NotificationCard extends StatelessWidget {
@@ -34,7 +39,15 @@ class NotificationCard extends StatelessWidget {
       case NotificationType.request:
         cardElevation = 5;
         break;
-      case NotificationType.alert: // urgent
+      case NotificationType.volunteer_request:
+        cardElevation = 5;
+        bgColor = Colors.white;
+        cardShape = RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Colors.grey),
+        );
+        break;
+      case NotificationType.alert:
         bgColor = const Color(0xFFeed2d2);
         cardShape = RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
@@ -76,13 +89,14 @@ class NotificationCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             buildProfileImage(profilePicture),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(body),
                   Text(
@@ -90,6 +104,75 @@ class NotificationCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 5),
+
+                  // 🔑 Accept/Reject buttons for volunteer request
+                  if (notification.type == NotificationType.volunteer_request)
+                    Consumer<NotificationViewModel>(
+                      builder: (context, vm, _) {
+                        final decision = vm.getDecision(notification.id);
+
+                        return Row(
+                          children: [
+                            ElevatedButton(
+                              onPressed: decision == VolunteerDecision.accepted
+                                  ? null // disable once accepted
+                                  : () async {
+                                final success = await vm.acceptVolunteer(notification);
+                                if (success) {
+                                  await NotificationService.display(
+                                    body: "${notification.senderName} has accepted your volunteering request.",
+                                    createdAt: DateTime.now(),
+                                    payload: "notification_screen",
+                                    buildContext: context,
+                                  );
+                                  Fluttertoast.showToast(msg: "Notification sent successfully");
+                                } else {
+                                  Fluttertoast.showToast(msg: "Failed to send notification");
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: decision == VolunteerDecision.accepted
+                                    ? Colors.green.shade700
+                                    : Colors.green.shade400,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text(
+                                decision == VolunteerDecision.accepted ? "Accepted" : "Accept",
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final success = await vm.rejectVolunteer(notification);
+                                if (success) {
+                                  await NotificationService.display(
+                                    body: "${notification.senderName} has rejected your volunteering request.",
+                                    createdAt: DateTime.now(),
+                                    payload: "notification_screen",
+                                    buildContext: context,
+                                  );
+                                  Fluttertoast.showToast(msg: "Notification sent successfully");
+                                } else {
+                                  Fluttertoast.showToast(msg: "Failed to send notification");
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: decision == VolunteerDecision.rejected
+                                    ? Colors.red.shade700
+                                    : Colors.red.shade400,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text(
+                                decision == VolunteerDecision.rejected ? "Rejected" : "Reject",
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                  const SizedBox(height: 5),
+
                   if (onMarkAsRead != null)
                     InkWell(
                       onTap: notification.isRead ? null : onMarkAsRead,
@@ -126,10 +209,8 @@ class NotificationList extends StatelessWidget {
 
     return cards.where((card) {
       if (card.type == NotificationType.alert) {
-        // urgent → vanish after 1 day
         return now.isBefore(card.createdAt.add(const Duration(days: 1)));
       } else {
-        // normal → vanish after 30 days
         return now.isBefore(card.createdAt.add(const Duration(days: 30)));
       }
     }).toList();
@@ -148,8 +229,7 @@ class NotificationList extends StatelessWidget {
       } else if (diff.inDays == 1) {
         sectionTitle = "Yesterday";
       } else {
-        sectionTitle =
-        "${card.createdAt.day}-${card.createdAt.month}-${card.createdAt.year}";
+        sectionTitle = "${card.createdAt.day}/${card.createdAt.month}/${card.createdAt.year}";
       }
 
       grouped.putIfAbsent(sectionTitle, () => []).add(card);
@@ -173,7 +253,6 @@ class NotificationList extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section header
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -184,7 +263,6 @@ class NotificationList extends StatelessWidget {
                 ),
               ),
             ),
-            // Cards under this section
             ...cards,
           ],
         );
@@ -192,6 +270,7 @@ class NotificationList extends StatelessWidget {
     );
   }
 }
+
 
 
 

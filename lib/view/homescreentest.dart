@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -148,23 +149,29 @@ class _HomescreentestState extends State<Homescreentest> {
           ElevatedButton(
             onPressed: () async {
               final vm = context.read<NotificationViewModel>();
-              final currentUid = widget.uid;
+              final currentUid = FirebaseAuth.instance.currentUser!.uid;
 
               final senderInfo = await vm.getUserById(currentUid);
+
+              final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
+              final receiverInfo = await vm.getUserById(receiverId);
+
 
               final model = NotificationModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 senderId: currentUid,
                 senderName: senderInfo.fullName,
                 profilePicture: senderInfo.profilePicture,
-                receiverId: 'BmbWYHtwszNrTbRiVgRovbKeEZk2',
+                receiverId: receiverId,
+                receiverName: receiverInfo.fullName,
                 type: NotificationType.alert,
                 body: "${senderInfo.fullName} says: Food item expires today",
                 createdAt: DateTime.now(),
                 isRead: false,
+                postId: '',//postId, // do this 🔑 link notification to the item
               );
 
-              final success = await vm.addNotification(model);
+              final success = await vm.sendNotification(model);
 
               if (success) {
                 await NotificationService.display(
@@ -186,12 +193,13 @@ class _HomescreentestState extends State<Homescreentest> {
           ElevatedButton(
             onPressed: () async {
               final vm = context.read<NotificationViewModel>();
-              final currentUid = widget.uid;
+              final currentUid = FirebaseAuth.instance.currentUser!.uid;
 
               final senderInfo = await vm.getUserById(currentUid);
 
               // Replace with the UID of the post owner (the donor)
-              final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
+              final receiverId = "ODtMAJm65EMIptU1H8ZOh8vgHpi1";
+              final receiverInfo = await vm.getUserById(receiverId);
 
               final model = NotificationModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -199,13 +207,15 @@ class _HomescreentestState extends State<Homescreentest> {
                 senderName: senderInfo.fullName,
                 profilePicture: senderInfo.profilePicture,
                 receiverId: receiverId,               // donor
+                receiverName: receiverInfo.fullName,
                 type: NotificationType.request,
                 body: "${senderInfo.fullName} has requested for your donation",
                 createdAt: DateTime.now(),
                 isRead: false,
+                postId: '', //postId, // do this 🔑 link notification to the item
               );
 
-              final success = await vm.addNotification(model);
+              final success = await vm.sendNotification(model);
 
               if (success) {
                 await NotificationService.display(
@@ -220,6 +230,49 @@ class _HomescreentestState extends State<Homescreentest> {
               }
             },
             child: const Text("Request this item"),
+          ),
+
+          // Request Volunteering for Item delivery (sender = requester, receiver = post owner)
+          ElevatedButton(
+            onPressed: () async {
+              final vm = context.read<NotificationViewModel>();
+              final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+              final senderInfo = await vm.getUserById(currentUid);
+
+              // Replace with the UID of the post owner (the donor)
+              final receiverId = "ODtMAJm65EMIptU1H8ZOh8vgHpi1";
+              final receiverInfo = await vm.getUserById(receiverId);
+
+              final model = NotificationModel(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                senderId: currentUid,                 // requester
+                senderName: senderInfo.fullName,
+                profilePicture: senderInfo.profilePicture,
+                receiverId: receiverId,               // donor
+                receiverName: receiverInfo.fullName,
+                type: NotificationType.volunteer_request,
+                body: "${senderInfo.fullName} has requested to volunteer for your donation",
+                createdAt: DateTime.now(),
+                isRead: false,
+                postId: '', //postId, // do this 🔑 link notification to the item
+              );
+
+              final success = await vm.sendNotification(model);
+
+              if (success) {
+                await NotificationService.display(
+                  body: model.body,
+                  createdAt: model.createdAt,
+                  payload: "request_system_screen",
+                  buildContext: context,
+                );
+                Fluttertoast.showToast(msg: "Notification sent successfully");
+              } else {
+                Fluttertoast.showToast(msg: "Failed to send notification");
+              }
+            },
+            child: const Text("Volunteer to deliever this item"),
           ),
 
 
