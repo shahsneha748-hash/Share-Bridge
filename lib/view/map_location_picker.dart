@@ -172,7 +172,11 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   }
 
   void _confirmLocation() {
-    Navigator.pop(context, _address);
+    Navigator.pop(context, {
+      'address': _address,
+      'lat': _pickedLocation.latitude,
+      'lng': _pickedLocation.longitude,
+    });
   }
 
   @override

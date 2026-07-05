@@ -7,11 +7,15 @@ import 'map_location_picker.dart';
 class PickupLocationField extends StatefulWidget {
   final String value;
   final ValueChanged<String> onChanged;
+  /// Optional: called whenever we have real coordinates for the location
+  /// (from GPS or the map picker), so the caller can store mapLat/mapLng.
+  final void Function(double lat, double lng)? onCoordinatesPicked;
 
   const PickupLocationField({
     super.key,
     required this.value,
     required this.onChanged,
+    this.onCoordinatesPicked,
   });
 
   @override
@@ -58,16 +62,13 @@ class _PickupLocationFieldState extends State<PickupLocationField> {
         }
         return;
       }
-
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-
       final placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
-
       String address;
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
@@ -83,9 +84,10 @@ class _PickupLocationFieldState extends State<PickupLocationField> {
       } else {
         address = 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
       }
-
       setState(() => _controller.text = address);
       widget.onChanged(address);
+      // Report the real coordinates back to the caller.
+      widget.onCoordinatesPicked?.call(position.latitude, position.longitude);
     } catch (e) {
       debugPrint('Current location error: $e');
       if (mounted) {
@@ -100,13 +102,26 @@ class _PickupLocationFieldState extends State<PickupLocationField> {
 
   // ── Open pin-point map picker ──
   Future<void> _openMapPicker() async {
-    final result = await Navigator.push<String>(
+    // NOTE: this expects MapLocationPicker to return a Map like
+    // {'address': String, 'lat': double, 'lng': double}.
+    // If your MapLocationPicker currently only returns a String,
+    // see the note below the code block to update it.
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(builder: (_) => const MapLocationPicker()),
     );
     if (result != null) {
-      setState(() => _controller.text = result);
-      widget.onChanged(result);
+      final address = result['address'] as String? ?? '';
+      final lat = (result['lat'] as num?)?.toDouble();
+      final lng = (result['lng'] as num?)?.toDouble();
+
+      if (address.isNotEmpty) {
+        setState(() => _controller.text = address);
+        widget.onChanged(address);
+      }
+      if (lat != null && lng != null) {
+        widget.onCoordinatesPicked?.call(lat, lng);
+      }
     }
   }
 
@@ -138,7 +153,6 @@ class _PickupLocationFieldState extends State<PickupLocationField> {
           ),
         ),
         const SizedBox(height: 8),
-
         // ── Action Buttons ──
         Row(
           children: [
