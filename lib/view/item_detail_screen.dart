@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
+import 'package:sharebridge/view/donation_chat_screen.dart';
 import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
+import 'package:sharebridge/utils/chat_helper.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -31,6 +35,7 @@ class _ItemDetailView extends StatefulWidget {
 
 class _ItemDetailViewState extends State<_ItemDetailView> {
   bool _isDonorBlocked = false;
+  bool _isWishlisted = false;
 
   void _snack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -43,12 +48,62 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
   }
 
   void _shareItem(Map<String, dynamic> item) {
-    final title = item['title'] ?? 'an item';
+    final title = item['itemName'] ?? 'an item';
     final location = item['location'] ?? '';
     Share.share(
       'Check out "$title" on Share Bridge!${location.isNotEmpty ? '\n📍 $location' : ''}',
     );
   }
+
+  Future<void> _handleMessageTap(BuildContext context) async {
+    if (_isDonorBlocked) {
+      _snack(context, 'Unblock this donor to send a message');
+      return;
+    }
+
+    final vm = context.read<ItemDetailViewModel>();
+    final item = vm.item;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final donorId = item['donorId'] ?? '';
+    final donorName = item['donorName'] ?? 'Donor';
+    final donationId = item['id'] ?? '';
+    final donationTitle = item['title'] ?? '';
+
+    if (donorId.isEmpty) {
+      _snack(context, 'Donor information not available');
+      return;
+    }
+
+    // Don't let donor chat with themselves
+    if (donorId == currentUser.uid) {
+      _snack(context, 'This is your own donation');
+      return;
+    }
+
+    final chatId = await ChatHelper.openChat(
+      otherUserId: donorId,
+      otherUserName: donorName,
+      donationId: donationId,
+      donationTitle: donationTitle,
+    );
+
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DonationChatScreen(
+            chatId: chatId,
+            otherUserId: donorId,
+            otherUserName: donorName,
+            itemName: donationTitle,
+          ),
+        ),
+      );
+    }
+  }
+
 
   void _showMoreMenu(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
@@ -59,56 +114,78 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.flag_outlined,
-                    color: AppColors.darkGreen),
-                title: const Text('Report'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await vm.reportItem();
-                  _snack(context, 'Reported. Thank you for keeping us safe.');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.bookmark_outline,
-                    color: AppColors.darkGreen),
-                title: const Text('Save for later'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _snack(context, 'Saved to your bookmarks');
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  Icons.block,
-                  color: _isDonorBlocked ? AppColors.darkGreen : Colors.redAccent,
-                ),
-                title: Text(
-                  _isDonorBlocked ? 'Unblock donor' : 'Block donor',
-                  style: TextStyle(
-                    color: _isDonorBlocked ? AppColors.darkGreen : Colors.redAccent,
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined,
+                        color: AppColors.darkGreen),
+                    title: const Text('Report'),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await vm.reportItem();
+                      _snack(context, 'Reported. Thank you for keeping us safe.');
+                    },
                   ),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (_isDonorBlocked) {
-                    await vm.blockDonor();
-                    setState(() => _isDonorBlocked = false);
-                    _snack(context, 'Donor unblocked');
-                  } else {
-                    await vm.blockDonor();
-                    setState(() => _isDonorBlocked = true);
-                    _snack(context, 'Donor blocked');
-                  }
-                },
+                  ListTile(
+                    leading: Icon(
+                      _isWishlisted ? Icons.favorite : Icons.favorite_border,
+                      color: AppColors.darkGreen,
+                    ),
+                    title: Text(
+                      _isWishlisted
+                          ? 'Remove from wishlist'
+                          : 'Add to wishlist',
+                    ),
+                    onTap: () {
+                      final newState = !_isWishlisted;
+                      setState(() => _isWishlisted = newState);
+                      setSheetState(() => _isWishlisted = newState);
+                      Navigator.pop(ctx);
+                      _snack(
+                        context,
+                        newState
+                            ? 'Added to your wishlist'
+                            : 'Removed from your wishlist',
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.block,
+                      color: _isDonorBlocked
+                          ? AppColors.darkGreen
+                          : Colors.redAccent,
+                    ),
+                    title: Text(
+                      _isDonorBlocked ? 'Unblock donor' : 'Block donor',
+                      style: TextStyle(
+                        color: _isDonorBlocked
+                            ? AppColors.darkGreen
+                            : Colors.redAccent,
+                      ),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      if (_isDonorBlocked) {
+                        await vm.blockDonor();
+                        setState(() => _isDonorBlocked = false);
+                        _snack(context, 'Donor unblocked');
+                      } else {
+                        await vm.blockDonor();
+                        setState(() => _isDonorBlocked = true);
+                        _snack(context, 'Donor blocked. You can no longer message them.');
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -119,8 +196,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
         title: const Text('Request this item?',
             style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text(
@@ -171,6 +248,20 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     );
   }
 
+  void _openFullImage(BuildContext context, String imageUrl) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (_, __, ___) => _FullImageView(imageUrl: imageUrl),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ItemDetailViewModel>();
@@ -185,7 +276,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         backgroundColor: Colors.white,
         body: Column(
           children: [
-
             Container(
               width: double.infinity,
               color: AppColors.darkGreen,
@@ -220,7 +310,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => _shareItem(item),  // ← changed
+                        onPressed: () => _shareItem(item),
                         icon: const Icon(Icons.share,
                             color: AppColors.cream, size: 22),
                       ),
@@ -246,6 +336,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       item: item,
                       available: vm.available,
                       showExpiry: vm.showExpiry,
+                      onImageTap: (url) => _openFullImage(context, url),
                     ),
 
                     Transform.translate(
@@ -307,7 +398,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: AppColors.backgroundGreen,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius:
+                                  BorderRadius.circular(20),
                                   border: Border.all(
                                       color: AppColors.paleGreen,
                                       width: 1),
@@ -408,14 +500,65 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
             // ── Bottom Action Bar ────────────────────────────────────────────
             _BottomActionBar(
               available: vm.available,
-              onMessageTap: () =>
-                  _snack(context, 'Messaging — Coming Soon'),
+              isBlocked: _isDonorBlocked,
+              onMessageTap: _isDonorBlocked
+                  ? null
+                  : () => _handleMessageTap(context),
               onRequestTap: vm.available && !_isDonorBlocked
                   ? () => _showRequestDialog(context)
                   : null,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Full Screen Image Viewer ────────────────────────────────────────────────
+
+class _FullImageView extends StatelessWidget {
+  final String imageUrl;
+  const _FullImageView({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.image_not_supported,
+                  color: Colors.white54,
+                  size: 60,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -478,24 +621,43 @@ class _HeroImage extends StatelessWidget {
   final Map<String, dynamic> item;
   final bool available;
   final bool showExpiry;
+  final ValueChanged<String> onImageTap;
 
   const _HeroImage({
     required this.item,
     required this.available,
     required this.showExpiry,
+    required this.onImageTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final List images = item['images'] ?? [];
+    final String? imageUrl = images.isNotEmpty ? images[0] : null;
+
     return Stack(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 320,
-          child: Image.asset(
-            item['image'],
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+        GestureDetector(
+          onTap: imageUrl != null ? () => onImageTap(imageUrl) : null,
+          child: SizedBox(
+            width: double.infinity,
+            height: 320,
+            child: imageUrl != null
+                ? Hero(
+              tag: imageUrl,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.paleGreen,
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported,
+                        color: AppColors.darkGreen, size: 60),
+                  ),
+                ),
+              ),
+            )
+                : Container(
               color: AppColors.paleGreen,
               child: const Center(
                 child: Icon(Icons.image_not_supported,
@@ -508,16 +670,18 @@ class _HeroImage extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          child: Container(
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  AppColors.darkText.withOpacity(0.85),
-                ],
+          child: IgnorePointer(
+            child: Container(
+              height: 180,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    AppColors.darkText.withOpacity(0.85),
+                  ],
+                ),
               ),
             ),
           ),
@@ -550,45 +714,47 @@ class _HeroImage extends StatelessWidget {
           left: 20,
           right: 20,
           bottom: 36,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.paleGreen.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  item['subcategory']?.toString().toUpperCase() ??
-                      item['category']?.toString().toUpperCase() ??
-                      'GENERAL',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.darkText,
-                    letterSpacing: 1.2,
+          child: IgnorePointer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.paleGreen.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    item['subcategory']?.toString().toUpperCase() ??
+                        item['category']?.toString().toUpperCase() ??
+                        'GENERAL',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkText,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                item['title'] ?? 'Item',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  height: 1.15,
-                  shadows: [
-                    Shadow(
-                        color: Colors.black26,
-                        offset: Offset(0, 1),
-                        blurRadius: 4),
-                  ],
+                const SizedBox(height: 10),
+                Text(
+                  item['title'] ?? 'Item',
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.15,
+                    shadows: [
+                      Shadow(
+                          color: Colors.black26,
+                          offset: Offset(0, 1),
+                          blurRadius: 4),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -701,7 +867,9 @@ class _DonorCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 18, vertical: 9),
                   decoration: BoxDecoration(
-                    color: isFollowing ? Colors.white : AppColors.darkGreen,
+                    color: isFollowing
+                        ? Colors.white
+                        : AppColors.darkGreen,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                         color: AppColors.darkGreen, width: 1.4),
@@ -923,11 +1091,13 @@ class _MapDecorPainter extends CustomPainter {
 
 class _BottomActionBar extends StatelessWidget {
   final bool available;
-  final VoidCallback onMessageTap;
+  final bool isBlocked;
+  final VoidCallback? onMessageTap;
   final VoidCallback? onRequestTap;
 
   const _BottomActionBar({
     required this.available,
+    required this.isBlocked,
     required this.onMessageTap,
     required this.onRequestTap,
   });
@@ -960,21 +1130,35 @@ class _BottomActionBar extends StatelessWidget {
                   height: _buttonHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: AppColors.backgroundGreen,
+                    color: isBlocked
+                        ? Colors.grey.shade200
+                        : AppColors.backgroundGreen,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: AppColors.paleGreen, width: 1),
+                        color: isBlocked
+                            ? Colors.grey.shade300
+                            : AppColors.paleGreen,
+                        width: 1),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.chat_bubble_outline,
-                          color: AppColors.darkText, size: 18),
-                      SizedBox(width: 6),
+                      Icon(
+                        isBlocked
+                            ? Icons.block
+                            : Icons.chat_bubble_outline,
+                        color: isBlocked
+                            ? Colors.grey.shade500
+                            : AppColors.darkText,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
                       Text(
-                        'Message',
+                        isBlocked ? 'Blocked' : 'Message',
                         style: TextStyle(
-                            color: AppColors.darkText,
+                            color: isBlocked
+                                ? Colors.grey.shade500
+                                : AppColors.darkText,
                             fontSize: 14,
                             fontWeight: FontWeight.bold),
                       ),
@@ -1023,9 +1207,11 @@ class _BottomActionBar extends StatelessWidget {
                           color: Colors.white, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        onRequestTap != null
+                        isBlocked
+                            ? 'Donor Blocked'
+                            : (onRequestTap != null
                             ? 'Request Item'
-                            : 'Not Available',
+                            : 'Not Available'),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,

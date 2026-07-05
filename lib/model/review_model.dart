@@ -1,26 +1,35 @@
 class ReviewModel {
   final String id;
+
   final String donationId;
-  final String userId;
-  final String name;
-  final String initials;
+  final String targetUserId; // donor or volunteer
+  final String reviewType;
+  final String reviewerId;
+  final String reviewerName;
+  final String reviewerInitials;
+
   final double rating;
   final String review;
-  final String time;
-  final String date;
+
+  final DateTime createdAt;
+
   final int likes;
   final bool liked;
 
   ReviewModel({
     required this.id,
     required this.donationId,
-    required this.userId,
-    required this.name,
-    required this.initials,
+    required this.targetUserId,
+    required this.reviewType,
+    required this.reviewerId,
+    required this.reviewerName,
+    required this.reviewerInitials,
+
     required this.rating,
     required this.review,
-    required this.time,
-    required this.date,
+
+    required this.createdAt,
+
     required this.likes,
     required this.liked,
   });
@@ -29,15 +38,20 @@ class ReviewModel {
     return ReviewModel(
       id: json['id'],
       donationId: json['donationId'],
-      userId: json['userId'],
-      name: json['name'],
-      initials: json['initials'],
-      rating: json['rating'].toDouble(),
+      targetUserId: json['targetUserId'],
+      reviewType: json['reviewType'],
+
+      reviewerId: json['reviewerId'],
+      reviewerName: json['reviewerName'],
+      reviewerInitials: json['reviewerInitials'],
+
+      rating: (json['rating'] as num).toDouble(),
       review: json['review'],
-      time: json['time'],
-      date: json['date'],
-      likes: json['likes'],
-      liked: json['liked'],
+
+      createdAt: DateTime.parse(json['createdAt']),
+
+      likes: json['likes'] ?? 0,
+      liked: json['liked'] ?? false,
     );
   }
 
@@ -45,13 +59,18 @@ class ReviewModel {
     return {
       'id': id,
       'donationId': donationId,
-      'userId': userId,
-      'name': name,
-      'initials': initials,
+      'targetUserId': targetUserId,
+      'reviewType': reviewType,
+
+      'reviewerId': reviewerId,
+      'reviewerName': reviewerName,
+      'reviewerInitials': reviewerInitials,
+
       'rating': rating,
       'review': review,
-      'time': time,
-      'date': date,
+
+      'createdAt': createdAt.toIso8601String(),
+
       'likes': likes,
       'liked': liked,
     };

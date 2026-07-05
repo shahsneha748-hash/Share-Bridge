@@ -3,7 +3,7 @@ import 'admin_dashboard_view.dart';
 import 'users_admin_screen.dart';
 import 'donation_admin_screen.dart';
 import 'admin_report_screen.dart';
-import 'volunteer_admin_screen.dart';
+import 'admin_volunteer_screen.dart';
 import 'settings_admin_screen.dart';
 
 class AdminNavigationScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
     const UsersAdminScreen(),
     const DonationAdminScreen(),
     const AdminReportScreen(),
-    const VolunteerAdminScreen(),
+    const AdminVolunteerScreen(),
     const SettingsAdminScreen(),
   ];
 

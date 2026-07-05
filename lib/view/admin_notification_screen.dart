@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/admin_notification_viewmodel.dart';
 import 'admin_dashboard_view.dart';
+import '../constants/colors.dart';
 
 class AdminNotificationScreen extends StatelessWidget {
   const AdminNotificationScreen({super.key});

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/settings_admin_viewmodel.dart';
 import 'admin_dashboard_view.dart';
+import 'package:sharebridge/view/login_screen.dart';
+import '../constants/colors.dart';
 
 class SettingsAdminScreen extends StatelessWidget {
   const SettingsAdminScreen({super.key});
@@ -446,12 +448,11 @@ class _SettingsBody extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               await vm.logout();
-              // Replace with your login screen later:
-              // Navigator.pushAndRemoveUntil(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => const LoginScreen()),
-              //   (route) => false,
-              // );
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
             },
             child: const Text('Log out',
                 style: TextStyle(color: Colors.white)),
