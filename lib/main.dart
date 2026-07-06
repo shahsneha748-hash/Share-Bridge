@@ -172,7 +172,7 @@ class MyHomePage extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const NavigationScreen(), // your dashboard
       },
-      home: VolunteerIntroScreen(),
+      home: LoginScreen(),
     );
   }
 }
