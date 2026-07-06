@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
 import 'package:sharebridge/view/donation_chat_screen.dart';
 import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
 import 'package:sharebridge/utils/chat_helper.dart';
+import 'package:sharebridge/view/user_report_screen.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -104,7 +104,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     }
   }
 
-
   void _showMoreMenu(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
     showModalBottomSheet(
@@ -124,10 +123,13 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                     leading: const Icon(Icons.flag_outlined,
                         color: AppColors.darkGreen),
                     title: const Text('Report'),
-                    onTap: () async {
+                    onTap: () {
                       Navigator.pop(ctx);
-                      await vm.reportItem();
-                      _snack(context, 'Reported. Thank you for keeping us safe.');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const UserReportScreen()),
+                      );
                     },
                   ),
                   ListTile(
@@ -177,7 +179,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       } else {
                         await vm.blockDonor();
                         setState(() => _isDonorBlocked = true);
-                        _snack(context, 'Donor blocked. You can no longer message them.');
+                        _snack(context,
+                            'Donor blocked. You can no longer message them.');
                       }
                     },
                   ),
@@ -190,6 +193,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       },
     );
   }
+
 
   void _showRequestDialog(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
@@ -550,7 +554,7 @@ class _FullImageView extends StatelessWidget {
               child: Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.black54,
                   shape: BoxShape.circle,
                 ),
@@ -1193,7 +1197,8 @@ class _BottomActionBar extends StatelessWidget {
                     boxShadow: onRequestTap != null
                         ? [
                       BoxShadow(
-                        color: AppColors.darkText.withOpacity(0.3),
+                        color:
+                        AppColors.darkText.withOpacity(0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
