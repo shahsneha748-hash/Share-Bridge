@@ -26,18 +26,13 @@ class _AdminVolunteerBody extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        title: const Text('Volunteers',
-            style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
       body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
         onRefresh: () => viewModel.loadVolunteers(),
         child: Column(
           children: [
+            _buildTopBar(context, viewModel),
             _buildStatsRow(viewModel),
             _buildFilterChips(context, viewModel),
             Expanded(
@@ -58,6 +53,40 @@ class _AdminVolunteerBody extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar(BuildContext context, AdminVolunteerViewModel viewModel) {
+    return Container(
+      color: AppColors.primary,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20, right: 16, bottom: 14,
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text('Volunteers',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text('${viewModel.volunteers.length} total',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500)),
+          ),
+        ],
       ),
     );
   }

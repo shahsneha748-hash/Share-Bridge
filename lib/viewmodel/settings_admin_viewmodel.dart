@@ -17,6 +17,31 @@ class SettingsAdminViewModel extends ChangeNotifier {
   bool get flaggedContentAlerts => _flaggedContentAlerts;
   AdminProfile? get profile => _profile;
 
+  Future<bool> updateProfile(String newName) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || _profile == null) return false;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .update({'fullName': newName});
+
+      _profile = AdminProfile(
+        name: newName,
+        email: _profile!.email,
+        initials: newName.isNotEmpty ? newName[0].toUpperCase() : 'A',
+        role: _profile!.role,
+        joinDate: _profile!.joinDate,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating admin profile: $e');
+      return false;
+    }
+  }
+
   Future<void> loadSettings() async {
     _isLoading = true;
     notifyListeners();
