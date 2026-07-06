@@ -1,27 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class DonationRequestModel {
+class RequestSystemModel {
   final String id;
   final String itemName;
+  final String donorId;
+  final String donorName;
+  final String donationId; // 👈 ADDED — links this request back to its donation
   final String category;
-  final String description;
   final String location;
-  final String condition;
-  final String weight;
   final String note;
   final List<String> images;
   final List<String> tags;
   final String status;
   final DateTime createdAt;
 
-  DonationRequestModel({
+  RequestSystemModel({
     required this.id,
     required this.itemName,
+    required this.donorId,
+    required this.donorName,
+    required this.donationId, // 👈 ADDED
     required this.category,
-    required this.description,
     required this.location,
-    required this.condition,
-    required this.weight,
     required this.note,
     required this.images,
     required this.tags,
@@ -29,15 +29,19 @@ class DonationRequestModel {
     required this.createdAt,
   });
 
-  factory DonationRequestModel.fromFirestore(Map<String, dynamic> data, String id) {
-    return DonationRequestModel(
+  factory RequestSystemModel.fromFirestore(
+      Map<String, dynamic> data,
+      String id, {
+        String donorName = '',
+      }) {
+    return RequestSystemModel(
       id: id,
       itemName: data['itemName'] ?? '',
+      donorId: data['donorId'] ?? '',
+      donorName: donorName,
+      donationId: data['donationId'] ?? '', // 👈 ADDED
       category: data['category'] ?? '',
-      description: data['description'] ?? '',
       location: data['location'] ?? '',
-      condition: data['condition'] ?? '',
-      weight: data['weight'] ?? '',
       note: data['note'] ?? '',
       images: List<String>.from(data['images'] ?? []),
       tags: List<String>.from(data['tags'] ?? []),
@@ -51,11 +55,10 @@ class DonationRequestModel {
   Map<String, dynamic> toMap() {
     return {
       'itemName': itemName,
+      'donorId': donorId,
+      'donationId': donationId, // 👈 ADDED
       'category': category,
-      'description': description,
       'location': location,
-      'condition': condition,
-      'weight': weight,
       'note': note,
       'images': images,
       'tags': tags,
@@ -64,15 +67,15 @@ class DonationRequestModel {
     };
   }
 
-  DonationRequestModel copyWith({String? status}) {
-    return DonationRequestModel(
+  RequestSystemModel copyWith({String? status}) {
+    return RequestSystemModel(
       id: id,
       itemName: itemName,
+      donorId: donorId,
+      donorName: donorName,
+      donationId: donationId, // 👈 ADDED
       category: category,
-      description: description,
       location: location,
-      condition: condition,
-      weight: weight,
       note: note,
       images: images,
       tags: tags,
