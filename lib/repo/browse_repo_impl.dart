@@ -24,7 +24,7 @@ class BrowseRepoImpl implements BrowseRepo {
         final acceptedAt =
         (data['acceptedAt'] as Timestamp?)?.toDate();
 
-        final status = data['status'] ?? 'pending';
+        final status = data['status'] ?? 'available';
         final userId = data['userId'] ?? '';
 
         // ── Look up donor info from users collection (keyed by uid) ──
@@ -56,9 +56,9 @@ class BrowseRepoImpl implements BrowseRepo {
           'title': data['itemName'] ?? '',
           'images': images,
           'image': images.isNotEmpty ? images[0] : null,
-          'available': status == 'pending',
+          'available': status == 'available',
           // isDonated drives the Available/Taken badge on Item Detail
-          'isDonated': status == 'accepted',
+          'isDonated': status == 'claimed',
           'status': status,
           'acceptedAt': acceptedAt,
           'category': category,

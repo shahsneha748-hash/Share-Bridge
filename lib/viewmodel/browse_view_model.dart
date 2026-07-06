@@ -117,21 +117,20 @@ class BrowseViewModel extends ChangeNotifier {
     final now = DateTime.now();
 
     var list = List<Map<String, dynamic>>.from(_model.allItems)
-    // ── 12-hour taken filter ─────────────────────────────────
+    // ── 12-hour claimed-item grace period ───────────────────────
     // Show item if:
-    // 1. It is still pending (available)
-    // 2. OR it was accepted less than 12 hours ago (still visible)
-    // Items accepted more than 12 hours ago are hidden from browse
+    // 1. It is still available
+    // 2. OR it was claimed less than 12 hours ago (still visible)
+    // Items claimed more than 12 hours ago are hidden from browse
         .where((e) {
-      final status = e['status']?.toString() ?? 'pending';
-      if (status == 'pending') return true;
-      if (status == 'accepted') {
+      final status = e['status']?.toString() ?? 'available';
+      if (status == 'available') return true;
+      if (status == 'claimed') {
         final acceptedAt = e['acceptedAt'] as DateTime?;
         if (acceptedAt == null) return false;
         return now.difference(acceptedAt).inHours < 12;
       }
-      // rejected items stay visible as available
-      return status == 'rejected';
+      return false;
     })
         .toList();
 
@@ -154,7 +153,7 @@ class BrowseViewModel extends ChangeNotifier {
 
     // ── Available only filter ────────────────────────────────────
     if (_availableOnly) {
-      list = list.where((i) => i['status'] == 'pending').toList();
+      list = list.where((i) => i['status'] == 'available').toList();
     }
 
     // ── Today only filter ────────────────────────────────────────
@@ -181,8 +180,8 @@ class BrowseViewModel extends ChangeNotifier {
       });
     } else if (_sortBy == 'Available') {
       list.sort((a, b) {
-        final aAvail = a['status'] == 'pending';
-        final bAvail = b['status'] == 'pending';
+        final aAvail = a['status'] == 'available';
+        final bAvail = b['status'] == 'available';
         if (aAvail == bAvail) return 0;
         return aAvail ? -1 : 1;
       });
@@ -201,7 +200,7 @@ class BrowseViewModel extends ChangeNotifier {
       list = list.where((i) => i['category'] == category).toList();
     }
     if (available) {
-      list = list.where((i) => i['status'] == 'pending').toList();
+      list = list.where((i) => i['status'] == 'available').toList();
     }
     return list.length;
   }
