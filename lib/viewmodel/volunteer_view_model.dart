@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../model/volunteer_model.dart';
 import '../repo/volunteer_repo.dart';
+import '../repo/image_repo.dart'; // adjust path if different
 
 class VolunteerViewModel extends ChangeNotifier {
   final VolunteerRepo repo;
+  final ImageRepo imageRepo;
 
-  VolunteerViewModel(this.repo);
+  VolunteerViewModel(this.repo, this.imageRepo);
 
   Future<String> getStatus(String userId) async {
     return await repo.getStatus(userId);
@@ -37,19 +38,15 @@ class VolunteerViewModel extends ChangeNotifier {
     if (citizenshipNumber.isEmpty) {
       return "Please enter citizenship number";
     }
-
     if (citizenshipImage == null) {
       return "Please upload citizenship document";
     }
-
     if (selfieImage == null) {
       return "Please take a selfie";
     }
-
     if (!agreed) {
       return "Please accept the declaration checkbox";
     }
-
     return null;
   }
 
@@ -79,7 +76,6 @@ class VolunteerViewModel extends ChangeNotifier {
 
   Future<void> pickCitizenship(ImageSource source) async {
     final img = await picker.pickImage(source: source);
-
     if (img != null) {
       citizenshipImage = img;
       notifyListeners();
@@ -93,7 +89,6 @@ class VolunteerViewModel extends ChangeNotifier {
       source: ImageSource.camera,
       preferredCameraDevice: CameraDevice.front,
     );
-
     if (img != null) {
       selfieImage = img;
       notifyListeners();
@@ -123,22 +118,37 @@ class VolunteerViewModel extends ChangeNotifier {
     }
 
     loading = true;
+    errorMessage = null;
     notifyListeners();
 
-    final model = VolunteerModel(
-      userId: userId,
-      citizenshipNumber: citizenshipNumber,
-      citizenshipImage: citizenshipImage?.path ?? "",
-      selfieImage: selfieImage?.path ?? "",
-      vehicle: vehicle ??"",
-      availability: availability ??"",
-      status: "Pending",
-      submittedAt: DateTime.now(),
-    );
+    try {
+      // Upload both images to Cloudinary in parallel
+      final urls = await Future.wait([
+        imageRepo.uploadImage(citizenshipImage!.path),
+        imageRepo.uploadImage(selfieImage!.path),
+      ]);
 
-    await repo.submitVolunteer(model);
+      final citizenshipUrl = urls[0];
+      final selfieUrl = urls[1];
 
-    loading = false;
-    notifyListeners();
+      final model = VolunteerModel(
+        userId: userId,
+        citizenshipNumber: citizenshipNumber,
+        citizenshipImage: citizenshipUrl,
+        selfieImage: selfieUrl,
+        vehicle: vehicle ?? "",
+        availability: availability ?? "",
+        status: "Pending",
+        submittedAt: DateTime.now(),
+      );
+
+      await repo.submitVolunteer(model);
+    } catch (e) {
+      errorMessage = "Submission failed: $e";
+      rethrow;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
   }
 }

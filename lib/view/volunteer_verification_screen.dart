@@ -44,8 +44,23 @@ class _VolunteerVerificationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Guard against null user (not logged in / auth not ready yet)
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Volunteer Verification"),
+          backgroundColor: const Color(0xFF3A5C2E),
+        ),
+        body: const Center(
+          child: Text("Please log in to continue."),
+        ),
+      );
+    }
+
+    final uid = user.uid;
     final vm = context.watch<VolunteerViewModel>();
-    final uid = FirebaseAuth.instance.currentUser!.uid;
     final error = vm.getMissingFieldMessage(
       citizenshipController.text,
       agreed,
@@ -194,7 +209,8 @@ class _VolunteerVerificationScreenState
                     children: ["Bike", "Car", "Walking", "Scooter"]
                         .map((e) => ChoiceChip(
                       label: Text(e),
-                      selected: vm.vehicle != null && vm.vehicle == e,                      onSelected: (_) => vm.setVehicle(e),
+                      selected: vm.vehicle != null && vm.vehicle == e,
+                      onSelected: (_) => vm.setVehicle(e),
                       selectedColor: const Color(0xFF3A5C2E),
                       labelStyle: TextStyle(
                         color: vm.vehicle == e
@@ -214,7 +230,8 @@ class _VolunteerVerificationScreenState
                     children: ["Morning", "Afternoon", "Evening"]
                         .map((e) => ChoiceChip(
                       label: Text(e),
-                      selected: vm.availability != null && vm.availability == e,                      onSelected: (_) =>
+                      selected: vm.availability != null && vm.availability == e,
+                      onSelected: (_) =>
                           vm.setAvailability(e),
                       selectedColor: const Color(0xFF3A5C2E),
                       labelStyle: TextStyle(
@@ -271,10 +288,7 @@ class _VolunteerVerificationScreenState
               ],
             ),
 
-
-
             const SizedBox(height: 10),
-
 
             // ---------------- SUBMIT ----------------
 
@@ -307,24 +321,29 @@ class _VolunteerVerificationScreenState
                   ),
                 ),
 
-                onPressed: (!vm.isFullyValid|| vm.loading)
+                onPressed: (!vm.isFullyValid || vm.loading)
                     ? null
                     : () async {
-                  await vm.submit(
-                    userId: uid,
-                    citizenshipNumber:
-                    citizenshipController.text,
-                  );
+                  try {
+                    await vm.submit(
+                      userId: uid,
+                      citizenshipNumber: citizenshipController.text,
+                    );
 
-                  if (!context.mounted) return;
+                    if (!context.mounted) return;
 
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                      const VolunteerPendingScreen(),
-                    ),
-                  );
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VolunteerPendingScreen(),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(vm.errorMessage ?? "Upload failed. Please try again.")),
+                    );
+                  }
                 },
 
                 child: vm.loading

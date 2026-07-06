@@ -5,6 +5,7 @@ import 'package:sharebridge/view/create_donation_screen.dart';
 import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/view/profile_screen.dart';
 import 'package:sharebridge/view/browse_screen.dart';
+import 'package:sharebridge/view/user_profile.dart';
 
 class NavigationScreen extends StatefulWidget {
   final int initialIndex;
@@ -76,7 +77,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           BrowseScreen(initialCategory: _browseInitialCategory),
           const CreateDonationScreen(),
           const ChatListScreen(),
-          const ProfileScreen(),
+          const MyProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
