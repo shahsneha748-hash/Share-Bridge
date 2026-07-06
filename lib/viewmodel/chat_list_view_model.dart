@@ -56,6 +56,10 @@ class ChatListViewModel extends ChangeNotifier {
           }
           isLoading = false;
           notifyListeners();
+        }, onError: (e) {
+          debugPrint('❌ CHAT LIST ERROR: $e');
+          isLoading = false;
+          notifyListeners();
         });
   }
 

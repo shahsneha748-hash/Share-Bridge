@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../viewmodel/chat_viewmodel.dart';
 import '../model/message_model.dart';
 import '../components/quick_chip.dart';
 
 class DonationChatScreen extends StatelessWidget {
-  final String donorId;
-  final String donorName;
-  final String itemName;
   final String chatId;
+  final String otherUserId;
+  final String otherUserName;
+  final String itemName;
 
-  DonationChatScreen({
+  const DonationChatScreen({
     super.key,
-    required this.donorId,
-    required this.donorName,
-    required this.itemName,
     required this.chatId,
+    required this.otherUserId,
+    required this.otherUserName,
+    required this.itemName,
   });
 
   static const Color _topBarColor = Color(0xFF2D5A14);
@@ -28,15 +29,18 @@ class DonationChatScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ChatViewModel(
         chatId: chatId,
-        donorId: donorId,
-        donorName: donorName,
+        otherUserId: otherUserId,
+        otherUserName: otherUserName,
+        donationTitle: itemName,
       ),
       child: Scaffold(
         backgroundColor: _bgColor,
         body: Column(
           children: [
-            _buildTopBar(context),
-            _buildBanner(context),
+            Consumer<ChatViewModel>(
+              builder: (context, vm, _) => _buildTopBar(context, vm),
+            ),
+            if (itemName.isNotEmpty) _buildBanner(context),
             Expanded(
               child: Consumer<ChatViewModel>(
                 builder: (context, vm, _) => _buildMessageList(vm),
@@ -54,7 +58,23 @@ class DonationChatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
+  // ── CALL ──────────────────────────────────────────────
+  Future<void> _makeCall(BuildContext context, String? phone) async {
+    if (phone == null || phone.isEmpty) {
+      _showSnackbar(context, "Phone number not available");
+      return;
+    }
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (context.mounted) {
+        _showSnackbar(context, "Could not open dialer");
+      }
+    }
+  }
+
+  Widget _buildTopBar(BuildContext context, ChatViewModel vm) {
     return Container(
       color: _topBarColor,
       child: SafeArea(
@@ -67,12 +87,14 @@ class DonationChatScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 20,
-                backgroundColor: Color(0xFF7AB648),
+                backgroundColor: const Color(0xFF7AB648),
                 child: Text(
-                  "R",
-                  style: TextStyle(
+                  otherUserName.isNotEmpty
+                      ? otherUserName[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -84,49 +106,36 @@ class DonationChatScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Ram Sah",
-                      style: TextStyle(
+                    Text(
+                      otherUserName,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Row(
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF56C769),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          "Online",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      vm.otherUserPhone ?? '',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.call, color: Colors.white),
-                onPressed: () =>
-                    _showSnackbar(context, "Starting voice call with Ram Sah…"),
+                onPressed: () => _makeCall(context, vm.otherUserPhone),
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 onSelected: (value) => _showSnackbar(context, value),
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: "Opening Ram Sah's profile",
-                    child: ListTile(
+                  PopupMenuItem(
+                    value: "Opening $otherUserName's profile",
+                    child: const ListTile(
                       leading: Icon(Icons.person),
                       title: Text("View profile"),
                     ),
@@ -145,17 +154,6 @@ class DonationChatScreen extends StatelessWidget {
                       title: Text("Report"),
                     ),
                   ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: "Conversation deleted",
-                    child: ListTile(
-                      leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text(
-                        "Delete conversation",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -166,164 +164,29 @@ class DonationChatScreen extends StatelessWidget {
   }
 
   Widget _buildBanner(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showDonationDetail(context),
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            const Icon(Icons.push_pin, size: 18, color: _greenMedium),
-            const SizedBox(width: 6),
-            const Text(
-              "Re: ",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const Expanded(
-              child: Text(
-                "Grocery Essentials Bundle",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD7EDCA),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                "Food",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF2D6E10),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F0E8),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.schedule, size: 12, color: Color(0xFF9E8A6A)),
-                  SizedBox(width: 3),
-                  Text(
-                    "Exp 2d",
-                    style:
-                    TextStyle(fontSize: 11, color: Color(0xFF9E8A6A)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDonationDetail(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7EDCA),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "Food",
-                    style: TextStyle(
-                      color: Color(0xFF2D6E10),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    "Grocery Essentials Bundle",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            _detailRow("Pickup Deadline", "Today before 6:00 PM"),
-            const SizedBox(height: 12),
-            _detailRow("Pickup Location", "Imadol 5, near ABC Tol gate"),
-            const SizedBox(height: 12),
-            _detailRow(
-              "Description",
-              "A bundle of essential grocery items including rice, lentils, "
-                  "cooking oil, and canned goods. Perfect for a family of 4 for about a week.",
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _greenMedium,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    "Close",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.grey,
-            fontSize: 13,
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.push_pin, size: 18, color: _greenMedium),
+          const SizedBox(width: 6),
+          const Text(
+            "Re: ",
+            style: TextStyle(color: Colors.grey, fontSize: 13),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 14)),
-      ],
+          Expanded(
+            child: Text(
+              itemName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -348,8 +211,7 @@ class DonationChatScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(
         child: Container(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: const Color.fromRGBO(0, 0, 0, 0.08),
             borderRadius: BorderRadius.circular(20),
@@ -380,8 +242,7 @@ class DonationChatScreen extends StatelessWidget {
         alignment: sent ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 280),
-          padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: sent ? _sentBubble : Colors.white,
             borderRadius: BorderRadius.only(
@@ -450,8 +311,7 @@ class DonationChatScreen extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Container(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: const BorderRadius.only(
@@ -486,8 +346,7 @@ class DonationChatScreen extends StatelessWidget {
       color: const Color.fromRGBO(255, 255, 255, 0.6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: vm.quickReplies
               .map(
@@ -516,10 +375,6 @@ class DonationChatScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.attach_file, color: Colors.grey),
-            onPressed: () => _showAttachmentSheet(context),
-          ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -558,9 +413,7 @@ class DonationChatScreen extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: canSend
-                        ? _greenMedium
-                        : Colors.grey.shade300,
+                    color: canSend ? _greenMedium : Colors.grey.shade300,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -572,66 +425,6 @@ class DonationChatScreen extends StatelessWidget {
               );
             },
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showAttachmentSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Share",
-              style:
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _attachOption(ctx, "📷", "Camera"),
-                _attachOption(ctx, "🖼️", "Gallery"),
-                _attachOption(ctx, "📍", "Location"),
-                _attachOption(ctx, "📄", "Document"),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _attachOption(BuildContext ctx, String emoji, String label) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(ctx);
-        _showSnackbar(ctx, "$label opened");
-      },
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child:
-              Text(emoji, style: const TextStyle(fontSize: 28)),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 12)),
         ],
       ),
     );

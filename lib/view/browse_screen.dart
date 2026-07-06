@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import 'package:sharebridge/components/category_pill.dart';
 import 'package:sharebridge/components/browse_item_card.dart';
 import 'package:sharebridge/repo/browse_repo_impl.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
+import 'package:sharebridge/view/saved_items.dart';
 import 'package:sharebridge/viewmodel/browse_view_model.dart';
 
 class BrowseScreen extends StatelessWidget {
@@ -53,12 +56,19 @@ class _BrowseViewState extends State<_BrowseView> {
   Widget _heartIcon(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        // Show snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Wishlist — Coming Soon'),
+            content: Text('Opening Wishlist...'),
             backgroundColor: AppColors.darkGreen,
             duration: Duration(seconds: 1),
           ),
+        );
+
+        // 👉 Navigate to SavedItemsScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
         );
       },
       child: Container(
@@ -85,17 +95,57 @@ class _BrowseViewState extends State<_BrowseView> {
     ).then((_) => vm.refresh());
   }
 
-  void _toggleFavorite(BuildContext context, String title) {
+  void _toggleFavorite(BuildContext context, Map<String, dynamic> item) async {
     final vm = context.read<BrowseViewModel>();
+    final title = item["title"].toString();
     final wasSaved = vm.isFavorite(title);
+
+    // Toggle locally in ViewModel
     vm.toggleFavorite(title);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(wasSaved ? 'Removed from wishlist' : 'Added to wishlist'),
-        backgroundColor: AppColors.darkGreen,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    if (!wasSaved) {
+      // 👉 Add to Firestore
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("saved_items")
+          .doc(item["id"] ?? title) // use item id if available
+          .set({
+        "id": item["id"] ?? title,
+        "title": item["title"] ?? "",
+        "image": item["image"] ?? "",
+        "category": item["category"] ?? "Others",
+        "miles": item["miles"] ?? "",
+        "addedTime": item["addedTime"] ?? "",
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Added to wishlist'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+      // 👉 Remove from Firestore
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("saved_items")
+          .doc(item["id"] ?? title)
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed from wishlist'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   void _openFilterSheet(BuildContext context) {
@@ -507,7 +557,7 @@ class _BrowseViewState extends State<_BrowseView> {
                                 onTap: () =>
                                     _openItemDetail(context, item),
                                 onFavoriteTap: () =>
-                                    _toggleFavorite(context, title),
+                                    _toggleFavorite(context, item),
                               );
                             },
                           ),

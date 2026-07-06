@@ -4,7 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/repo/create_donation_repo.dart';
-import 'package:sharebridge/repo/create_donation_repo_imp.dart';
+import 'package:sharebridge/repo/create_donation_repo_impl.dart';
+import 'package:sharebridge/repo/create_donation_repo_impl.dart';
 import 'package:sharebridge/repo/image_repo.dart';
 import 'package:sharebridge/repo/image_repo_impl.dart';
 import 'package:sharebridge/repo/my_donation_repo_impl.dart';
@@ -73,8 +74,8 @@ Future<void> main() async {
         Provider<ImageRepo>(create: (_) => ImageRepoImpl()),
 
         // Request System repo
-        Provider<DonationRequestRepository>(
-          create: (_) => DonationRequestRepositoryImpl(),
+        Provider<RequestSystemRepo>(
+          create: (_) => RequestSystemRepoImpl(),
         ),
 
         // ViewModels depend on repos
@@ -108,7 +109,7 @@ Future<void> main() async {
         // Request System ViewModel
         ChangeNotifierProvider(
           create: (context) => RequestSystemViewModel(
-            repository: context.read<DonationRequestRepository>(),
+            repository: context.read<RequestSystemRepo>(),
           ),
         ),
 

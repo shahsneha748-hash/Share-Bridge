@@ -244,22 +244,22 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ✅ Navigate on success
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (_) => const Homescreentest(uid: '')),
+                                MaterialPageRoute(builder: (_) => const DashboardScreen()),
                               );
 
 
-                              // // 🔑 Step 4: Navigate based on role
-                              // if (role == 'admin') {
-                              //   Navigator.pushReplacement(
-                              //     context,
-                              //     MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
-                              //   );
-                              // } else {
-                              //   Navigator.pushReplacement(
-                              //     context,
-                              //     MaterialPageRoute(builder: (_) => const NavigationScreen()),
-                              //   );
-                              // }
+                              // 🔑 Step 4: Navigate based on role
+                              if (role == 'admin') {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
+                                );
+                              } else {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const NavigationScreen()),
+                                );
+                              }
 
                             } on FirebaseAuthException catch (e) {
                               if (e.code == 'user-not-found') {

@@ -20,7 +20,7 @@ class DashboardRepoImpl implements DashboardRepo {
             "id": doc.id,
             ...doc.data(),
           };
-        }).toList(),
+        }).toList(), id: '',
       );
     });
   }
