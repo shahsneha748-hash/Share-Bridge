@@ -38,7 +38,7 @@ class ItemDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> sendRequest() async {
-    await _repo.sendRequest(item['itemName'] ?? '', item['donorName'] ?? '');
+    await _repo.sendRequest(item);
   }
 
   /// Opens Maps using lat/lng if available, otherwise falls back to

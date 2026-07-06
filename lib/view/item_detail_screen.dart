@@ -278,13 +278,15 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     }
   }
 
-  void _openFullImage(BuildContext context, String imageUrl) {
+  void _openFullImage(
+      BuildContext context, List<String> images, int startIndex) {
     Navigator.push(
       context,
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
-        pageBuilder: (_, __, ___) => _FullImageView(imageUrl: imageUrl),
+        pageBuilder: (_, __, ___) =>
+            _FullImageView(images: images, initialIndex: startIndex),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -388,7 +390,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       item: item,
                       available: vm.available,
                       showExpiry: vm.showExpiry,
-                      onImageTap: (url) => _openFullImage(context, url),
+                      onImageTap: (images, index) =>
+                          _openFullImage(context, images, index),
                     ),
 
                     Transform.translate(
@@ -567,9 +570,19 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
 
 // ── Full Screen Image Viewer ──────────────────────────────────────────────────
 
-class _FullImageView extends StatelessWidget {
-  final String imageUrl;
-  const _FullImageView({required this.imageUrl});
+class _FullImageView extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+  const _FullImageView({required this.images, required this.initialIndex});
+
+  @override
+  State<_FullImageView> createState() => _FullImageViewState();
+}
+
+class _FullImageViewState extends State<_FullImageView> {
+  late final PageController _pageController =
+  PageController(initialPage: widget.initialIndex);
+  late int _currentIndex = widget.initialIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -577,21 +590,46 @@ class _FullImageView extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          Center(
-            child: InteractiveViewer(
-              minScale: 0.8,
-              maxScale: 4,
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.image_not_supported,
-                  color: Colors.white54,
-                  size: 60,
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.images.length,
+            onPageChanged: (i) => setState(() => _currentIndex = i),
+            itemBuilder: (_, i) {
+              return Center(
+                child: InteractiveViewer(
+                  minScale: 0.8,
+                  maxScale: 4,
+                  child: Hero(
+                    tag: widget.images[i],
+                    child: Image.network(
+                      widget.images[i],
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white54,
+                        size: 60,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          if (widget.images.length > 1)
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Text(
+                  '${_currentIndex + 1} / ${widget.images.length}',
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-          ),
           Positioned(
             top: 40,
             right: 16,
@@ -665,11 +703,11 @@ class _FloatingBadge extends StatelessWidget {
   }
 }
 
-class _HeroImage extends StatelessWidget {
+class _HeroImage extends StatefulWidget {
   final Map<String, dynamic> item;
   final bool available;
   final bool showExpiry;
-  final ValueChanged<String> onImageTap;
+  final void Function(List<String> images, int startIndex) onImageTap;
 
   const _HeroImage({
     required this.item,
@@ -679,38 +717,60 @@ class _HeroImage extends StatelessWidget {
   });
 
   @override
+  State<_HeroImage> createState() => _HeroImageState();
+}
+
+class _HeroImageState extends State<_HeroImage> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final List images = item['images'] ?? [];
-    final String? imageUrl = images.isNotEmpty ? images[0] : null;
+    final List<String> images =
+        (widget.item['images'] as List?)?.cast<String>() ?? [];
+    final hasImages = images.isNotEmpty;
 
     return Stack(
       children: [
-        GestureDetector(
-          onTap: imageUrl != null ? () => onImageTap(imageUrl) : null,
-          child: SizedBox(
-            width: double.infinity,
-            height: 320,
-            child: imageUrl != null
-                ? Hero(
-              tag: imageUrl,
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.paleGreen,
-                  child: const Center(
-                    child: Icon(Icons.image_not_supported,
-                        color: AppColors.darkGreen, size: 60),
+        SizedBox(
+          width: double.infinity,
+          height: 320,
+          child: hasImages
+              ? PageView.builder(
+            controller: _pageController,
+            itemCount: images.length,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            itemBuilder: (_, i) {
+              return GestureDetector(
+                onTap: () => widget.onImageTap(images, i),
+                child: Hero(
+                  tag: images[i],
+                  child: Image.network(
+                    images[i],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AppColors.paleGreen,
+                      child: const Center(
+                        child: Icon(Icons.image_not_supported,
+                            color: AppColors.darkGreen, size: 60),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            )
-                : Container(
-              color: AppColors.paleGreen,
-              child: const Center(
-                child: Icon(Icons.image_not_supported,
-                    color: AppColors.darkGreen, size: 60),
-              ),
+              );
+            },
+          )
+              : Container(
+            color: AppColors.paleGreen,
+            child: const Center(
+              child: Icon(Icons.image_not_supported,
+                  color: AppColors.darkGreen, size: 60),
             ),
           ),
         ),
@@ -741,16 +801,16 @@ class _HeroImage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _FloatingBadge(
-                icon: available ? Icons.check_circle : Icons.cancel,
-                text: available ? 'Available' : 'Taken',
+                icon: widget.available ? Icons.check_circle : Icons.cancel,
+                text: widget.available ? 'Available' : 'Taken',
                 bg: AppColors.darkText.withOpacity(0.85),
                 fg: Colors.white,
               ),
-              if (showExpiry) ...[
+              if (widget.showExpiry) ...[
                 const SizedBox(height: 8),
                 _FloatingBadge(
                   icon: Icons.access_time,
-                  text: 'Expiring ${item['expires']}',
+                  text: 'Expiring ${widget.item['expires']}',
                   bg: AppColors.expiryBg,
                   fg: AppColors.expiryText,
                 ),
@@ -767,15 +827,15 @@ class _HeroImage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.paleGreen.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    item['subcategory']?.toString().toUpperCase() ??
-                        item['category']?.toString().toUpperCase() ??
+                    widget.item['subcategory']?.toString().toUpperCase() ??
+                        widget.item['category']?.toString().toUpperCase() ??
                         'GENERAL',
                     style: const TextStyle(
                       fontSize: 11,
@@ -787,7 +847,7 @@ class _HeroImage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  item['title'] ?? 'Item',
+                  widget.item['title'] ?? 'Item',
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -805,6 +865,31 @@ class _HeroImage extends StatelessWidget {
             ),
           ),
         ),
+        if (images.length > 1)
+          Positioned(
+            top: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(images.length, (i) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _currentPage == i ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _currentPage == i
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
       ],
     );
   }
