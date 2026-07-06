@@ -13,7 +13,7 @@ class CreateDonationRepoImpl implements CreateDonationRepository {
       await firestore.collection("donations").add({
         ...model.toMap(),
         'createdAt': FieldValue.serverTimestamp(),
-        'status': 'pending',
+        'status': 'available',
       });
       return true;
     } catch (e) {

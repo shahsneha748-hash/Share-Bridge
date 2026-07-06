@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
+import 'package:sharebridge/repo/review_repo_impl.dart'; // added: concrete ReviewRepo impl
 import 'package:sharebridge/view/donation_chat_screen.dart';
-import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
-import 'package:sharebridge/utils/chat_helper.dart';
+import 'package:sharebridge/view/review.dart';
 import 'package:sharebridge/view/user_report_screen.dart';
+import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
+import 'package:sharebridge/viewmodel/review_view_model.dart';
+import 'package:sharebridge/utils/chat_helper.dart';
+import '../model/notification_model.dart';
+import '../service/notification_service.dart';
+import '../viewmodel/notification_view_model.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -23,8 +31,6 @@ class ItemDetailScreen extends StatelessWidget {
     );
   }
 }
-
-// ── View ──────────────────────────────────────────────────────────────────────
 
 class _ItemDetailView extends StatefulWidget {
   const _ItemDetailView();
@@ -76,7 +82,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       return;
     }
 
-    // Don't let donor chat with themselves
     if (donorId == currentUser.uid) {
       _snack(context, 'This is your own donation');
       return;
@@ -134,7 +139,9 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                   ),
                   ListTile(
                     leading: Icon(
-                      _isWishlisted ? Icons.favorite : Icons.favorite_border,
+                      _isWishlisted
+                          ? Icons.favorite
+                          : Icons.favorite_border,
                       color: AppColors.darkGreen,
                     ),
                     title: Text(
@@ -194,7 +201,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     );
   }
 
-
   void _showRequestDialog(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
     showDialog(
@@ -221,9 +227,40 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                   borderRadius: BorderRadius.circular(20)),
             ),
             onPressed: () async {
-              Navigator.pop(ctx);
-              await vm.sendRequest();
-              _snack(context, 'Request sent to donor!');
+              final notifVm = context.read<NotificationViewModel>();
+              final currentUid = FirebaseAuth.instance.currentUser!.uid;
+              final senderInfo = await notifVm.getUserById(currentUid);
+              final receiverId = vm.item['donorId'] ?? '';
+              final receiverInfo = await notifVm.getUserById(receiverId);
+
+              final model = NotificationModel(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                senderId: currentUid,
+                senderName: senderInfo.fullName,
+                profilePicture: senderInfo.profilePicture,
+                receiverId: receiverId,
+                receiverName: receiverInfo.fullName,
+                type: NotificationType.request,
+                body:
+                '${senderInfo.fullName} has requested for your donation',
+                createdAt: DateTime.now(),
+                isRead: false,
+                postId: vm.item['id'] ?? '',
+              );
+
+              final success = await notifVm.sendNotification(model);
+
+              if (success) {
+                await NotificationService.display(
+                  body: model.body,
+                  createdAt: model.createdAt,
+                  payload: 'request_system_screen',
+                  buildContext: context,
+                );
+                Fluttertoast.showToast(msg: 'Notification sent successfully');
+              } else {
+                Fluttertoast.showToast(msg: 'Failed to send notification');
+              }
             },
             child: const Text('Send Request',
                 style: TextStyle(color: Colors.white)),
@@ -241,17 +278,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     }
   }
 
-  Future<void> _handleFollowTap(BuildContext context) async {
-    final vm = context.read<ItemDetailViewModel>();
-    await vm.toggleFollow();
-    _snack(
-      context,
-      vm.isFollowing
-          ? 'Following ${vm.item['donorName'] ?? 'donor'}'
-          : 'Unfollowed',
-    );
-  }
-
   void _openFullImage(BuildContext context, String imageUrl) {
     Navigator.push(
       context,
@@ -262,6 +288,29 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },
+      ),
+    );
+  }
+
+  void _openReview(BuildContext context, Map<String, dynamic> item) {
+    final donationId = item['id'] ?? '';
+    final targetUserId = item['donorId'] ?? '';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          // Fix: ReviewViewModel requires a ReviewRepo — it was previously
+          // constructed with no arguments, which fails to compile because
+          // `repository` is a required named parameter.
+          create: (_) => ReviewViewModel(repository: ReviewRepoImpl())
+            ..getReviewsForUser(targetUserId),
+          child: RatingsReviewsPage(
+            donationId: donationId,
+            targetUserId: targetUserId,
+            reviewType: 'donor',
+          ),
+        ),
       ),
     );
   }
@@ -329,7 +378,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               ),
             ),
 
-            // ── Scrollable Body ──────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.zero,
@@ -350,9 +398,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                         const EdgeInsets.symmetric(horizontal: 20),
                         child: _DonorCard(
                           item: item,
-                          isFollowing: vm.isFollowing,
                           isBlocked: _isDonorBlocked,
-                          onFollowTap: () => _handleFollowTap(context),
+                          onReviewTap: () => _openReview(context, item),
                         ),
                       ),
                     ),
@@ -501,7 +548,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               ),
             ),
 
-            // ── Bottom Action Bar ────────────────────────────────────────────
             _BottomActionBar(
               available: vm.available,
               isBlocked: _isDonorBlocked,
@@ -519,7 +565,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
   }
 }
 
-// ── Full Screen Image Viewer ────────────────────────────────────────────────
+// ── Full Screen Image Viewer ──────────────────────────────────────────────────
 
 class _FullImageView extends StatelessWidget {
   final String imageUrl;
@@ -603,8 +649,8 @@ class _FloatingBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-          color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration:
+      BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -612,9 +658,7 @@ class _FloatingBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(text,
               style: TextStyle(
-                  color: fg,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold)),
+                  color: fg, fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -768,15 +812,13 @@ class _HeroImage extends StatelessWidget {
 
 class _DonorCard extends StatelessWidget {
   final Map<String, dynamic> item;
-  final bool isFollowing;
   final bool isBlocked;
-  final VoidCallback onFollowTap;
+  final VoidCallback onReviewTap;
 
   const _DonorCard({
     required this.item,
-    required this.isFollowing,
     required this.isBlocked,
-    required this.onFollowTap,
+    required this.onReviewTap,
   });
 
   @override
@@ -865,25 +907,18 @@ class _DonorCard extends StatelessWidget {
             ),
             if (!isBlocked)
               GestureDetector(
-                onTap: onFollowTap,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                onTap: onReviewTap,
+                child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 18, vertical: 9),
                   decoration: BoxDecoration(
-                    color: isFollowing
-                        ? Colors.white
-                        : AppColors.darkGreen,
+                    color: AppColors.darkGreen,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: AppColors.darkGreen, width: 1.4),
                   ),
-                  child: Text(
-                    isFollowing ? 'Following' : 'Follow',
+                  child: const Text(
+                    'Review',
                     style: TextStyle(
-                      color: isFollowing
-                          ? AppColors.darkGreen
-                          : Colors.white,
+                      color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1197,8 +1232,7 @@ class _BottomActionBar extends StatelessWidget {
                     boxShadow: onRequestTap != null
                         ? [
                       BoxShadow(
-                        color:
-                        AppColors.darkText.withOpacity(0.3),
+                        color: AppColors.darkText.withOpacity(0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),

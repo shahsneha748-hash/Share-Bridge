@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected }
+enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected, volunteer_request }
 
 class NotificationModel {
   final String id;
@@ -20,6 +20,7 @@ class NotificationModel {
   final String? imageUrl;
   final String? senderName;
   final String? receiverName;
+  final String postId;
 
 
   NotificationModel({
@@ -40,6 +41,7 @@ class NotificationModel {
     this.imageUrl,
     this.senderName,
     this.receiverName,
+    required this.postId,
   });
 
   /// Convert to Firestore map
@@ -62,6 +64,7 @@ class NotificationModel {
       "imageUrl": imageUrl,
       "senderName": senderName,
       "receiverName": receiverName,
+      "postId": postId,
     };
   }
 
@@ -87,6 +90,8 @@ class NotificationModel {
       imageUrl: map["imageUrl"],
       senderName: map["senderName"],
       receiverName: map["receiverName"],
+      postId: map["postId"],
+
     );
   }
 
@@ -99,6 +104,7 @@ class NotificationModel {
       case 'normal_alert': return NotificationType.normal_alert;
       case 'accepted': return NotificationType.accepted;
       case 'rejected': return NotificationType.rejected;
+      case 'volunteer_request': return NotificationType.volunteer_request;
       default: return NotificationType.alert;
     }
   }
@@ -122,6 +128,7 @@ class NotificationModel {
     String? imageUrl,
     String? senderName,
     String? receiverName,
+    String? postId,
   }) {
     return NotificationModel(
       id: id ?? this.id,
@@ -141,6 +148,7 @@ class NotificationModel {
       imageUrl: imageUrl ?? this.imageUrl,
       senderName: senderName ?? this.senderName,
       receiverName: receiverName ?? this.receiverName,
+      postId: postId ?? this.postId,
 
     );
   }

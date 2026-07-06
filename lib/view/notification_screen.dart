@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/components/notification_card.dart'; // use the clean card
 import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/item_detail_screen.dart';
 import 'package:sharebridge/view/request_system_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import '../model/notification_model.dart'; // make sure this imports your enum
@@ -87,6 +88,24 @@ class NotificationScreen extends StatelessWidget {
                             ),
                           );
                         }
+
+                        // else if (n.type == NotificationType.alert ||
+                        //     n.type == NotificationType.normal_alert) {
+                        //   Navigator.push(
+                        //     context,
+                        //     MaterialPageRoute(
+                        //       builder: (_) => ItemDetailScreen(postId: n.postId, item: {},),   // create posId in ItemDetailScreen and model too i think and pass it here
+                        //     ),
+                        //   );
+                        // }
+                        //
+                        // else if (n.type == NotificationType.pickup) {
+                        //   // Navigate to sender profile
+                        //   Navigator.push(
+                        //     context,
+                        //     MaterialPageRoute(
+                        //       builder: (_) => ProfileScreen(userId: n.senderId),   // create parameter in ProfileScreen in view
+                        // }
                       },
                       child: NotificationCard(
                         notification: n,
@@ -95,10 +114,12 @@ class NotificationScreen extends StatelessWidget {
                         createdAt: n.createdAt,
                         profilePicture: n.profilePicture ?? "",
                         onMarkAsRead: () => vm.markAsRead(n.id),
+
                       ),
                     );
                   }).toList(),
                 ),
+
               ],
             );
           },
