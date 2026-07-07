@@ -15,6 +15,7 @@ class AdminNavigationScreen extends StatefulWidget {
 
 class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
   int _selectedIndex = 0;
+  final PageController _pageController = PageController();
 
   final List<Widget> _screens = [
     const AdminDashboardScreen(),
@@ -26,10 +27,31 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
   ];
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Called when user swipes
+  void _onPageChanged(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
+  // Called when user taps a bottom nav tab
+  void _onTabTapped(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
         children: _screens,
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -62,7 +84,7 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => setState(() => _selectedIndex = e.key),
+                  onTap: () => _onTabTapped(e.key),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

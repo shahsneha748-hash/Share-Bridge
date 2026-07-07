@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sharebridge/view/user.dart';
 import '../constants/colors.dart';
 import '../model/request_system_model.dart';
+import '../utils/chat_helper.dart';
 import '../viewmodel/request_system_view_model.dart';
+import 'donation_chat_screen.dart';
 
 class RequestSystemScreen extends StatelessWidget {
   const RequestSystemScreen({super.key});
@@ -214,91 +217,185 @@ class _FilterRow extends StatelessWidget {
 
 class _RequestCard extends StatelessWidget {
   final RequestSystemModel request;
+
   const _RequestCard({required this.request});
 
   @override
   Widget build(BuildContext context) {
     final vm = context.read<RequestSystemViewModel>();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Avatar(name: request.donorName),
-              const SizedBox(width: 10),
+
+              GestureDetector(
+                onTap: () {
+                  // Profile screen will be connected by teammate later
+                },
+                child: _Avatar(name: request.donorName),
+              ),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+
                     Text(
-                      request.donorName.isEmpty ? 'Unknown User' : request.donorName,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkText),
+                      request.itemName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 2),
+
+                    const SizedBox(height: 4),
+
                     Text(
-                      '${request.id.substring(0, request.id.length >= 8 ? 8 : request.id.length).toUpperCase()} · ${_formatDate(request.createdAt)}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      request.donorName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
                     ),
-                    if (request.itemName.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        request.itemName,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      "Category: ${request.category}",
+                      style: const TextStyle(
+                        fontSize: 12,
                       ),
-                    ],
-                    if (request.location.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 12, color: AppColors.darkGreen),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              request.location,
-                              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      "Location: ${request.location}",
+                      style: const TextStyle(
+                        fontSize: 12,
                       ),
-                    ],
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      _formatDate(request.createdAt),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              // Status pill hidden for pending requests, shown for accepted/rejected.
-              // If you want it gone completely, just delete this line.
-              if (request.status != 'pending') _StatusPill(status: request.status),
+
+              // Show status only accepted/rejected
+              if (request.status != 'pending')
+                _StatusPill(status: request.status),
+
             ],
           ),
-          const SizedBox(height: 10),
 
-          const SizedBox(height: 12),
+
+          const SizedBox(height: 14),
+
 
           Row(
             children: [
-              _ActionButton(
-                label: 'Accept',
-                icon: Icons.check,
-                onTap: () => vm.updateStatus(request.id, 'accepted'),
-                color: AppColors.darkGreen,
-                bgColor: AppColors.paleGreen,
-              ),
-              const SizedBox(width: 8),
-              _ActionButton(
-                label: 'Reject',
-                icon: Icons.close,
-                onTap: () => vm.updateStatus(request.id, 'rejected'),
-                color: AppColors.rejectedText,
-                bgColor: AppColors.rejectedBg,
-              ),
+
+              // Pending
+              if (request.status == 'pending') ...[
+
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Accept',
+                    icon: Icons.check,
+                    onTap: () =>
+                        vm.updateStatus(request.id, 'accepted'),
+                    color: AppColors.darkGreen,
+                    bgColor: AppColors.paleGreen,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Reject',
+                    icon: Icons.close,
+                    onTap: () =>
+                        vm.updateStatus(request.id, 'rejected'),
+                    color: AppColors.rejectedText,
+                    bgColor: AppColors.rejectedBg,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                _ChatIcon(request: request),
+              ],
+
+              // Accepted
+              if (request.status == 'accepted') ...[
+
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Unaccept',
+                    icon: Icons.undo,
+                    onTap: () =>
+                        vm.updateStatus(request.id, 'pending'),
+                    color: AppColors.darkGreen,
+                    bgColor: AppColors.paleGreen,
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Assign',
+                    icon: Icons.person_add,
+                    onTap: () {
+                      // Assign action later
+                    },
+                    color: AppColors.darkGreen,
+                    bgColor: AppColors.paleGreen,
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                _ChatIcon(request: request),
+
+              ],
+
+              // Rejected
+               if (request.status == 'rejected')
+
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Unreject',
+                    icon: Icons.undo,
+                    onTap: () =>
+                        vm.updateStatus(request.id, 'pending'),
+                    color: AppColors.rejectedText,
+                    bgColor: AppColors.rejectedBg,
+                  ),
+                ),
+
             ],
           ),
         ],
@@ -306,9 +403,104 @@ class _RequestCard extends StatelessWidget {
     );
   }
 
+
   String _formatDate(DateTime date) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan','Feb','Mar','Apr','May','Jun',
+      'Jul','Aug','Sep','Oct','Nov','Dec'
+    ];
+
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+}
+
+// ─── Chat Icon ─────────────────────────────────────────────────────────────
+
+class _ChatIcon extends StatelessWidget {
+
+  final RequestSystemModel request;
+
+  const _ChatIcon({required this.request});
+
+
+  @override
+  Widget build(BuildContext context) {
+
+    return GestureDetector(
+
+      onTap: () async {
+
+        final chatId = await ChatHelper.openChat(
+
+          otherUserId: request.donorId,
+
+          otherUserName: request.donorName,
+
+          donationId: request.donationId,
+
+          donationTitle: request.itemName,
+
+        );
+
+
+        if (context.mounted) {
+
+          Navigator.push(
+
+            context,
+
+            MaterialPageRoute(
+
+              builder: (_) => DonationChatScreen(
+
+                chatId: chatId,
+
+                otherUserId: request.donorId,
+
+                otherUserName: request.donorName,
+
+                itemName: request.itemName,
+
+              ),
+
+            ),
+
+          );
+
+        }
+
+      },
+
+
+      child: Container(
+
+        width: 44,
+
+        height: 44,
+
+        decoration: BoxDecoration(
+
+          color: AppColors.darkGreen,
+
+          borderRadius: BorderRadius.circular(10),
+
+        ),
+
+
+        child: const Icon(
+
+          Icons.chat_bubble_outline,
+
+          color: AppColors.white,
+
+          size: 20,
+
+        ),
+
+      ),
+
+    );
+
   }
 }
 

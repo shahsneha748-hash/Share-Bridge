@@ -7,6 +7,8 @@ class AdminVolunteerModel {
   final String address;
   final String availability;
   final String citizenshipNumber;
+  final String citizenshipImage;
+  final String selfieImage;
   final String vehicle;
   final String status;
   final String submittedAt;
@@ -20,6 +22,8 @@ class AdminVolunteerModel {
     required this.address,
     required this.availability,
     required this.citizenshipNumber,
+    required this.citizenshipImage,
+    required this.selfieImage,
     required this.vehicle,
     required this.status,
     required this.submittedAt,
@@ -42,6 +46,8 @@ class AdminVolunteerModel {
       address: address,
       availability: map['availability'] ?? 'N/A',
       citizenshipNumber: map['citizenshipNumber'] ?? 'N/A',
+      citizenshipImage: map['citizenshipImage'] ?? '',
+      selfieImage: map['selfieImage'] ?? '',
       vehicle: map['vehicle'] ?? 'N/A',
       status: map['status'] ?? 'Pending',
       submittedAt: map['submittedAt'] ?? '',

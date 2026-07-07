@@ -68,16 +68,11 @@ class _SettingsBody extends StatelessWidget {
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top,
-        left: 4, right: 16, bottom: 12,
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20, right: 16, bottom: 14,
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left,
-                color: Colors.white, size: 28),
-            onPressed: () => Navigator.pop(context),
-          ),
           const Expanded(
             child: Text('Settings',
                 style: TextStyle(
@@ -183,7 +178,7 @@ class _SettingsBody extends StatelessWidget {
             iconColor: AppColors.blueText,
             title: 'Edit profile',
             subtitle: 'Update your name and email',
-            onTap: () => _showComingSoon(context),
+            onTap: () => _showEditProfile(context, vm),
           ),
           const Divider(height: 1, color: Color(0xFFEDF2E7),
               indent: 56),
@@ -339,6 +334,132 @@ class _SettingsBody extends StatelessWidget {
                 style: TextStyle(color: Colors.white, fontSize: 13)),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditProfile(BuildContext context, SettingsAdminViewModel vm) {
+    final nameController = TextEditingController(text: vm.profile?.name ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text('Edit profile',
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Full name',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMuted)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: nameController,
+              style: const TextStyle(
+                  fontSize: 14, color: AppColors.textDark),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 12),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                      color: AppColors.primary, width: 1.2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.light2,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.email_outlined,
+                      size: 14, color: AppColors.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(vm.profile?.email ?? '',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textMuted),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              final newName = nameController.text.trim();
+              if (newName.isEmpty) return;
+
+              Navigator.pop(ctx);
+              final success = await vm.updateProfile(newName);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: success
+                      ? AppColors.primary
+                      : AppColors.dangerText,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  content: Row(
+                    children: [
+                      Icon(
+                        success
+                            ? Icons.check_circle_outline
+                            : Icons.error_outline,
+                        color: Colors.white, size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        success
+                            ? 'Profile updated successfully'
+                            : 'Failed to update profile',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            child: const Text('Save',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

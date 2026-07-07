@@ -61,16 +61,11 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top,
-        left: 4, right: 16, bottom: 12,
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20, right: 16, bottom: 14,
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left,
-                color: Colors.white, size: 28),
-            onPressed: () => Navigator.pop(context),
-          ),
           const Expanded(
             child: Text('Reports',
                 style: TextStyle(
@@ -83,14 +78,14 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
               padding: const EdgeInsets.symmetric(
                   horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFCEBEB),
+                color: Colors.white24,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text('${_vm.pendingCount} pending',
                   style: const TextStyle(
-                      color: Color(0xFFA32D2D),
+                      color: Colors.white,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600)),
+                      fontWeight: FontWeight.w500)),
             ),
         ],
       ),
@@ -112,32 +107,31 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
       'Resolved': AppColors.successText,
     };
 
-    return Container(
-      color: AppColors.primary,
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
       child: Row(
         children: counts.entries.map((e) {
+          final color = colors[e.key]!;
           return Expanded(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withOpacity(0.3)),
               ),
               child: Column(
                 children: [
                   Text(e.value.toString(),
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors[e.key],
-                      )),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: color)),
                   const SizedBox(height: 2),
                   Text(e.key,
                       style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted)),
+                          fontSize: 10, color: AppColors.textMuted)),
                 ],
               ),
             ),
