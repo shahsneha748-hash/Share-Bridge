@@ -112,6 +112,9 @@ class CreateDonationViewModel extends ChangeNotifier {
   final List<String> conditions = const ['New', 'Gently Used', 'Used'];
 
   bool get isFood => model.category == 'food';
+  bool get showConditionField {
+    return model.category != 'food';
+  }
 
   void setLocation(String value) {
     model.location = value;

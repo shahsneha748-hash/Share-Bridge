@@ -203,19 +203,20 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
             const SizedBox(height: 12),
 
             // ================= CONDITION =================
-            CustomSection(
-              title: "Condition",
-              child: Wrap(
-                spacing: 8,
-                children: vm.conditions.map((c) {
-                  return RadioChip(
-                    label: c,
-                    isSelected: vm.model.condition == c,
-                    onTap: () => vm.setCondition(c),
-                  );
-                }).toList(),
+            if (vm.showConditionField)
+              CustomSection(
+                title: "Condition",
+                child: Wrap(
+                  spacing: 8,
+                  children: vm.conditions.map((c) {
+                    return RadioChip(
+                      label: c,
+                      isSelected: vm.model.condition == c,
+                      onTap: () => vm.setCondition(c),
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
 
             const SizedBox(height: 12),
 

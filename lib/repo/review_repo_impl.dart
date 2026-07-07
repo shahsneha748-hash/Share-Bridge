@@ -13,7 +13,6 @@ class ReviewRepoImpl implements ReviewRepo {
     return firestore
         .collection(collection)
         .where("targetUserId", isEqualTo: targetUserId)
-        .orderBy("createdAt", descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
