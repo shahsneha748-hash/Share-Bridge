@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:sharebridge/view/chat_list_screen.dart';
 import 'package:sharebridge/view/create_donation_screen.dart';
 import 'package:sharebridge/view/dashboard_screen.dart';
-import 'package:sharebridge/view/user_profile.dart';
 import 'package:sharebridge/view/browse_screen.dart';
-import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/view/user_profile.dart';
 
 class NavigationScreen extends StatefulWidget {
   final int initialIndex;

@@ -29,7 +29,7 @@ class DashboardViewModel extends ChangeNotifier {
 
   List<Map<String, dynamic>> get featuredItems {
     return _model.donations
-        .where((e) => e['status'] == 'pending')
+        .where((e) => e['status'] == 'available')
         .take(5)
         .toList();
   }

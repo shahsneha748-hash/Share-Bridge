@@ -57,10 +57,6 @@ class AppColors {
   static const Color accepted        = Color(0xFF27AE60);
   static const Color acceptedBorder  = Color(0xFFA5D6A7);
 
-  // ── Added Status — Pending ─────────────────────────────────────────
-  static const Color pendingText     = Color(0xFFE65100);
-  static const Color pendingBg       = Color(0xFFFFF3E0);
-  static const Color pendingBorder   = Color(0xFFFFCC80);
 
   // ── Added Status — Rejected ────────────────────────────────────────
   static const Color rejectedText    = Color(0xFFC62828);

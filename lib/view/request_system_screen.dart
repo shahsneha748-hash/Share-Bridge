@@ -55,24 +55,27 @@ class _TopBar extends StatelessWidget {
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 10,
         bottom: 14,
-        left: 20,
-        right: 12,
+        left: 12,
+        right: 20,
       ),
       child: Row(
         children: [
-          const Expanded(
-            child: Text(
-              'Requests',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.white),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: AppColors.cream,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back, color: AppColors.darkGreen, size: 20),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: AppColors.white, size: 24),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_horiz, color: AppColors.white, size: 24),
-            onPressed: () {},
+          const SizedBox(width: 14),
+          const Text(
+            'Request',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.white),
           ),
         ],
       ),
@@ -117,11 +120,19 @@ class _StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _StatCard(count: vm.pendingCount,  label: 'Pending',  color: AppColors.pendingText),
+        _StatCard(
+          count: vm.acceptedCount,
+          label: 'Accepted',
+          color: AppColors.darkGreen,
+          bgColor: AppColors.paleGreen,
+        ),
         const SizedBox(width: 8),
-        _StatCard(count: vm.acceptedCount, label: 'Accepted', color: AppColors.accepted),
-        const SizedBox(width: 8),
-        _StatCard(count: vm.rejectedCount, label: 'Rejected', color: AppColors.rejectedText),
+        _StatCard(
+          count: vm.rejectedCount,
+          label: 'Rejected',
+          color: AppColors.rejectedText,
+          bgColor: AppColors.rejectedBg,
+        ),
       ],
     );
   }
@@ -131,7 +142,8 @@ class _StatCard extends StatelessWidget {
   final int count;
   final String label;
   final Color color;
-  const _StatCard({required this.count, required this.label, required this.color});
+  final Color bgColor;
+  const _StatCard({required this.count, required this.label, required this.color, required this.bgColor});
 
   @override
   Widget build(BuildContext context) {
@@ -139,14 +151,14 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
             Text('$count', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w600, color: color)),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+            Text(label, style: TextStyle(fontSize: 12, color: color)),
           ],
         ),
       ),
@@ -201,15 +213,8 @@ class _FilterRow extends StatelessWidget {
 // ─── Request Card ──────────────────────────────────────────────────────────
 
 class _RequestCard extends StatelessWidget {
-  final DonationRequestModel request;
+  final RequestSystemModel request;
   const _RequestCard({required this.request});
-
-  static const _itemIcons = {
-    'food':       Icons.restaurant,
-    'stationery': Icons.edit,
-    'clothes':    Icons.checkroom,
-    'other':      Icons.category,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -224,95 +229,76 @@ class _RequestCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Avatar(name: request.itemName),
+              _Avatar(name: request.donorName),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request.itemName.isEmpty ? 'Unnamed Item' : request.itemName,
+                      request.donorName.isEmpty ? 'Unknown User' : request.donorName,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkText),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${request.id.substring(0, 8).toUpperCase()} · ${_formatDate(request.createdAt)}',
+                      '${request.id.substring(0, request.id.length >= 8 ? 8 : request.id.length).toUpperCase()} · ${_formatDate(request.createdAt)}',
                       style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
+                    if (request.itemName.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        request.itemName,
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
                     if (request.location.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.location_on, size: 12, color: AppColors.pendingText),
+                          const Icon(Icons.location_on, size: 12, color: AppColors.darkGreen),
                           const SizedBox(width: 2),
-                          Text(request.location, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                          Expanded(
+                            child: Text(
+                              request.location,
+                              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ],
                 ),
               ),
-              _StatusPill(status: request.status),
+              // Status pill hidden for pending requests, shown for accepted/rejected.
+              // If you want it gone completely, just delete this line.
+              if (request.status != 'pending') _StatusPill(status: request.status),
             ],
           ),
           const SizedBox(height: 10),
 
-          // Category chip
-          if (request.category.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.paleGreen,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_itemIcons[request.category] ?? Icons.category, size: 13, color: AppColors.darkGreen),
-                  const SizedBox(width: 4),
-                  Text(
-                    request.category[0].toUpperCase() + request.category.substring(1),
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.darkGreen),
-                  ),
-                ],
-              ),
-            ),
-
-          if (request.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(request.description, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-          ],
-
-          if (request.condition.isNotEmpty || request.weight.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                if (request.condition.isNotEmpty)
-                  Text('Condition: ${request.condition}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                if (request.condition.isNotEmpty && request.weight.isNotEmpty)
-                  const Text('  ·  ', style: TextStyle(color: AppColors.textMuted)),
-                if (request.weight.isNotEmpty)
-                  Text('Weight: ${request.weight}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-              ],
-            ),
-          ],
-
           const SizedBox(height: 12),
 
-          // Action buttons
           Row(
             children: [
-              _ActionButton(label: 'Accept', icon: Icons.check,       onTap: () => vm.updateStatus(request.id, 'accepted')),
+              _ActionButton(
+                label: 'Accept',
+                icon: Icons.check,
+                onTap: () => vm.updateStatus(request.id, 'accepted'),
+                color: AppColors.darkGreen,
+                bgColor: AppColors.paleGreen,
+              ),
               const SizedBox(width: 8),
-              _ActionButton(label: 'Pending', icon: Icons.access_time, onTap: () => vm.updateStatus(request.id, 'pending')),
-              const SizedBox(width: 8),
-              _ActionButton(label: 'Reject', icon: Icons.close,        onTap: () => vm.updateStatus(request.id, 'rejected')),
+              _ActionButton(
+                label: 'Reject',
+                icon: Icons.close,
+                onTap: () => vm.updateStatus(request.id, 'rejected'),
+                color: AppColors.rejectedText,
+                bgColor: AppColors.rejectedBg,
+              ),
             ],
           ),
         ],
@@ -359,11 +345,10 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final configs = {
-      'pending':  (bg: AppColors.pendingBg,  text: AppColors.pendingText,  border: AppColors.pendingBorder),
-      'accepted': (bg: AppColors.acceptedBg, text: AppColors.accepted,     border: AppColors.acceptedBorder),
-      'rejected': (bg: AppColors.rejectedBg, text: AppColors.rejectedText, border: AppColors.rejectedBorder),
+      'accepted': (bg: AppColors.paleGreen, text: AppColors.darkGreen, border: AppColors.paleGreen),
+      'rejected': (bg: AppColors.rejectedBg, text: AppColors.rejectedText, border: AppColors.rejectedBg),
     };
-    final c = configs[status] ?? configs['pending']!;
+    final c = configs[status] ?? configs['accepted']!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
@@ -385,7 +370,15 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  const _ActionButton({required this.label, required this.icon, required this.onTap});
+  final Color color; // text + icon color
+  final Color? bgColor; // optional background color (pill style)
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    required this.color,
+    this.bgColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -395,16 +388,16 @@ class _ActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: bgColor ?? AppColors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 14, color: AppColors.darkGreen),
+              Icon(icon, size: 14, color: color),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.darkText)),
+              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
             ],
           ),
         ),

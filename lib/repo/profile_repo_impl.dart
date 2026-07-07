@@ -12,4 +12,17 @@ class ProfileRepoImpl implements ProfileRepo {
     if (data == null) return null;
     return ProfileDisplayData.fromFirestoreMap(data);
   }
+
+  @override
+  Future<bool> updateProfilePicture(String uid, String imageUrl) async {
+    try {
+      await firestore.collection("users").doc(uid).update({
+        'profilePicture': imageUrl,
+      });
+      return true;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
 }
