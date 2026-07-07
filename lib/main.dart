@@ -148,11 +148,6 @@ Future<void> main() async {
           create: (_) => MyDonationsViewModel(repository: MyDonationsRepoImpl()),
         ),
 
-
-
-
-
-
       ],
       child: const MyHomePage(),
     ),
