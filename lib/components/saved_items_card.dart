@@ -4,6 +4,7 @@ class SavedItemCard extends StatelessWidget {
   final Function(bool)? onBookmarkToggle;
   final String title;
   final String imagePath;
+  final List<String> images;    // full list (may be empty)
   final String miles;
   final String addedTime;
   final bool isBookmarked;
@@ -13,11 +14,47 @@ class SavedItemCard extends StatelessWidget {
     this.onBookmarkToggle,
     required this.title,
     required this.imagePath,
+    required this.images,
     required this.miles,
     required this.addedTime,
     this.isBookmarked = false,
   });
 
+  Widget buildImage(String imagePath, List<String> images) {
+    final path = imagePath.isNotEmpty
+        ? imagePath
+        : (images.isNotEmpty ? images[0] : "");
+
+    if (path.isEmpty) {
+      return Container(
+        height: 166,
+        color: Colors.grey[300],
+        child: const Center(
+          child: Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
+        ),
+      );
+    }
+
+    if (path.startsWith("http")) {
+      return Image.network(
+        path,
+        height: 166,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+        const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+      );
+    }
+
+    return Image.asset(
+      path,
+      height: 166,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+      const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +62,7 @@ class SavedItemCard extends StatelessWidget {
       height: 299,
       width: double.infinity,
       child: Card(
-        color: Color(0XFFecf6e5),
+        color: const Color(0XFFecf6e5),
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(1),
@@ -33,50 +70,44 @@ class SavedItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image full width
-            Image.asset(
-              imagePath,
-              height: 166,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            // ✅ Pass both arguments now
+            buildImage(imagePath, images),
 
-            // Title + bookmark
             Row(
               children: [
                 TextButton(
                   onPressed: () {},
                   child: Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       color: Color(0XFF435944),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 IconButton(
-                  onPressed: () {onBookmarkToggle?.call(!isBookmarked);
+                  onPressed: () {
+                    onBookmarkToggle?.call(!isBookmarked);
                   },
-                  icon: Icon(Icons.bookmark,
+                  icon: const Icon(Icons.bookmark,
                       color: Color(0XFF414439), size: 22),
                 ),
               ],
             ),
 
-            // Miles + added time
             Padding(
-              padding: const EdgeInsets.only(left: 8, right: 8, ),
+              padding: const EdgeInsets.only(left: 8, right: 8),
               child: Row(
                 children: [
-                  Icon(Icons.location_on_outlined,
+                  const Icon(Icons.location_on_outlined,
                       size: 18, color: Color(0XFF435944)),
-                  Text(miles, style: TextStyle(color: Color(0XFF435944))),
-                  SizedBox(width: 20),
+                  Text(miles, style: const TextStyle(color: Color(0XFF435944))),
+                  const SizedBox(width: 20),
                   Text(
                     addedTime,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       color: Color(0XFF435944),
                     ),
@@ -85,12 +116,11 @@ class SavedItemCard extends StatelessWidget {
               ),
             ),
 
-            // Full-width button
             Padding(
               padding: const EdgeInsets.all(4.0),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0XFF435944),
+                  backgroundColor: const Color(0XFF435944),
                   foregroundColor: Colors.white,
                   elevation: 5,
                   shape: RoundedRectangleBorder(
@@ -98,7 +128,7 @@ class SavedItemCard extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {},
-                child: Text("Message Donor"),
+                child: const Text("Message Donor"),
               ),
             ),
           ],
@@ -106,6 +136,4 @@ class SavedItemCard extends StatelessWidget {
       ),
     );
   }
-
-
 }

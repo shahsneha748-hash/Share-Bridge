@@ -21,7 +21,7 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0XFF435944),
-        foregroundColor: Colors.white,
+        foregroundColor: Color(0XFFf5f0e8),
         title: const Text(
           "Wishlist",
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w500),
@@ -87,11 +87,20 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
               else
                 ...filteredItems.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
+                  // 👇 Safely extract both image and images
+                  final List<String> images =
+                  (data["images"] != null) ? List<String>.from(data["images"]) : [];
+
+                  final String imagePath =
+                      data["image"] ?? (images.isNotEmpty ? images[0] : "");
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 15),
+                    
+
                     child: SavedItemCard(
                       title: data["title"] ?? "",
-                      imagePath: data["image"] ?? "",
+                      imagePath: imagePath,   // ✅ fallback to single "image"
+                      images: images,         // ✅ pass full list if available
                       miles: data["miles"] ?? "",
                       addedTime: data["addedTime"] ?? "",
                       isBookmarked: true,
