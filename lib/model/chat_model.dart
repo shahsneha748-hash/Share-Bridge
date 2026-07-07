@@ -9,6 +9,7 @@ class ChatRoom {
   final String lastMessage;
   final DateTime lastMessageTime;
   final bool isOnline;
+  final List<String> mutedBy;
 
   // Computed for current user
   final String otherUserId;
@@ -27,6 +28,7 @@ class ChatRoom {
     required this.otherUserId,
     required this.otherUserName,
     required this.otherUserInitial,
+    required this.mutedBy,
   });
 
   factory ChatRoom.fromMap(
@@ -48,6 +50,7 @@ class ChatRoom {
       donationTitle: map['donationTitle'] ?? '',
       participants: participants,
       participantNames: participantNames,
+      mutedBy: List<String>.from(map['mutedBy'] ?? []),
       lastMessage: map['lastMessage'] ?? '',
       lastMessageTime:
       (map['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -58,4 +61,5 @@ class ChatRoom {
       otherName.isNotEmpty ? otherName[0].toUpperCase() : '?',
     );
   }
+  bool isMutedBy(String userId) => mutedBy.contains(userId);
 }
