@@ -17,10 +17,10 @@ class VolunteerRepoImpl implements VolunteerRepo {
   Future<String> getStatus(String userId) async {
     final doc =
     await firestore.collection("volunteers").doc(userId).get();
-
     if (!doc.exists) return "none";
-
-    return doc.data()?['status'] ?? "none";
+    // trim() guards against stray whitespace like "Approved " breaking
+    // exact-match checks elsewhere in the app.
+    return (doc.data()?['status'] as String? ?? "none").trim();
   }
 
   @override
@@ -29,8 +29,38 @@ class VolunteerRepoImpl implements VolunteerRepo {
         .collection("volunteers")
         .doc(userId)
         .snapshots()
-        .map((doc) => doc.data()?["status"] ?? "none");
+        .map((doc) => (doc.data()?["status"] as String? ?? "none").trim());
   }
 
+  // --- new: donor-side assignment ---
 
+  @override
+  Stream<List<VolunteerModel>> watchAvailableApprovedVolunteers() {
+    return firestore
+        .collection("volunteers")
+        .where("status", isEqualTo: "Approved")
+        .where("isAcceptingTasks", isEqualTo: true)
+        .orderBy("rating", descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => VolunteerModel.fromMap(doc.data()))
+        .toList());
+  }
+
+  @override
+  Future<void> setAcceptingTasks(String userId, bool value) async {
+    await firestore
+        .collection("volunteers")
+        .doc(userId)
+        .update({"isAcceptingTasks": value});
+  }
+
+  @override
+  Stream<VolunteerModel> watchProfile(String userId) {
+    return firestore
+        .collection("volunteers")
+        .doc(userId)
+        .snapshots()
+        .map((doc) => VolunteerModel.fromMap(doc.data() ?? {'userId': userId}));
+  }
 }

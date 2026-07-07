@@ -1,112 +1,225 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class VolunteerTaskModel {
-  final String id;
-  final String donationId;
-  final String donationTitle;
-  final String donationImage;
-  final String donorId;
-  final String receiverName;
-  final String pickupLocation;
-  final String deliveryLocation;
-  final String status;
-  final String? assignedVolunteerId;
-  final DateTime? acceptedAt;
-  final DateTime? completedAt;
-  final DateTime createdAt;
 
-  VolunteerTaskModel({
-    required this.id,
-    required this.donationId,
-    required this.donationTitle,
-    required this.donationImage,
+class VolunteerTaskModel {
+
+  final String taskId;
+
+  final String requestId;
+
+  final String donorId;
+
+  final String receiverId;
+
+  final String volunteerId;
+
+  final String itemId;
+
+  final String status;
+  // Pending / Accepted / Rejected / InProgress / Reached / Completed
+
+
+  final Map<String, dynamic>? pickupLocation;
+
+  final Map<String, dynamic>? dropLocation;
+
+  final Map<String, dynamic>? currentLocation;
+
+
+  final DateTime? createdAt;
+
+  final DateTime? respondedAt;
+
+
+  final String itemName;
+
+  final String itemImage;
+
+  final String receiverName;
+
+
+
+  const VolunteerTaskModel({
+
+    required this.taskId,
+
+    required this.requestId,
+
     required this.donorId,
-    required this.receiverName,
-    required this.pickupLocation,
-    required this.deliveryLocation,
+
+    required this.receiverId,
+
+    required this.volunteerId,
+
+    required this.itemId,
+
     required this.status,
-    required this.assignedVolunteerId,
-    this.acceptedAt,
-    this.completedAt,
-    required this.createdAt,
+
+
+    this.pickupLocation,
+
+    this.dropLocation,
+
+    this.currentLocation,
+
+
+    this.createdAt,
+
+    this.respondedAt,
+
+
+    this.itemName = '',
+
+    this.itemImage = '',
+
+    this.receiverName = '',
+
   });
 
+
+
+  String get pickupAddress {
+
+    return pickupLocation?['address']
+        ?? 'Unknown pickup';
+
+  }
+
+
+
+  String get dropAddress {
+
+    return dropLocation?['address']
+        ?? 'Unknown drop';
+
+  }
+
+
+
   factory VolunteerTaskModel.fromMap(
-      Map<String, dynamic> map,
-      String documentId,
-      ) {
+      String id,
+      Map<String,dynamic> map,
+      ){
+
     return VolunteerTaskModel(
-      id: documentId,
-      donationId: map['donationId'] ?? '',
-      donationTitle: map['donationTitle'] ?? '',
-      donationImage: map['donationImage'] ?? '',
-      donorId: map['donorId'] ?? '',
-      receiverName: map['receiverName'] ?? '',
-      pickupLocation: map['pickupLocation'] ?? '',
-      deliveryLocation: map['deliveryLocation'] ?? '',
-      status: map['status'] ?? 'available',
-      assignedVolunteerId: map['assignedVolunteerId'] ?? '',
-      acceptedAt: map['acceptedAt'] != null
-          ? (map['acceptedAt'] as Timestamp).toDate()
-          : null,
-      completedAt: map['completedAt'] != null
-          ? (map['completedAt'] as Timestamp).toDate()
-          : null,
-      createdAt: map['createdAt'] != null
+
+      taskId: id,
+
+
+      requestId:
+      map['requestId'] ?? '',
+
+
+      donorId:
+      map['donorId'] ?? '',
+
+
+      receiverId:
+      map['receiverId'] ?? '',
+
+
+      volunteerId:
+      map['volunteerId'] ?? '',
+
+
+      itemId:
+      map['itemId'] ?? '',
+
+
+
+      status:
+      map['status'] ?? 'Pending',
+
+
+
+      pickupLocation:
+      map['pickupLocation']
+      as Map<String,dynamic>?,
+
+
+
+      dropLocation:
+      map['dropLocation']
+      as Map<String,dynamic>?,
+
+
+
+      currentLocation:
+      map['currentLocation']
+      as Map<String,dynamic>?,
+
+
+
+      createdAt:
+      map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
+          : null,
+
+
+
+      respondedAt:
+      map['respondedAt'] != null
+          ? (map['respondedAt'] as Timestamp).toDate()
+          : null,
+
+
+
+      itemName:
+      map['itemName'] ?? '',
+
+
+
+      itemImage:
+      map['itemImage'] ?? '',
+
+
+
+      receiverName:
+      map['receiverName'] ?? '',
+
     );
+
   }
 
-  Map<String, dynamic> toMap() {
+
+
+  Map<String,dynamic> toMap(){
+
     return {
-      'donationId': donationId,
-      'donationTitle': donationTitle,
-      'donationImage': donationImage,
-      'donorId': donorId,
-      'receiverName': receiverName,
-      'pickupLocation': pickupLocation,
-      'deliveryLocation': deliveryLocation,
-      'status': status,
-      'assignedVolunteerId': assignedVolunteerId,
-      'acceptedAt':
-      acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
-      'completedAt':
-      completedAt != null ? Timestamp.fromDate(completedAt!) : null,
-      'createdAt': Timestamp.fromDate(createdAt),
+
+      "requestId": requestId,
+
+      "donorId": donorId,
+
+      "receiverId": receiverId,
+
+      "volunteerId": volunteerId,
+
+      "itemId": itemId,
+
+      "status": status,
+
+
+      "pickupLocation": pickupLocation,
+
+      "dropLocation": dropLocation,
+
+      "currentLocation": currentLocation,
+
+
+      "createdAt": createdAt,
+
+      "respondedAt": respondedAt,
+
+
+      "itemName": itemName,
+
+      "itemImage": itemImage,
+
+      "receiverName": receiverName,
+
     };
+
   }
 
-  VolunteerTaskModel copyWith({
-    String? id,
-    String? donationId,
-    String? donationTitle,
-    String? donationImage,
-    String? donorId,
-    String? receiverName,
-    String? pickupLocation,
-    String? deliveryLocation,
-    String? status,
-    String? assignedVolunteerId,
-    DateTime? acceptedAt,
-    DateTime? completedAt,
-    DateTime? createdAt,
-  }) {
-    return VolunteerTaskModel(
-      id: id ?? this.id,
-      donationId: donationId ?? this.donationId,
-      donationTitle: donationTitle ?? this.donationTitle,
-      donationImage: donationImage ?? this.donationImage,
-      donorId: donorId ?? this.donorId,
-      receiverName: receiverName ?? this.receiverName,
-      pickupLocation: pickupLocation ?? this.pickupLocation,
-      deliveryLocation: deliveryLocation ?? this.deliveryLocation,
-      status: status ?? this.status,
-      assignedVolunteerId:
-      assignedVolunteerId ?? this.assignedVolunteerId,
-      acceptedAt: acceptedAt ?? this.acceptedAt,
-      completedAt: completedAt ?? this.completedAt,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
 }
