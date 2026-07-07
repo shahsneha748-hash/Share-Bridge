@@ -15,9 +15,19 @@ class SavedItemRepoImpl implements SavedItemRepo {
         .collection("users")
         .doc(uid)
         .collection("saved_items")
-        .doc(item.id) // use the model’s id
-        .set(item.toMap());
+        .doc(item.id)
+        .set({
+      "id": item.id,
+      "title": item.title,
+      "images": item.images,
+      "image": item.images.isNotEmpty ? item.images[0] : "",
+      "category": item.category,
+      "miles": item.miles,
+      "addedTime": item.addedTime,
+      "createdAt": FieldValue.serverTimestamp(),
+    });
   }
+
 
   @override
   Future<void> addBookmark(String uid, SavedItemsModel item) async {
@@ -26,8 +36,18 @@ class SavedItemRepoImpl implements SavedItemRepo {
         .doc(uid)
         .collection("saved_items")
         .doc(item.id)
-        .set(item.toMap());
+        .set({
+      "id": item.id,
+      "title": item.title,
+      "images": item.images,   // 👈 full Cloudinary list
+      "image": item.images.isNotEmpty ? item.images[0] : "", // 👈 first image
+      "category": item.category,
+      "miles": item.miles,
+      "addedTime": item.addedTime,
+      "createdAt": FieldValue.serverTimestamp(),
+    });
   }
+
 
   @override
   Future<void> removeBookmark(String uid, String itemId) async {

@@ -178,10 +178,6 @@ Future<void> main() async {
         ),
 
 
-
-
-
-
       ],
       child: const MyHomePage(),
     ),
@@ -197,11 +193,15 @@ class MyHomePage extends StatelessWidget {
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
 
+      // Named routes for navigation
       routes: {
         '/login': (_) => const LoginScreen(),
-        '/home': (_) => const NavigationScreen(), // your dashboard
+        '/home': (_) => const NavigationScreen(), // dashboard
       },
-      home: RequestSystemScreen(),
+      // Default screen when app starts
+      home: const LoginScreen(),
+
     );
+
   }
 }

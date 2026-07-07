@@ -244,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ✅ Navigate on success
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                                MaterialPageRoute(builder: (_) => Homescreentest(uid: '')),
                               );
 
 
