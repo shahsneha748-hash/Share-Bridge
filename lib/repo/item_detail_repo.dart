@@ -8,8 +8,7 @@ abstract class ItemDetailRepo {
   /// Blocks a donor — placeholder until backend exists.
   Future<void> blockDonor(String donorName);
 
-  /// Sends a request for the item to the donor.
-  Future<void> sendRequest(String itemTitle, String donorName);
-
-
+  /// Sends a request for the item to the donor, creating a document
+  /// in the `requests` collection that the Request System screen reads.
+  Future<void> sendRequest(Map<String, dynamic> item);
 }
