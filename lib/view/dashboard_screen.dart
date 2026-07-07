@@ -160,141 +160,145 @@ class _DashboardView extends StatelessWidget {
               Expanded(
                 child: Container(
                   color: Colors.white,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 18),
+                  child: RefreshIndicator(
+                    color: AppColors.darkGreen,
+                    onRefresh: vm.refresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 18),
 
-                        _SearchBar(onTap: () => _goToBrowse(context)),
+                          _SearchBar(onTap: () => _goToBrowse(context)),
 
-                        const SizedBox(height: 26),
+                          const SizedBox(height: 26),
 
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _VolunteerBanner(
-                            onTap: () => _openVolunteer(context),
-                          ),
-                        ),
-
-                        const SizedBox(height: 26),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            'Browse by Category',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.darkText,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: _VolunteerBanner(
+                              onTap: () => _openVolunteer(context),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
 
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: CategoryCard(
-                                  icon: Icons.restaurant,
-                                  label: 'Food',
-                                  onTap: () =>
-                                      _goToBrowse(context, category: 'Food'),
-                                ),
+                          const SizedBox(height: 26),
+
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              'Browse by Category',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.darkText,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: CategoryCard(
-                                  icon: Icons.edit,
-                                  label: 'Stationery',
-                                  onTap: () => _goToBrowse(context,
-                                      category: 'Stationery'),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: CategoryCard(
-                                  icon: Icons.checkroom,
-                                  label: 'Clothes',
-                                  onTap: () => _goToBrowse(context,
-                                      category: 'Clothes'),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
 
-                        const SizedBox(height: 26),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'New Arrivals',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.darkText,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CategoryCard(
+                                    icon: Icons.restaurant,
+                                    label: 'Food',
+                                    onTap: () =>
+                                        _goToBrowse(context, category: 'Food'),
+                                  ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _goToBrowse(context),
-                                child: const Text(
-                                  'View all →',
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: CategoryCard(
+                                    icon: Icons.edit,
+                                    label: 'Stationery',
+                                    onTap: () => _goToBrowse(context,
+                                        category: 'Stationery'),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: CategoryCard(
+                                    icon: Icons.checkroom,
+                                    label: 'Clothes',
+                                    onTap: () => _goToBrowse(context,
+                                        category: 'Clothes'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 26),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'New Arrivals',
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.darkGreen,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
+                                    color: AppColors.darkText,
                                   ),
                                 ),
-                              ),
-                            ],
+                                GestureDetector(
+                                  onTap: () => _goToBrowse(context),
+                                  child: const Text(
+                                    'View all →',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.darkGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 220,
-                          child: Builder(builder: (context) {
-                            if (vm.isLoading) {
-                              return const Center(
-                                child: CircularProgressIndicator(color: AppColors.darkGreen),
-                              );
-                            }
-                            if (vm.featuredItems.isEmpty) {
-                              return const Center(
-                                child: Text(
-                                  'No items available.',
-                                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                                ),
-                              );
-                            }
-                            return ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: vm.featuredItems.length,
-                              itemBuilder: (context, index) {
-                                final item = vm.featuredItems[index];
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    right: index == vm.featuredItems.length - 1 ? 0 : 12,
-                                  ),
-                                  child: _FeaturedCard(
-                                    item: item,
-                                    onTap: () => _openItemDetail(context, item),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 220,
+                            child: Builder(builder: (context) {
+                              if (vm.isLoading) {
+                                return const Center(
+                                  child: CircularProgressIndicator(color: AppColors.darkGreen),
+                                );
+                              }
+                              if (vm.featuredItems.isEmpty) {
+                                return const Center(
+                                  child: Text(
+                                    'No items available.',
+                                    style: TextStyle(color: Colors.grey, fontSize: 13),
                                   ),
                                 );
-                              },
-                            );
-                          }),
-                        ),
+                              }
+                              return ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                itemCount: vm.featuredItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = vm.featuredItems[index];
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      right: index == vm.featuredItems.length - 1 ? 0 : 12,
+                                    ),
+                                    child: _FeaturedCard(
+                                      item: item,
+                                      onTap: () => _openItemDetail(context, item),
+                                    ),
+                                  );
+                                },
+                              );
+                            }),
+                          ),
 
-
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

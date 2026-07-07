@@ -28,7 +28,6 @@ import 'package:sharebridge/repo/volunteer_request_repo_impl.dart';
 import 'package:sharebridge/repo/volunteer_task_repo.dart';
 import 'package:sharebridge/repo/volunteer_task_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/assign_volunteer_screen.dart';
 import 'package:sharebridge/view/chat_list_screen.dart';
 import 'package:sharebridge/view/confirmation_screen.dart';
 import 'package:sharebridge/view/create_donation_screen.dart';
@@ -192,13 +191,10 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-
-      // Named routes for navigation
       routes: {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const NavigationScreen(), // dashboard
       },
-      // Default screen when app starts
       home: const LoginScreen(),
 
     );

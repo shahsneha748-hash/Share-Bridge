@@ -6,10 +6,25 @@ class ItemDetailViewModel extends ChangeNotifier {
   final ItemDetailRepo _repo;
   final Map<String, dynamic> item;
 
-  ItemDetailViewModel(this._repo, this.item);
+  ItemDetailViewModel(this._repo, this.item) {
+    _loadDonorProfilePicture();
+  }
 
   bool _isFollowing = false;
   bool get isFollowing => _isFollowing;
+
+  String? _donorProfilePicture;
+  String? get donorProfilePicture => _donorProfilePicture;
+
+  Future<void> _loadDonorProfilePicture() async {
+    final donorId = item['donorId']?.toString() ?? '';
+    if (donorId.isEmpty) return;
+    final url = await _repo.getDonorProfilePicture(donorId);
+    if (url != null && url.isNotEmpty) {
+      _donorProfilePicture = url;
+      notifyListeners();
+    }
+  }
 
   bool get available => item['isDonated'] != true;
 
