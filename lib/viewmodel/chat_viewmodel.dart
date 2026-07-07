@@ -25,6 +25,7 @@ class ChatViewModel extends ChangeNotifier {
   bool isTyping = false;
   String? _cachedUserName;
   String? otherUserPhone;
+  bool isMuted = false;
 
   final List<String> quickReplies = [
     "I'm on my way",
@@ -41,6 +42,7 @@ class ChatViewModel extends ChangeNotifier {
   }) {
     listenToMessages();
     _loadOtherUserPhone();
+    _loadMuteStatus();
   }
 
   void listenToMessages() {
@@ -69,6 +71,34 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  /// Check if current user has muted this chat
+  Future<void> _loadMuteStatus() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .get();
+      final mutedBy = List<String>.from(doc.data()?['mutedBy'] ?? []);
+      isMuted = mutedBy.contains(currentUserId);
+      notifyListeners();
+    } catch (_) {
+      isMuted = false;
+    }
+  }
+
+  /// Toggle mute on/off
+  Future<void> toggleMute() async {
+    isMuted = !isMuted;
+    notifyListeners();
+    await _repo.toggleMute(chatId, currentUserId, isMuted);
+  }
+
+  /// Set mute to a specific value (used from contact info screen)
+  Future<void> setMute(bool value) async {
+    isMuted = value;
+    notifyListeners();
+    await _repo.toggleMute(chatId, currentUserId, value);
+  }
   Future<String> _getCurrentUserName() async {
     if (_cachedUserName != null) return _cachedUserName!;
     try {

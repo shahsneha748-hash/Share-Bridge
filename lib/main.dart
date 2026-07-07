@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/repo/create_donation_repo.dart';
 import 'package:sharebridge/repo/create_donation_repo_impl.dart';
+import 'package:sharebridge/repo/create_donation_repo_impl.dart';
 import 'package:sharebridge/repo/image_repo.dart';
 import 'package:sharebridge/repo/image_repo_impl.dart';
+import 'package:sharebridge/repo/my_donation_repo_impl.dart';
 import 'package:sharebridge/repo/notification_repo.dart';
 import 'package:sharebridge/repo/notification_repo_impl.dart';
 import 'package:sharebridge/repo/profile_repo_impl.dart';
@@ -22,19 +24,22 @@ import 'package:sharebridge/repo/volunteer_repo_impl.dart';
 import 'package:sharebridge/repo/volunteer_task_repo.dart';
 import 'package:sharebridge/repo/volunteer_task_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/admin_dashboard_view.dart';
-import 'package:sharebridge/view/admin_navigation_screen.dart';
 import 'package:sharebridge/view/chat_list_screen.dart';
 import 'package:sharebridge/view/confirmation_screen.dart';
 import 'package:sharebridge/view/create_donation_screen.dart';
 import 'package:sharebridge/view/dashboard_screen.dart';
 import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/request_system_screen.dart';
+import 'package:sharebridge/view/splash_screen.dart';
+import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/view/user_profile.dart';
+import 'package:sharebridge/view/volunteer_intro_screen.dart';
+import 'package:sharebridge/view/volunteer_verification_screen.dart';
 import 'package:sharebridge/viewmodel/create_donation_view_model.dart';
 import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
-import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
+import 'package:sharebridge/viewmodel/my_donation_view_model.dart';
 import 'package:sharebridge/viewmodel/my_profile_viewmodel.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/request_system_view_model.dart';
@@ -92,9 +97,6 @@ Future<void> main() async {
             uid: FirebaseAuth.instance.currentUser?.uid ?? '',
           ),
         ),
-        ChangeNotifierProvider(
-          create: (_) => AdminDashboardViewModel(),
-        ),
 
         // Create Donation ViewModel
         ChangeNotifierProvider(
@@ -120,8 +122,9 @@ Future<void> main() async {
         ),
 
         ChangeNotifierProvider(
-          create: (context) => VolunteerViewModel(
-            context.read<VolunteerRepo>(),
+          create: (_) => VolunteerViewModel(
+            VolunteerRepoImpl(),
+            ImageRepoImpl(),
           ),
         ),
 
@@ -138,8 +141,18 @@ Future<void> main() async {
         ),
 
         ChangeNotifierProvider(
-          create: (_) => MyProfileViewModel(profileRepo: ProfileRepoImpl()),
+          create: (_) => MyProfileViewModel(profileRepo: ProfileRepoImpl(), imageRepo: ImageRepoImpl()),
         ),
+
+        ChangeNotifierProvider(
+          create: (_) => MyDonationsViewModel(repository: MyDonationsRepoImpl()),
+        ),
+
+
+
+
+
+
       ],
       child: const MyHomePage(),
     ),
@@ -154,7 +167,12 @@ class MyHomePage extends StatelessWidget {
     return MaterialApp(
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
-      home: const RequestSystemScreen(),
+      home: const LoginScreen(),
+
+      routes: {
+        '/login': (_) => const LoginScreen(),
+        '/home': (_) => const NavigationScreen(), // your dashboard
+      },
     );
   }
 }

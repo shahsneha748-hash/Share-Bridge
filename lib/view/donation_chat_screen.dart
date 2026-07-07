@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../viewmodel/chat_viewmodel.dart';
 import '../model/message_model.dart';
 import '../components/quick_chip.dart';
+import 'package:sharebridge/view/chat_contact_info_screen.dart';
+import 'package:sharebridge/view/user_report_screen.dart';
 
 class DonationChatScreen extends StatelessWidget {
   final String chatId;
@@ -87,42 +89,64 @@ class DonationChatScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFF7AB648),
-                child: Text(
-                  otherUserName.isNotEmpty
-                      ? otherUserName[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
+              // Tappable avatar + name → opens contact info
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      otherUserName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                child: InkWell(
+                  onTap: () => _openContactInfo(context, vm),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: const Color(0xFF7AB648),
+                        child: Text(
+                          otherUserName.isNotEmpty
+                              ? otherUserName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      vm.otherUserPhone ?? '',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    otherUserName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (vm.isMuted) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.notifications_off,
+                                      color: Colors.white70, size: 14),
+                                ],
+                              ],
+                            ),
+                            if ((vm.otherUserPhone ?? '').isNotEmpty)
+                              Text(
+                                vm.otherUserPhone!,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               IconButton(
@@ -131,27 +155,29 @@ class DonationChatScreen extends StatelessWidget {
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
-                onSelected: (value) => _showSnackbar(context, value),
+                onSelected: (value) => _onMenuSelected(context, vm, value),
                 itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: "Opening $otherUserName's profile",
-                    child: const ListTile(
-                      leading: Icon(Icons.person),
-                      title: Text("View profile"),
-                    ),
-                  ),
                   const PopupMenuItem(
-                    value: "Chat muted",
+                    value: 'profile',
                     child: ListTile(
-                      leading: Icon(Icons.notifications_off),
-                      title: Text("Mute chat"),
+                      leading: Icon(Icons.person),
+                      title: Text('View profile'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'mute',
+                    child: ListTile(
+                      leading: Icon(vm.isMuted
+                          ? Icons.notifications_active
+                          : Icons.notifications_off),
+                      title: Text(vm.isMuted ? 'Unmute' : 'Mute chat'),
                     ),
                   ),
                   const PopupMenuItem(
-                    value: "Report submitted",
+                    value: 'report',
                     child: ListTile(
                       leading: Icon(Icons.flag),
-                      title: Text("Report"),
+                      title: Text('Report'),
                     ),
                   ),
                 ],
@@ -161,6 +187,43 @@ class DonationChatScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Opens the contact info screen
+  void _openContactInfo(BuildContext context, ChatViewModel vm) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatContactInfoScreen(
+          userId: otherUserId,
+          userName: otherUserName,
+          chatId: chatId,
+          isMuted: vm.isMuted,
+          onMuteChanged: (val) => vm.setMute(val),
+        ),
+      ),
+    );
+  }
+
+  // Handles the 3-dot menu actions
+  void _onMenuSelected(
+      BuildContext context, ChatViewModel vm, String value) {
+    switch (value) {
+      case 'profile':
+        _openContactInfo(context, vm);
+        break;
+      case 'mute':
+        vm.toggleMute();
+        _showSnackbar(
+            context, vm.isMuted ? 'Chat muted' : 'Chat unmuted');
+        break;
+      case 'report':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const UserReportScreen()),
+        );
+        break;
+    }
   }
 
   Widget _buildBanner(BuildContext context) {

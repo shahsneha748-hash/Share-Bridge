@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/colors.dart';
@@ -15,6 +16,10 @@ class AdminVolunteerDetailScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, color: Colors.white, size: 30),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('Volunteer Details',
             style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -70,8 +75,26 @@ class AdminVolunteerDetailScreen extends StatelessWidget {
               title: 'Volunteer Application',
               icon: Icons.volunteer_activism,
               children: [
-                _detailRow(Icons.badge, 'Citizenship No.',
-                    volunteer.citizenshipNumber),
+                _detailRowTappable(
+                  icon: Icons.badge,
+                  label: 'Citizenship No.',
+                  value: volunteer.citizenshipNumber,
+                  onTap: () => _showImageDialog(
+                    context,
+                    'Citizenship Document',
+                    volunteer.citizenshipImage,
+                  ),
+                ),
+                _detailRowTappable(
+                  icon: Icons.face,
+                  label: 'Selfie',
+                  value: 'Tap to view',
+                  onTap: () => _showImageDialog(
+                    context,
+                    'Selfie Photo',
+                    volunteer.selfieImage,
+                  ),
+                ),
                 _detailRow(Icons.directions_bike, 'Vehicle',
                     volunteer.vehicle),
                 _detailRow(Icons.access_time, 'Availability',
@@ -141,6 +164,156 @@ class AdminVolunteerDetailScreen extends StatelessWidget {
             child: Text(value,
                 style: const TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRowTappable({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 110,
+              child: Text(label,
+                  style:
+                  const TextStyle(fontSize: 13, color: Colors.grey)),
+            ),
+            Expanded(
+              child: Text(value,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                      decoration: TextDecoration.underline)),
+            ),
+            const Icon(Icons.visibility,
+                size: 14, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showImageDialog(
+      BuildContext context, String title, String imageData) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.white,
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(title,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(dialogContext),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: _buildImageWidget(imageData),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(String imageData) {
+    if (imageData.isEmpty) {
+      return _imageErrorBox('No image uploaded');
+    }
+
+    // Firebase Storage URL (if ever used later)
+    if (imageData.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageData,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const SizedBox(
+              height: 200,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) =>
+              _imageErrorBox('Failed to load image'),
+        ),
+      );
+    }
+
+    // Old local device path — can't display on admin device
+    if (imageData.startsWith('/')) {
+      return _imageErrorBox(
+          'Image stored locally on volunteer\'s device.\nAsk volunteer to re-apply.');
+    }
+
+    // Base64 string — decode and display
+    try {
+      final bytes = base64Decode(imageData);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              _imageErrorBox('Failed to load image'),
+        ),
+      );
+    } catch (e) {
+      return _imageErrorBox('Invalid image data');
+    }
+  }
+
+  Widget _imageErrorBox(String message) {
+    return Container(
+      height: 180,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.image_not_supported,
+              size: 40, color: Colors.grey),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(message,
+                textAlign: TextAlign.center,
+                style:
+                const TextStyle(color: Colors.grey, fontSize: 13)),
           ),
         ],
       ),

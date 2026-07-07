@@ -32,4 +32,18 @@ class ChatRepoImpl implements ChatRepo {
         .doc(chatId)
         .set(data, SetOptions(merge: true));
   }
+
+  @override
+  Future<void> toggleMute(String chatId, String userId, bool mute) async {
+    final ref = _firestore.collection('chats').doc(chatId);
+    if (mute) {
+      await ref.update({
+        'mutedBy': FieldValue.arrayUnion([userId])
+      });
+    } else {
+      await ref.update({
+        'mutedBy': FieldValue.arrayRemove([userId])
+      });
+    }
+  }
 }
