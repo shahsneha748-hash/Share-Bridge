@@ -36,6 +36,11 @@ class DashboardViewModel extends ChangeNotifier {
 
   List<Map<String, dynamic>> get donations => _model.donations;
 
+  Future<void> refresh() async {
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

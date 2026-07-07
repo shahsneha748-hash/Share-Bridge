@@ -140,10 +140,17 @@ class BrowseItemCard extends StatelessWidget {
                       const Icon(Icons.location_on,
                           size: 12, color: Colors.grey),
                       const SizedBox(width: 2),
-                      Text(
-                        item['distance'] ?? '—',
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.grey),
+                      Expanded(
+                        child: Text(
+                          (item['shortLocation'] != null &&
+                              item['shortLocation'].toString().isNotEmpty)
+                              ? item['shortLocation']
+                              : 'No location',
+                          style: const TextStyle(
+                              fontSize: 11, color: Colors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

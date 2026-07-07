@@ -64,6 +64,8 @@ class BrowseRepoImpl implements BrowseRepo {
           'category': category,
           'location': data['location'] ?? '',
           'shortLocation': _shortLocation(data['location'] ?? ''),
+          'mapLat': data['mapLat'],
+          'mapLng': data['mapLng'],
           'description': data['description'] ?? '',
           'condition': data['condition'] ?? '',
           'weight': data['weight'] ?? '',

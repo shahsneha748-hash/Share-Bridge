@@ -42,4 +42,17 @@ class ItemDetailRepoImpl implements ItemDetailRepo {
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
+
+  @override
+  Future<String?> getDonorProfilePicture(String donorId) async {
+    if (donorId.isEmpty) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(donorId).get();
+      final data = doc.data();
+      if (data == null) return null;
+      return data['profilePicture'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
 }

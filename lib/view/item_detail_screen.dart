@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -5,9 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/components/profile_avatar.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
-import 'package:sharebridge/repo/review_repo_impl.dart'; // added: concrete ReviewRepo impl
+import 'package:sharebridge/repo/review_repo_impl.dart';
 import 'package:sharebridge/view/donation_chat_screen.dart';
 import 'package:sharebridge/view/review.dart';
 import 'package:sharebridge/view/user_report_screen.dart';
@@ -17,6 +20,10 @@ import 'package:sharebridge/utils/chat_helper.dart';
 import '../model/notification_model.dart';
 import '../service/notification_service.dart';
 import '../viewmodel/notification_view_model.dart';
+import '../model/request_system_model.dart';
+import '../repo/request_system_repo_impl.dart';
+import 'request_system_screen.dart';
+import 'navigation_screen.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -42,6 +49,69 @@ class _ItemDetailView extends StatefulWidget {
 class _ItemDetailViewState extends State<_ItemDetailView> {
   bool _isDonorBlocked = false;
   bool _isWishlisted = false;
+  String? _distanceText;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateDistance();
+  }
+
+  Future<void> _calculateDistance() async {
+    final vm = context.read<ItemDetailViewModel>();
+    final item = vm.item;
+    final double? lat = (item['mapLat'] as num?)?.toDouble();
+    final double? lng = (item['mapLng'] as num?)?.toDouble();
+
+    if (lat == null || lng == null) return;
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          return;
+        }
+      }
+
+      // Step 1: show an immediate estimate using the last cached fix,
+      // if the OS has one. This is usually instant (no waiting for GPS).
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null && mounted) {
+        _updateDistanceText(lastKnown.latitude, lastKnown.longitude, lat, lng);
+      }
+
+      // Step 2: get a fresh fix, but with a hard timeout so a bad signal
+      // can't hang or silently fail this call forever.
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 8),
+      );
+
+      if (!mounted) return;
+      _updateDistanceText(position.latitude, position.longitude, lat, lng);
+    } on TimeoutException {
+      // Fresh fix took too long — that's fine, we already showed the
+      // last-known estimate in Step 1 if one existed. Nothing more to do.
+      debugPrint('Distance calc: fresh GPS fix timed out, kept last-known estimate.');
+    } catch (e) {
+      debugPrint('Distance calculation error: $e');
+    }
+  }
+
+  void _updateDistanceText(
+      double fromLat, double fromLng, double toLat, double toLng) {
+    final meters = Geolocator.distanceBetween(fromLat, fromLng, toLat, toLng);
+    setState(() {
+      _distanceText = meters < 1000
+          ? '${meters.round()} m'
+          : '${(meters / 1000).toStringAsFixed(1)} km';
+    });
+  }
 
   void _snack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -207,9 +277,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
-        title: const Text('Request this item?',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Request this item?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Text(
           'A request will be sent to ${vm.item['donorName'] ?? 'the donor'}. They will review and respond shortly.',
           style: const TextStyle(fontSize: 14),
@@ -217,14 +290,17 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.darkGreen,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
             onPressed: () async {
               final notifVm = context.read<NotificationViewModel>();
@@ -232,6 +308,25 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               final senderInfo = await notifVm.getUserById(currentUid);
               final receiverId = vm.item['donorId'] ?? '';
               final receiverInfo = await notifVm.getUserById(receiverId);
+
+              final request = RequestSystemModel(
+                id: '',
+                itemName: vm.item['title'] ??
+                    vm.item['itemName'] ??
+                    '',
+                donorId: receiverId,
+                donorName: receiverInfo.fullName,
+                donationId: vm.item['id'] ?? '',
+                category: vm.item['category'] ?? '',
+                location: vm.item['location'] ?? '',
+                note: '',
+                images: List<String>.from(vm.item['images'] ?? []),
+                tags: List<String>.from(vm.item['tags'] ?? []),
+                status: 'pending',
+                createdAt: DateTime.now(),
+              );
+
+              await RequestSystemRepoImpl().createRequest(request);
 
               final model = NotificationModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -257,13 +352,21 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                   payload: 'request_system_screen',
                   buildContext: context,
                 );
-                Fluttertoast.showToast(msg: 'Notification sent successfully');
+                Fluttertoast.showToast(msg: 'Request sent successfully');
+                Navigator.pop(ctx); // close the confirmation dialog
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NavigationScreen()),
+                      (route) => false,
+                );
               } else {
-                Fluttertoast.showToast(msg: 'Failed to send notification');
+                Fluttertoast.showToast(msg: 'Failed to send request');
               }
             },
-            child: const Text('Send Request',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Send Request',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -302,9 +405,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider(
-          // Fix: ReviewViewModel requires a ReviewRepo — it was previously
-          // constructed with no arguments, which fails to compile because
-          // `repository` is a required named parameter.
           create: (_) => ReviewViewModel(repository: ReviewRepoImpl())
             ..getReviewsForUser(targetUserId),
           child: RatingsReviewsPage(
@@ -403,6 +503,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                           item: item,
                           isBlocked: _isDonorBlocked,
                           onReviewTap: () => _openReview(context, item),
+                          donorProfilePicture: vm.donorProfilePicture,
                         ),
                       ),
                     ),
@@ -466,7 +567,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                                         color: AppColors.darkGreen),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${item['distance'] ?? '—'} away',
+                                      '${_distanceText ?? item['distance'] ?? '—'} away',
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: AppColors.darkGreen,
@@ -899,11 +1000,13 @@ class _DonorCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final bool isBlocked;
   final VoidCallback onReviewTap;
+  final String? donorProfilePicture;
 
   const _DonorCard({
     required this.item,
     required this.isBlocked,
     required this.onReviewTap,
+    required this.donorProfilePicture,
   });
 
   @override
@@ -928,15 +1031,16 @@ class _DonorCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.darkGreen,
-                  child: Text(
-                    (item['donorName'] ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 19),
+                GestureDetector(
+                  onTap: () {
+                    // TODO: navigate to donor profile screen once your
+                    // friend's view-profile screen is ready.
+                    // final donorId = item['donorId'] ?? '';
+                  },
+                  child: ProfileAvatar(
+                    imageUrl: donorProfilePicture,
+                    name: item['donorName'] ?? 'U',
+                    size: 48,
                   ),
                 ),
                 Positioned(

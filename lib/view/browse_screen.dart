@@ -53,10 +53,35 @@ class _BrowseViewState extends State<_BrowseView> {
     super.dispose();
   }
 
+  void _snack(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.darkGreen,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // Actively requests location (permission + GPS) right when "Nearest" is
+  // tapped, instead of relying only on the silent fetch from app start.
+  Future<void> _handleNearestTap(BuildContext context) async {
+    final vm = context.read<BrowseViewModel>();
+    final ready = await vm.ensureLocationForNearest();
+    if (!ready) {
+      if (vm.locationError == 'service_disabled') {
+        _snack(context, 'Turn on location services to see nearest items');
+      } else {
+        _snack(context, 'Location permission needed to sort by nearest');
+      }
+      return;
+    }
+    vm.setSortBy('Nearest');
+  }
+
   Widget _heartIcon(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Show snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Opening Wishlist...'),
@@ -65,7 +90,6 @@ class _BrowseViewState extends State<_BrowseView> {
           ),
         );
 
-        // 👉 Navigate to SavedItemsScreen
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SavedItemsScreen()),
@@ -100,18 +124,16 @@ class _BrowseViewState extends State<_BrowseView> {
     final title = item["title"].toString();
     final wasSaved = vm.isFavorite(title);
 
-    // Toggle locally in ViewModel
     vm.toggleFavorite(title);
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     if (!wasSaved) {
-      // 👉 Add to Firestore
       await FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
           .collection("saved_items")
-          .doc(item["id"] ?? title) // use item id if available
+          .doc(item["id"] ?? title)
           .set({
         "id": item["id"] ?? title,
         "title": item["title"] ?? "",
@@ -130,7 +152,6 @@ class _BrowseViewState extends State<_BrowseView> {
         ),
       );
     } else {
-      // 👉 Remove from Firestore
       await FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
@@ -152,7 +173,6 @@ class _BrowseViewState extends State<_BrowseView> {
     final vm = context.read<BrowseViewModel>();
     String tempCategory = vm.selectedCategory;
     String tempDistance = vm.distanceFilter;
-    bool tempAvailable = vm.availableOnly;
     String tempSort = vm.sortBy;
 
     showModalBottomSheet(
@@ -247,25 +267,26 @@ class _BrowseViewState extends State<_BrowseView> {
                             .map((d) => pill(
                           d,
                           tempDistance == d,
-                              () => setSheetState(() => tempDistance = d),
+                              () async {
+                            // Distance filter needs location too — request
+                            // it up front so results aren't silently empty.
+                            if (d != 'Anywhere') {
+                              final vm = context.read<BrowseViewModel>();
+                              final ready = await vm.ensureLocationForNearest();
+                              if (!ready) {
+                                if (vm.locationError == 'service_disabled') {
+                                  _snack(context,
+                                      'Turn on location services to filter by distance');
+                                } else {
+                                  _snack(context,
+                                      'Location permission needed to filter by distance');
+                                }
+                              }
+                            }
+                            setSheetState(() => tempDistance = d);
+                          },
                         ))
                             .toList(),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text('Status',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.darkText)),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          pill('Available only', tempAvailable,
-                                  () => setSheetState(() => tempAvailable = true)),
-                          pill('Show all', !tempAvailable,
-                                  () => setSheetState(() => tempAvailable = false)),
-                        ],
                       ),
                       const SizedBox(height: 20),
                       const Text('Sort by',
@@ -276,11 +297,27 @@ class _BrowseViewState extends State<_BrowseView> {
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
-                        children: ['Newest', 'Nearest', 'Available']
+                        children: ['Newest', 'Nearest', 'Today']
                             .map((s) => pill(
                           s,
                           tempSort == s,
-                              () => setSheetState(() => tempSort = s),
+                              () async {
+                            if (s == 'Nearest') {
+                              final vm = context.read<BrowseViewModel>();
+                              final ready = await vm.ensureLocationForNearest();
+                              if (!ready) {
+                                if (vm.locationError == 'service_disabled') {
+                                  _snack(context,
+                                      'Turn on location services to sort by nearest');
+                                } else {
+                                  _snack(context,
+                                      'Location permission needed to sort by nearest');
+                                }
+                                return;
+                              }
+                            }
+                            setSheetState(() => tempSort = s);
+                          },
                         ))
                             .toList(),
                       ),
@@ -290,7 +327,6 @@ class _BrowseViewState extends State<_BrowseView> {
                           vm.applyFilters(
                             category: tempCategory,
                             distance: tempDistance,
-                            available: tempAvailable,
                             sort: tempSort,
                           );
                           Navigator.pop(ctx);
@@ -303,7 +339,7 @@ class _BrowseViewState extends State<_BrowseView> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
-                            'Show ${vm.previewCount(category: tempCategory, distance: tempDistance, available: tempAvailable)} results',
+                            'Show ${vm.previewCount(category: tempCategory, distance: tempDistance, sort: tempSort)} results',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
@@ -319,7 +355,6 @@ class _BrowseViewState extends State<_BrowseView> {
                           setSheetState(() {
                             tempCategory = 'All';
                             tempDistance = 'Anywhere';
-                            tempAvailable = false;
                             tempSort = 'Newest';
                           });
                         },
@@ -431,21 +466,21 @@ class _BrowseViewState extends State<_BrowseView> {
                             ),
                             const SizedBox(width: 8),
                             FilterChipButton(
-                              label: 'Nearest',
-                              active: vm.sortBy == 'Nearest',
-                              onTap: vm.toggleSortNearest,
+                              label: 'Newest',
+                              active: vm.sortBy == 'Newest',
+                              onTap: () => vm.setSortBy('Newest'),
                             ),
                             const SizedBox(width: 8),
                             FilterChipButton(
-                              label: 'Available only',
-                              active: vm.availableOnly,
-                              onTap: vm.toggleAvailableOnly,
+                              label: 'Nearest',
+                              active: vm.sortBy == 'Nearest',
+                              onTap: () => _handleNearestTap(context),
                             ),
                             const SizedBox(width: 8),
                             FilterChipButton(
                               label: 'Today',
-                              active: vm.todayOnly,
-                              onTap: vm.toggleTodayOnly,
+                              active: vm.sortBy == 'Today',
+                              onTap: () => vm.setSortBy('Today'),
                             ),
                           ],
                         ),
@@ -514,52 +549,60 @@ class _BrowseViewState extends State<_BrowseView> {
                       const SizedBox(height: 12),
 
                       Expanded(
-                        child: vm.isLoading
-                            ? const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.darkGreen),
-                        )
-                            : items.isEmpty
-                            ? const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.search_off,
-                                  size: 56, color: Colors.grey),
-                              SizedBox(height: 10),
-                              Text(
-                                'No items match your filters',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 15),
+                        child: RefreshIndicator(
+                          color: AppColors.darkGreen,
+                          onRefresh: vm.refresh,
+                          child: vm.isLoading
+                              ? const Center(
+                            child: CircularProgressIndicator(
+                                color: AppColors.darkGreen),
+                          )
+                              : items.isEmpty
+                              ? ListView(
+                            children: const [
+                              SizedBox(height: 120),
+                              Center(
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.search_off,
+                                        size: 56, color: Colors.grey),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      'No items match your filters',
+                                      style: TextStyle(
+                                          color: Colors.grey, fontSize: 15),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
-                          ),
-                        )
-                            : Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 20),
-                          child: GridView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: items.length,
-                            gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.72,
+                          )
+                              : Padding(
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 20),
+                            child: GridView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: items.length,
+                              gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.72,
+                              ),
+                              itemBuilder: (ctx, i) {
+                                final item = items[i];
+                                final title = item['title'].toString();
+                                return BrowseItemCard(
+                                  item: item,
+                                  isSaved: vm.isFavorite(title),
+                                  onTap: () =>
+                                      _openItemDetail(context, item),
+                                  onFavoriteTap: () =>
+                                      _toggleFavorite(context, item),
+                                );
+                              },
                             ),
-                            itemBuilder: (ctx, i) {
-                              final item = items[i];
-                              final title = item['title'].toString();
-                              return BrowseItemCard(
-                                item: item,
-                                isSaved: vm.isFavorite(title),
-                                onTap: () =>
-                                    _openItemDetail(context, item),
-                                onFavoriteTap: () =>
-                                    _toggleFavorite(context, item),
-                              );
-                            },
                           ),
                         ),
                       ),
