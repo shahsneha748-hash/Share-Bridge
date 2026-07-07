@@ -96,6 +96,9 @@ class CreateDonationViewModel extends ChangeNotifier {
 
   // ================= GETTERS =================
   bool get isFood => model.category == 'food';
+  bool get showConditionField {
+    return model.category != 'food';
+  }
 
   // ================= SETTERS =================
 
