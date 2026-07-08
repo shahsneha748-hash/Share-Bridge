@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sharebridge/repo/item_detail_repo.dart';
+import 'package:sharebridge/utils/expiry_helper.dart';
 
 class ItemDetailViewModel extends ChangeNotifier {
   final ItemDetailRepo _repo;
@@ -32,6 +33,10 @@ class ItemDetailViewModel extends ChangeNotifier {
       item['category']?.toString().toLowerCase() == 'food' &&
           item['expiryDate'] != null &&
           item['expiryDate'].toString().isNotEmpty;
+
+  /// True when this is a food item whose expiry date has passed.
+  /// Once expired, the item can no longer be requested or messaged about.
+  bool get isExpired => isItemExpired(item);
 
   String get donorInitial => (item['donorName'] ?? 'U')[0].toString().toUpperCase();
 

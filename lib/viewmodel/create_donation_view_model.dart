@@ -226,10 +226,11 @@ class CreateDonationViewModel extends ChangeNotifier {
   }
 
   bool get canSubmit {
+    final conditionOk = isFood || model.condition.isNotEmpty;
     return model.location.isNotEmpty &&
         model.itemName.isNotEmpty &&
         model.category.isNotEmpty &&
-        model.condition.isNotEmpty;
+        conditionOk;
   }
   Future<bool> submit() async {
     loading = true;
