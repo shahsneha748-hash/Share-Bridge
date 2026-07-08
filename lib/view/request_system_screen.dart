@@ -1,6 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:sharebridge/model/notification_model.dart';
+import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import '../constants/colors.dart';
 import '../model/request_system_model.dart';
 import '../utils/chat_helper.dart';
@@ -322,10 +327,60 @@ class _RequestCard extends StatelessWidget {
                   child: _ActionButton(
                     label: 'Accept',
                     icon: Icons.check,
-                    onTap: () =>
-                        vm.updateStatus(request.id, 'accepted'),
                     color: AppColors.darkGreen,
                     bgColor: AppColors.paleGreen,
+                    onTap: () async {
+                      final requestVm = context.read<RequestSystemViewModel>();
+                      final notificationVm = context.read<NotificationViewModel>();
+
+                      // Update request status
+                      await requestVm.updateStatus(request.id, 'accepted');
+
+                      final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+                      // Current user (the one accepting)
+                      final senderInfo =
+                      await notificationVm.getUserById(currentUid);
+
+                      // Person who created the request
+                      final receiverInfo =
+                      await notificationVm.getUserById(request.userId);
+
+                      final model = NotificationModel(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        senderId: currentUid,
+                        senderName: senderInfo.fullName,
+                        profilePicture: senderInfo.profilePicture,
+                        receiverId: request.userId,
+                        receiverName: receiverInfo.fullName,
+                        type: NotificationType.request_accepted,
+                        body:
+                        "${senderInfo.fullName} accepted your request.",
+                        createdAt: DateTime.now(),
+                        isRead: false,
+                        postId: request.id,
+                      );
+
+                      final success =
+                      await notificationVm.sendNotification(model);
+
+                      if (success) {
+                        await NotificationService.display(
+                          body: model.body,
+                          createdAt: model.createdAt,
+                          payload: "request_system_screen",
+                          buildContext: context,
+                        );
+
+                        Fluttertoast.showToast(
+                          msg: "Notification sent successfully",
+                        );
+                      } else {
+                        Fluttertoast.showToast(
+                          msg: "Failed to send notification",
+                        );
+                      }
+                    },
                   ),
                 ),
 
@@ -336,10 +391,57 @@ class _RequestCard extends StatelessWidget {
                   child: _ActionButton(
                     label: 'Reject',
                     icon: Icons.close,
-                    onTap: () =>
-                        vm.updateStatus(request.id, 'rejected'),
                     color: AppColors.rejectedText,
                     bgColor: AppColors.rejectedBg,
+                    onTap: () async {
+                      final requestVm = context.read<RequestSystemViewModel>();
+                      final notificationVm = context.read<NotificationViewModel>();
+
+                      await requestVm.updateStatus(request.id, 'rejected');
+
+                      final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+                      final senderInfo =
+                      await notificationVm.getUserById(currentUid);
+
+                      final receiverInfo =
+                      await notificationVm.getUserById(request.userId);
+
+                      final model = NotificationModel(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        senderId: currentUid,
+                        senderName: senderInfo.fullName,
+                        profilePicture: senderInfo.profilePicture,
+                        receiverId: request.userId,
+                        receiverName: receiverInfo.fullName,
+                        type: NotificationType.request_rejected,
+                        body:
+                        "${senderInfo.fullName} rejected your request.",
+                        createdAt: DateTime.now(),
+                        isRead: false,
+                        postId: request.id,
+                      );
+
+                      final success =
+                      await notificationVm.sendNotification(model);
+
+                      if (success) {
+                        await NotificationService.display(
+                          body: model.body,
+                          createdAt: model.createdAt,
+                          payload: "request_system_screen",
+                          buildContext: context,
+                        );
+
+                        Fluttertoast.showToast(
+                          msg: "Notification sent successfully",
+                        );
+                      } else {
+                        Fluttertoast.showToast(
+                          msg: "Failed to send notification",
+                        );
+                      }
+                    },
                   ),
                 ),
 

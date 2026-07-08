@@ -209,6 +209,8 @@ class NotificationService {
       payload: payload,
     );
   }
+
+  static Future<void> scheduleExpiryNotifications({required String itemName, required String expiryDate, required donationId}) async {}
 }
 
 

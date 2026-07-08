@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class CreateDonationModel {
   String userId;
   String donorId;
@@ -60,7 +62,9 @@ class CreateDonationModel {
   })  : tags = tags ?? [],
         images = images ?? [];
 
-  // ================= FROM MAP =================
+
+  // ================= FROM FIRESTORE =================
+
   factory CreateDonationModel.fromMap(Map<String, dynamic> map) {
     return CreateDonationModel(
       userId: map['userId'] ?? '',
@@ -73,12 +77,15 @@ class CreateDonationModel {
 
       itemName: map['itemName'] ?? '',
       title: map['title'] ?? map['itemName'] ?? '',
+
       description: map['description'] ?? '',
       expiryDate: map['expiryDate'] ?? '',
+
       unit: map['unit'] ?? '',
       category: map['category'] ?? '',
       subcategory: map['subcategory'] ?? '',
       condition: map['condition'] ?? '',
+
       note: map['note'] ?? '',
       portion: map['portion'] ?? '',
       weight: map['weight'] ?? '',
@@ -86,15 +93,22 @@ class CreateDonationModel {
       portionCount: map['portionCount'] ?? 1,
       isDonated: map['isDonated'] ?? false,
 
-      donorRating: (map['donorRating'] as num?)?.toDouble() ?? 0.0,
-      donorDonations: map['donorDonations'] ?? 0,
+      donorRating:
+      (map['donorRating'] as num?)?.toDouble() ?? 0.0,
+
+      donorDonations:
+      (map['donorDonations'] as num?)?.toInt() ?? 0,
 
       tags: List<String>.from(map['tags'] ?? []),
       images: List<String>.from(map['images'] ?? []),
     );
   }
 
-  // ================= TO MAP =================
+  set id(String id) {}
+
+
+  // ================= TO FIRESTORE =================
+
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -106,16 +120,57 @@ class CreateDonationModel {
       'mapLng': mapLng,
 
       'itemName': itemName,
-      // title mirrors itemName unless explicitly set — keeps ItemDetailScreen's
-      // item['title'] working without renaming everything.
       'title': title.isNotEmpty ? title : itemName,
 
       'description': description,
       'expiryDate': expiryDate,
+
       'unit': unit,
       'category': category,
       'subcategory': subcategory,
       'condition': condition,
+
+      'note': note,
+      'portion': portion,
+      'weight': weight,
+
+      'portionCount': portionCount,
+      'isDonated': isDonated,
+
+      'donorRating': donorRating,
+      'donorDonations': donorDonations,
+
+      'tags': tags,
+      'images': images,
+
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+
+  // ================= JSON =================
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'donorId': donorId,
+      'donorName': donorName,
+
+      'location': location,
+      'mapLat': mapLat,
+      'mapLng': mapLng,
+
+      'itemName': itemName,
+      'title': title.isNotEmpty ? title : itemName,
+
+      'description': description,
+      'expiryDate': expiryDate,
+
+      'unit': unit,
+      'category': category,
+      'subcategory': subcategory,
+      'condition': condition,
+
       'note': note,
       'portion': portion,
       'weight': weight,

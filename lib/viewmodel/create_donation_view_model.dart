@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sharebridge/service/notification_service.dart';
 
 import '../model/create_donation_model.dart';
 import '../repo/create_donation_repo.dart';
@@ -13,7 +14,7 @@ class CreateDonationViewModel extends ChangeNotifier {
   CreateDonationViewModel(this._repo, this._imageRepo) {
     model.userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     model.donorId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  }
+    model.id = DateTime.now().millisecondsSinceEpoch.toString();  }
 
   CreateDonationModel model = CreateDonationModel();
 
@@ -219,23 +220,39 @@ class CreateDonationViewModel extends ChangeNotifier {
   // ================= VALIDATION =================
 
   bool get canSubmit {
+    final conditionOk = isFood || model.condition.isNotEmpty;
     return model.location.isNotEmpty &&
         model.itemName.isNotEmpty &&
         model.category.isNotEmpty &&
-        model.condition.isNotEmpty;
+        conditionOk;
   }
 
   // ================= SUBMIT =================
 
   Future<bool> submit() async {
+    if (!canSubmit) {
+      return false;
+    }
+
     loading = true;
     notifyListeners();
 
     bool success = false;
 
     try {
-      await _ensureDonorInfo(); // guarantees donor info is resolved before writing
+      await _ensureDonorInfo();
+
       success = await _repo.submitDonation(model);
+
+      // 👇 ADD HERE
+      if (success && isFood && model.expiryDate.isNotEmpty) {
+        await NotificationService.scheduleExpiryNotifications(
+          itemName: model.itemName,
+          expiryDate: model.expiryDate,
+          donationId: model.userId,
+        );
+      }
+
     } catch (e) {
       debugPrint("Submit error: $e");
       success = false;
@@ -246,4 +263,8 @@ class CreateDonationViewModel extends ChangeNotifier {
 
     return success;
   }
+
+  // ================= SUBMIT =================
+
+
 }

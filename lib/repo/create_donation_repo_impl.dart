@@ -21,4 +21,26 @@ class CreateDonationRepoImpl implements CreateDonationRepository {
       return false;
     }
   }
+
+  @override
+  Future<bool> createDonation(CreateDonationModel model) async {
+    try {
+
+      // Firebase creates the donation id automatically
+      final docRef = firestore.collection("donations").doc();
+
+      await docRef.set({
+        ...model.toJson(),
+        'donationId': docRef.id,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'available',
+      });
+
+      return true;
+
+    } catch (e) {
+      print("Error creating donation: $e");
+      return false;
+    }
+  }
 }

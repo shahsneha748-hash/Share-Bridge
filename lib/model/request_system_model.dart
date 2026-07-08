@@ -13,6 +13,7 @@ class RequestSystemModel {
   final List<String> tags;
   final String status;
   final DateTime createdAt;
+  final String userId;
 
   RequestSystemModel({
     required this.id,
@@ -27,6 +28,7 @@ class RequestSystemModel {
     required this.tags,
     required this.status,
     required this.createdAt,
+    required this.userId,
   });
 
   factory RequestSystemModel.fromFirestore(
@@ -49,8 +51,11 @@ class RequestSystemModel {
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      userId: data['userId'] ?? '',
     );
   }
+
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -81,6 +86,7 @@ class RequestSystemModel {
       tags: tags,
       status: status ?? this.status,
       createdAt: createdAt,
+      userId: userId
     );
   }
 }

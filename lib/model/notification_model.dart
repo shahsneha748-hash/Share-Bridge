@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected, volunteer_request }
+enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected, volunteer_request, request_rejected, request_accepted }
 
 class NotificationModel {
   final String id;
