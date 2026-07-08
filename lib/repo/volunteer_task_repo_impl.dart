@@ -3,60 +3,61 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/volunteer_task_model.dart';
 import 'volunteer_task_repo.dart';
 
-class VolunteerTaskRepoImpl implements VolunteerTaskRepo {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+class VolunteerTaskRepoImpl implements VolunteerTaskRepo{
+
+
+  final FirebaseFirestore firestore;
+
+
+  VolunteerTaskRepoImpl({
+    required this.firestore
+  });
+
 
   @override
-  Stream<List<VolunteerTaskModel>> getAvailableTasks() {
+  Stream<List<VolunteerTaskModel>> getVolunteerTasks(
+      String volunteerId){
+
     return firestore
-        .collection('volunteer_tasks')
-        .where('status', isEqualTo: 'available')
-        .orderBy('createdAt', descending: true)
+        .collection("volunteer_requests")
+        .where(
+        "volunteerId",
+        isEqualTo: volunteerId
+    )
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
+        .map((snapshot){
+
+      return snapshot.docs.map((doc){
+
         return VolunteerTaskModel.fromMap(
-          doc.data(),
-          doc.id,
+            doc.id,
+            doc.data()
         );
+
       }).toList();
+
     });
+
   }
 
+
+
   @override
-  Stream<List<VolunteerTaskModel>> getMyTasks(String volunteerId) {
+  Future<void> updateTaskStatus(
+      String taskId,
+      String status){
+
     return firestore
-        .collection('volunteer_tasks')
-        .where('assignedVolunteerId', isEqualTo: volunteerId)
-        .orderBy('acceptedAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return VolunteerTaskModel.fromMap(
-          doc.data(),
-          doc.id,
-        );
-      }).toList();
+        .collection("volunteer_requests")
+        .doc(taskId)
+        .update({
+
+      "status":status
+
     });
+
   }
 
-  @override
-  Future<void> acceptTask({
-    required String taskId,
-    required String volunteerId,
-  }) async {
-    await firestore.collection('volunteer_tasks').doc(taskId).update({
-      'status': 'accepted',
-      'assignedVolunteerId': volunteerId,
-      'acceptedAt': FieldValue.serverTimestamp(),
-    });
-  }
 
-  @override
-  Future<void> completeTask(String taskId) async {
-    await firestore.collection('volunteer_tasks').doc(taskId).update({
-      'status': 'completed',
-      'completedAt': FieldValue.serverTimestamp(),
-    });
-  }
 }

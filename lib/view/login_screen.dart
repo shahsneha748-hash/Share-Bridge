@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
@@ -203,7 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 20),
 
-                      // Login button
                       SizedBox(
                         width: double.infinity,
                         height: 57,
@@ -230,10 +230,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               Fluttertoast.showToast(msg: "Login successful");
 
-                              // 🔑 Step 2: Get the logged-in user's UID
+                              // 🔑 Step 2: Request notification permission
+                              final settings = await FirebaseMessaging.instance.getNotificationSettings();
+                              if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+                                await FirebaseMessaging.instance.requestPermission();
+                              }
+
+                              // 🔑 Step 3: Get the logged-in user's UID
                               final uid = FirebaseAuth.instance.currentUser!.uid;
 
-                              // 🔑 Step 3: Fetch user document from Firestore
+                              // 🔑 Step 4: Fetch user document from Firestore
                               final userDoc = await FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(uid)
@@ -241,14 +247,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               final role = userDoc.data()?['role'];
 
-                              // ✅ Navigate on success
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (_) => const DashboardScreen()),
-                              );
+                              // 🔑 Step 5: Get FCM token and save it
+                              final token = await FirebaseMessaging.instance.getToken();
+                              if (token != null) {
+                                await FirebaseFirestore.instance.collection('users').doc(uid).set({
+                                  'fcmToken': token,
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                }, SetOptions(merge: true));
+                              }
 
-
-                              // 🔑 Step 4: Navigate based on role
+                              // 🔑 Step 6: Navigate based on role
                               if (role == 'admin') {
                                 Navigator.pushReplacement(
                                   context,
@@ -278,7 +286,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
 
 
-                          SizedBox(height: 30),
+
+
+                      SizedBox(height: 30),
 
                       // Signup link
                       Row(

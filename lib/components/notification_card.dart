@@ -72,16 +72,6 @@ class NotificationCard extends StatelessWidget {
       return CircleAvatar(radius: 40, backgroundImage: AssetImage(profilePicture));
     }
 
-    String formatRelativeTime(DateTime createdAt) {
-      final now = DateTime.now();
-      final diff = now.difference(createdAt);
-
-      if (diff.inMinutes < 60) return "${diff.inMinutes}m";
-      if (diff.inHours < 24) return "${diff.inHours}h";
-      if (diff.inDays < 30) return "${diff.inDays}d";
-      return "30d";
-    }
-
     return Card(
       color: bgColor,
       shape: cardShape,
@@ -99,10 +89,17 @@ class NotificationCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(body),
-                  Text(
-                    formatRelativeTime(createdAt),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+
+                  // ✅ Fixed timestamp using ViewModel
+                  Consumer<NotificationViewModel>(
+                    builder: (context, vm, _) {
+                      return Text(
+                        vm.timeAgo(notification.createdAt),
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      );
+                    },
                   ),
+
                   const SizedBox(height: 5),
 
                   // 🔑 Accept/Reject buttons for volunteer request
@@ -110,12 +107,11 @@ class NotificationCard extends StatelessWidget {
                     Consumer<NotificationViewModel>(
                       builder: (context, vm, _) {
                         final decision = vm.getDecision(notification.id);
-
                         return Row(
                           children: [
                             ElevatedButton(
                               onPressed: decision == VolunteerDecision.accepted
-                                  ? null // disable once accepted
+                                  ? null
                                   : () async {
                                 final success = await vm.acceptVolunteer(notification);
                                 if (success) {
@@ -197,6 +193,7 @@ class NotificationCard extends StatelessWidget {
     );
   }
 }
+
 
 /// List widget with grouping + vanish rules
 class NotificationList extends StatelessWidget {

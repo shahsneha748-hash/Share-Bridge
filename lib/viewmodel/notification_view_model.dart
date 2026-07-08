@@ -4,6 +4,7 @@ import 'package:sharebridge/repo/user_repo.dart';
 import '../model/notification_model.dart';
 import '../model/user_model.dart';
 import '../repo/notification_repo.dart';
+import 'dart:async';
 
 /// Tracks the decision state for volunteer requests
 enum VolunteerDecision {
@@ -27,12 +28,15 @@ class NotificationViewModel extends ChangeNotifier {
     required UserRepo userRepo,
   })  : _repo = repo,
         _userRepo = userRepo {
+    // 👇 Listen to auth state changes (login/logout/reboot)
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      setUser(user);
+    });
+
+    // 👇 Also initialize immediately for the current user
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      _repo.getNotifications(uid).listen((list) {
-        _notifications = list;
-        notifyListeners();
-      });
+      _subscribeToNotifications(uid);
     }
   }
 
@@ -45,6 +49,8 @@ class NotificationViewModel extends ChangeNotifier {
 
   NotificationModel? _notification;
   NotificationModel? get notification => _notification;
+
+  StreamSubscription? _subscription;
 
   List<NotificationModel> _notifications = [];
   List<NotificationModel> get notifications => _notifications;
@@ -105,6 +111,23 @@ class NotificationViewModel extends ChangeNotifier {
     return grouped;
   }
 
+  // ✅ Put timeAgo here, as a class method
+  String timeAgo(DateTime createdAt) {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+
+    if (difference.inDays >= 30) {
+      return "${createdAt.day} ${_monthName(createdAt.month)} ${createdAt.year}";
+    } else if (difference.inDays >= 1) {
+      return "${difference.inDays}d";
+    } else if (difference.inHours >= 1) {
+      return "${difference.inHours}h";
+    } else if (difference.inMinutes >= 1) {
+      return "${difference.inMinutes}m";
+    } else {
+      return "just now";
+    }
+  }
 
   String _monthName(int month) {
     const months = [
@@ -391,6 +414,29 @@ class NotificationViewModel extends ChangeNotifier {
     return success; // 👈 return a bool
   }
 
+  void setUser(User? user) {
+    _subscription?.cancel(); // stop old listener
+    if (user != null) {
+      _subscribeToNotifications(user.uid);
+    } else {
+      _notifications = [];
+      notifyListeners();
+    }
+  }
+
+  void _subscribeToNotifications(String uid) {
+    _subscription?.cancel();
+    _subscription = _repo.getNotifications(uid).listen((list) {
+      _notifications = list;
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
 }
 

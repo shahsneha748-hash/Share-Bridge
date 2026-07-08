@@ -1,29 +1,40 @@
 class ReviewModel {
   final String id;
 
-  final String donationId;
-  final String targetUserId; // donor or volunteer
-  final String reviewType;
+  // Who is being reviewed
+  final String targetUserId;
+  final String reviewType; // donor / volunteer
+
+  // Who wrote the review
   final String reviewerId;
   final String reviewerName;
   final String reviewerInitials;
 
+  // Donation connection
+  final String donationId;
+
+  // Review content
   final double rating;
   final String review;
 
   final DateTime createdAt;
 
+  // Interaction
   final int likes;
   final bool liked;
 
+
   ReviewModel({
     required this.id,
-    required this.donationId,
+
     required this.targetUserId,
     required this.reviewType,
+
     required this.reviewerId,
     required this.reviewerName,
     required this.reviewerInitials,
+
+    required this.donationId,
 
     required this.rating,
     required this.review,
@@ -34,19 +45,22 @@ class ReviewModel {
     required this.liked,
   });
 
+
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
     return ReviewModel(
-      id: json['id'],
-      donationId: json['donationId'],
-      targetUserId: json['targetUserId'],
-      reviewType: json['reviewType'],
+      id: json['id'] ?? '',
 
-      reviewerId: json['reviewerId'],
-      reviewerName: json['reviewerName'],
-      reviewerInitials: json['reviewerInitials'],
+      targetUserId: json['targetUserId'] ?? '',
+      reviewType: json['reviewType'] ?? '',
 
-      rating: (json['rating'] as num).toDouble(),
-      review: json['review'],
+      reviewerId: json['reviewerId'] ?? '',
+      reviewerName: json['reviewerName'] ?? '',
+      reviewerInitials: json['reviewerInitials'] ?? '',
+
+      donationId: json['donationId'] ?? '',
+
+      rating: (json['rating'] ?? 0).toDouble(),
+      review: json['review'] ?? '',
 
       createdAt: DateTime.parse(json['createdAt']),
 
@@ -55,16 +69,20 @@ class ReviewModel {
     );
   }
 
+
   Map<String, dynamic> toJson() {
     return {
+
       'id': id,
-      'donationId': donationId,
+
       'targetUserId': targetUserId,
       'reviewType': reviewType,
 
       'reviewerId': reviewerId,
       'reviewerName': reviewerName,
       'reviewerInitials': reviewerInitials,
+
+      'donationId': donationId,
 
       'rating': rating,
       'review': review,

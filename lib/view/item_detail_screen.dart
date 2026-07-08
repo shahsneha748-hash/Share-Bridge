@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -5,18 +6,26 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/components/profile_avatar.dart';
 import 'package:sharebridge/repo/item_detail_repo_impl.dart';
-import 'package:sharebridge/repo/review_repo_impl.dart'; // added: concrete ReviewRepo impl
+import 'package:sharebridge/repo/review_repo_impl.dart';
 import 'package:sharebridge/view/donation_chat_screen.dart';
 import 'package:sharebridge/view/review.dart';
+import 'package:sharebridge/view/user.dart';
 import 'package:sharebridge/view/user_report_screen.dart';
 import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
 import 'package:sharebridge/viewmodel/review_view_model.dart';
+import 'package:sharebridge/viewmodel/block_view_model.dart';
 import 'package:sharebridge/utils/chat_helper.dart';
 import '../model/notification_model.dart';
 import '../service/notification_service.dart';
 import '../viewmodel/notification_view_model.dart';
+import '../model/request_system_model.dart';
+import '../repo/request_system_repo_impl.dart';
+import 'request_system_screen.dart';
+import 'navigation_screen.dart';
 
 class ItemDetailScreen extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -42,6 +51,87 @@ class _ItemDetailView extends StatefulWidget {
 class _ItemDetailViewState extends State<_ItemDetailView> {
   bool _isDonorBlocked = false;
   bool _isWishlisted = false;
+  String? _distanceText;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateDistance();
+    _checkIfDonorBlocked();
+  }
+
+  Future<void> _checkIfDonorBlocked() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final vm = context.read<ItemDetailViewModel>();
+    final donorId = vm.item['donorId'] ?? '';
+    if (donorId.isEmpty || donorId == currentUser.uid) return;
+
+    final blocked = await context
+        .read<BlockViewModel>()
+        .isBlocked(currentUser.uid, donorId);
+
+    if (mounted) {
+      setState(() => _isDonorBlocked = blocked);
+    }
+  }
+
+  Future<void> _calculateDistance() async {
+    final vm = context.read<ItemDetailViewModel>();
+    final item = vm.item;
+    final double? lat = (item['mapLat'] as num?)?.toDouble();
+    final double? lng = (item['mapLng'] as num?)?.toDouble();
+
+    if (lat == null || lng == null) return;
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          return;
+        }
+      }
+
+      // Step 1: show an immediate estimate using the last cached fix,
+      // if the OS has one. This is usually instant (no waiting for GPS).
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null && mounted) {
+        _updateDistanceText(lastKnown.latitude, lastKnown.longitude, lat, lng);
+      }
+
+      // Step 2: get a fresh fix, but with a hard timeout so a bad signal
+      // can't hang or silently fail this call forever.
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 8),
+      );
+
+      if (!mounted) return;
+      _updateDistanceText(position.latitude, position.longitude, lat, lng);
+    } on TimeoutException {
+      // Fresh fix took too long — that's fine, we already showed the
+      // last-known estimate in Step 1 if one existed. Nothing more to do.
+      debugPrint('Distance calc: fresh GPS fix timed out, kept last-known estimate.');
+    } catch (e) {
+      debugPrint('Distance calculation error: $e');
+    }
+  }
+
+  void _updateDistanceText(
+      double fromLat, double fromLng, double toLat, double toLng) {
+    final meters = Geolocator.distanceBetween(fromLat, fromLng, toLat, toLng);
+    setState(() {
+      _distanceText = meters < 1000
+          ? '${meters.round()} m'
+          : '${(meters / 1000).toStringAsFixed(1)} km';
+    });
+  }
 
   void _snack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -68,6 +158,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     }
 
     final vm = context.read<ItemDetailViewModel>();
+
+    if (vm.isExpired) {
+      _snack(context, 'This item has expired');
+      return;
+    }
+
     final item = vm.item;
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
@@ -111,6 +207,9 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
 
   void _showMoreMenu(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
+    final blockVm = context.read<BlockViewModel>();
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -179,15 +278,36 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                     ),
                     onTap: () async {
                       Navigator.pop(ctx);
+
+                      if (currentUser == null) return;
+                      final donorId = vm.item['donorId'] ?? '';
+                      if (donorId.isEmpty) return;
+
                       if (_isDonorBlocked) {
-                        await vm.blockDonor();
-                        setState(() => _isDonorBlocked = false);
-                        _snack(context, 'Donor unblocked');
+                        final success = await blockVm.unblockUser(
+                          currentUser.uid,
+                          donorId,
+                        );
+                        if (success) {
+                          setState(() => _isDonorBlocked = false);
+                          if (context.mounted) {
+                            _snack(context, 'Donor unblocked');
+                          }
+                        }
                       } else {
-                        await vm.blockDonor();
-                        setState(() => _isDonorBlocked = true);
-                        _snack(context,
-                            'Donor blocked. You can no longer message them.');
+                        final success = await blockVm.blockUser(
+                          currentUser.uid,
+                          donorId,
+                          fullName: vm.item['donorName'] ?? 'Unknown',
+                          profilePicture: vm.donorProfilePicture,
+                        );
+                        if (success) {
+                          setState(() => _isDonorBlocked = true);
+                          if (context.mounted) {
+                            _snack(context,
+                                'Donor blocked. You can no longer message them.');
+                          }
+                        }
                       }
                     },
                   ),
@@ -207,9 +327,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
-        title: const Text('Request this item?',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Request this item?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Text(
           'A request will be sent to ${vm.item['donorName'] ?? 'the donor'}. They will review and respond shortly.',
           style: const TextStyle(fontSize: 14),
@@ -217,18 +340,24 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.darkGreen,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
             onPressed: () async {
               final notifVm = context.read<NotificationViewModel>();
               final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+              await vm.sendRequest();   // 👈 THIS was missing — creates the Firestore doc
+
               final senderInfo = await notifVm.getUserById(currentUid);
               final receiverId = vm.item['donorId'] ?? '';
               final receiverInfo = await notifVm.getUserById(receiverId);
@@ -241,8 +370,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                 receiverId: receiverId,
                 receiverName: receiverInfo.fullName,
                 type: NotificationType.request,
-                body:
-                '${senderInfo.fullName} has requested for your donation',
+                body: '${senderInfo.fullName} has requested for your donation',
                 createdAt: DateTime.now(),
                 isRead: false,
                 postId: vm.item['id'] ?? '',
@@ -251,19 +379,22 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               final success = await notifVm.sendNotification(model);
 
               if (success) {
+                Navigator.pop(context); // close dialog
                 await NotificationService.display(
                   body: model.body,
                   createdAt: model.createdAt,
                   payload: 'request_system_screen',
                   buildContext: context,
                 );
-                Fluttertoast.showToast(msg: 'Notification sent successfully');
+                Fluttertoast.showToast(msg: 'Request sent successfully');
               } else {
                 Fluttertoast.showToast(msg: 'Failed to send notification');
               }
             },
-            child: const Text('Send Request',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Send Request',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -302,9 +433,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       context,
       MaterialPageRoute(
         builder: (_) => ChangeNotifierProvider(
-          // Fix: ReviewViewModel requires a ReviewRepo — it was previously
-          // constructed with no arguments, which fails to compile because
-          // `repository` is a required named parameter.
           create: (_) => ReviewViewModel(repository: ReviewRepoImpl())
             ..getReviewsForUser(targetUserId),
           child: RatingsReviewsPage(
@@ -321,6 +449,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
   Widget build(BuildContext context) {
     final vm = context.watch<ItemDetailViewModel>();
     final item = vm.item;
+    final isExpired = vm.isExpired;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -390,6 +519,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       item: item,
                       available: vm.available,
                       showExpiry: vm.showExpiry,
+                      isExpired: isExpired,
                       onImageTap: (images, index) =>
                           _openFullImage(context, images, index),
                     ),
@@ -403,6 +533,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                           item: item,
                           isBlocked: _isDonorBlocked,
                           onReviewTap: () => _openReview(context, item),
+                          donorProfilePicture: vm.donorProfilePicture,
                         ),
                       ),
                     ),
@@ -466,7 +597,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                                         color: AppColors.darkGreen),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${item['distance'] ?? '—'} away',
+                                      '${_distanceText ?? item['distance'] ?? '—'} away',
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: AppColors.darkGreen,
@@ -554,10 +685,11 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
             _BottomActionBar(
               available: vm.available,
               isBlocked: _isDonorBlocked,
-              onMessageTap: _isDonorBlocked
+              isExpired: isExpired,
+              onMessageTap: (_isDonorBlocked || isExpired)
                   ? null
                   : () => _handleMessageTap(context),
-              onRequestTap: vm.available && !_isDonorBlocked
+              onRequestTap: vm.available && !_isDonorBlocked && !isExpired
                   ? () => _showRequestDialog(context)
                   : null,
             ),
@@ -703,16 +835,34 @@ class _FloatingBadge extends StatelessWidget {
   }
 }
 
+/// Formats the raw `expiryDate` value (stored as an ISO 8601 string by
+/// CreateDonationViewModel.setExpiry) into a short, readable date like
+/// "8/7/2026". Falls back gracefully if parsing fails or the value is empty.
+String _formatExpiry(dynamic raw) {
+  if (raw == null) return '';
+  final str = raw.toString();
+  if (str.isEmpty) return '';
+  try {
+    final date = DateTime.parse(str);
+    return '${date.day}/${date.month}/${date.year}';
+  } catch (_) {
+    // Fallback: strip the time portion off a raw ISO string if parsing fails.
+    return str.split('T').first;
+  }
+}
+
 class _HeroImage extends StatefulWidget {
   final Map<String, dynamic> item;
   final bool available;
   final bool showExpiry;
+  final bool isExpired;
   final void Function(List<String> images, int startIndex) onImageTap;
 
   const _HeroImage({
     required this.item,
     required this.available,
     required this.showExpiry,
+    required this.isExpired,
     required this.onImageTap,
   });
 
@@ -808,9 +958,19 @@ class _HeroImageState extends State<_HeroImage> {
               ),
               if (widget.showExpiry) ...[
                 const SizedBox(height: 8),
-                _FloatingBadge(
+                widget.isExpired
+                    ? const _FloatingBadge(
+                  icon: Icons.event_busy,
+                  text: 'Expired',
+                  bg: Colors.redAccent,
+                  fg: Colors.white,
+                )
+                    : _FloatingBadge(
                   icon: Icons.access_time,
-                  text: 'Expiring ${widget.item['expires']}',
+                  // FIX: was reading a nonexistent 'expires' key. The real
+                  // field saved by CreateDonationViewModel is 'expiryDate'.
+                  text:
+                  'Expiring ${_formatExpiry(widget.item['expiryDate'])}',
                   bg: AppColors.expiryBg,
                   fg: AppColors.expiryText,
                 ),
@@ -899,11 +1059,13 @@ class _DonorCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final bool isBlocked;
   final VoidCallback onReviewTap;
+  final String? donorProfilePicture;
 
   const _DonorCard({
     required this.item,
     required this.isBlocked,
     required this.onReviewTap,
+    required this.donorProfilePicture,
   });
 
   @override
@@ -928,15 +1090,21 @@ class _DonorCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.darkGreen,
-                  child: Text(
-                    (item['donorName'] ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 19),
+                GestureDetector(
+                  onTap: () {
+                    final donorId = item['donorId']?.toString() ?? '';
+                    if (donorId.isEmpty) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(uid: donorId),
+                      ),
+                    );
+                  },
+                  child: ProfileAvatar(
+                    imageUrl: donorProfilePicture,
+                    name: item['donorName'] ?? 'U',
+                    size: 48,
                   ),
                 ),
                 Positioned(
@@ -1216,12 +1384,14 @@ class _MapDecorPainter extends CustomPainter {
 class _BottomActionBar extends StatelessWidget {
   final bool available;
   final bool isBlocked;
+  final bool isExpired;
   final VoidCallback? onMessageTap;
   final VoidCallback? onRequestTap;
 
   const _BottomActionBar({
     required this.available,
     required this.isBlocked,
+    required this.isExpired,
     required this.onMessageTap,
     required this.onRequestTap,
   });
@@ -1230,6 +1400,8 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messageDisabled = isBlocked || isExpired;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
@@ -1254,12 +1426,12 @@ class _BottomActionBar extends StatelessWidget {
                   height: _buttonHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isBlocked
+                    color: messageDisabled
                         ? Colors.grey.shade200
                         : AppColors.backgroundGreen,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: isBlocked
+                        color: messageDisabled
                             ? Colors.grey.shade300
                             : AppColors.paleGreen,
                         width: 1),
@@ -1270,17 +1442,21 @@ class _BottomActionBar extends StatelessWidget {
                       Icon(
                         isBlocked
                             ? Icons.block
-                            : Icons.chat_bubble_outline,
-                        color: isBlocked
+                            : (isExpired
+                            ? Icons.event_busy
+                            : Icons.chat_bubble_outline),
+                        color: messageDisabled
                             ? Colors.grey.shade500
                             : AppColors.darkText,
                         size: 18,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isBlocked ? 'Blocked' : 'Message',
+                        isBlocked
+                            ? 'Blocked'
+                            : (isExpired ? 'Expired' : 'Message'),
                         style: TextStyle(
-                            color: isBlocked
+                            color: messageDisabled
                                 ? Colors.grey.shade500
                                 : AppColors.darkText,
                             fontSize: 14,
@@ -1327,15 +1503,22 @@ class _BottomActionBar extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.volunteer_activism,
-                          color: Colors.white, size: 20),
+                      Icon(
+                        isExpired
+                            ? Icons.event_busy
+                            : Icons.volunteer_activism,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         isBlocked
                             ? 'Donor Blocked'
+                            : (isExpired
+                            ? 'Item Expired'
                             : (onRequestTap != null
                             ? 'Request Item'
-                            : 'Not Available'),
+                            : 'Not Available')),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
