@@ -117,11 +117,6 @@ class CreateDonationViewModel extends ChangeNotifier {
     return model.category != 'food';
   }
 
-  // ================= SETTERS =================
-  bool get showConditionField {
-    return model.category != 'food';
-  }
-
   void setLocation(String value) {
     model.location = value;
     notifyListeners();
