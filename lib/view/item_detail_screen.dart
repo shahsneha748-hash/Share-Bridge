@@ -848,6 +848,22 @@ class _FloatingBadge extends StatelessWidget {
   }
 }
 
+/// Formats the raw `expiryDate` value (stored as an ISO 8601 string by
+/// CreateDonationViewModel.setExpiry) into a short, readable date like
+/// "8/7/2026". Falls back gracefully if parsing fails or the value is empty.
+String _formatExpiry(dynamic raw) {
+  if (raw == null) return '';
+  final str = raw.toString();
+  if (str.isEmpty) return '';
+  try {
+    final date = DateTime.parse(str);
+    return '${date.day}/${date.month}/${date.year}';
+  } catch (_) {
+    // Fallback: strip the time portion off a raw ISO string if parsing fails.
+    return str.split('T').first;
+  }
+}
+
 class _HeroImage extends StatefulWidget {
   final Map<String, dynamic> item;
   final bool available;
@@ -955,7 +971,10 @@ class _HeroImageState extends State<_HeroImage> {
                 const SizedBox(height: 8),
                 _FloatingBadge(
                   icon: Icons.access_time,
-                  text: 'Expiring ${widget.item['expires']}',
+                  // FIX: was reading a nonexistent 'expires' key. The real
+                  // field saved by CreateDonationViewModel is 'expiryDate'.
+                  text:
+                  'Expiring ${_formatExpiry(widget.item['expiryDate'])}',
                   bg: AppColors.expiryBg,
                   fg: AppColors.expiryText,
                 ),
@@ -1075,7 +1094,6 @@ class _DonorCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                // AFTER:
                 GestureDetector(
                   onTap: () {
                     final donorId = item['donorId']?.toString() ?? '';
