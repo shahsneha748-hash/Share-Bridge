@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/repo/dashboard_repo_impl.dart';
+import 'package:sharebridge/repo/block_repo.dart';
 import 'package:sharebridge/components/app_header.dart';
 import 'package:sharebridge/components/category_card.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
@@ -24,20 +25,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // One-time setup on first load goes here (e.g. mark notifications
-    // as seen, fetch a badge count, log analytics, etc.)
   }
 
   @override
   void dispose() {
-    // Clean up any controllers/subscriptions started in initState here.
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => DashboardViewModel(DashboardRepoImpl()),
+      create: (context) => DashboardViewModel(
+        DashboardRepoImpl(),
+        context.read<BlockRepo>(),
+      ),
       child: _DashboardView(onGoToBrowse: widget.onGoToBrowse),
     );
   }
@@ -68,12 +69,14 @@ class _DashboardView extends StatelessWidget {
     }
   }
 
-  void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
-    Navigator.push(
+  void _openItemDetail(BuildContext context, Map<String, dynamic> item) async {
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)
-      ),
+      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
     );
+    if (context.mounted) {
+      context.read<DashboardViewModel>().refreshBlockedUsers();
+    }
   }
 
   void _openVolunteer(BuildContext context) {
@@ -110,7 +113,6 @@ class _DashboardView extends StatelessWidget {
                   size: 26,
                 ),
               ),
-              // Show badge only if unreadCount > 0
               if (vm.unreadCount > 0)
                 Positioned(
                   right: 8,
@@ -170,20 +172,15 @@ class _DashboardView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 18),
-
                           _SearchBar(onTap: () => _goToBrowse(context)),
-
                           const SizedBox(height: 26),
-
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: _VolunteerBanner(
                               onTap: () => _openVolunteer(context),
                             ),
                           ),
-
                           const SizedBox(height: 26),
-
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 20),
                             child: Text(
@@ -196,7 +193,6 @@ class _DashboardView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: Row(
@@ -230,9 +226,7 @@ class _DashboardView extends StatelessWidget {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 26),
-
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: Row(
@@ -296,7 +290,6 @@ class _DashboardView extends StatelessWidget {
                               );
                             }),
                           ),
-
                         ],
                       ),
                     ),

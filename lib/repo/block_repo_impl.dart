@@ -9,10 +9,17 @@ class BlockRepoImpl implements BlockRepo {
   }
 
   @override
-  Future<bool> blockUser(String blockerUid, String blockedUid) async {
+  Future<bool> blockUser(
+      String blockerUid,
+      String blockedUid, {
+        String? fullName,
+        String? profilePicture,
+      }) async {
     try {
       await _blockedCollection(blockerUid).doc(blockedUid).set({
         'blockedUid': blockedUid,
+        'fullName': fullName ?? 'Unknown',
+        'profilePicture': profilePicture,
         'createdAt': FieldValue.serverTimestamp(),
       });
       return true;
@@ -56,33 +63,18 @@ class BlockRepoImpl implements BlockRepo {
   }
 
   @override
-  Future<List<Map<String,dynamic>>> getBlockedUsers(
-      String blockerUid
-      ) async {
-
+  Future<List<Map<String, dynamic>>> getBlockedUsers(String blockerUid) async {
     try {
-
-      final snapshot =
-      await _blockedCollection(blockerUid).get();
-
-
-      return snapshot.docs.map((doc){
-
+      final snapshot = await _blockedCollection(blockerUid).get();
+      return snapshot.docs.map((doc) {
         return {
           'uid': doc.id,
           ...doc.data(),
         };
-
       }).toList();
-
-
-    } catch(e){
-
+    } catch (e) {
       print(e);
       return [];
-
     }
-
   }
-
 }
