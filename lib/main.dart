@@ -195,7 +195,7 @@ class MyHomePage extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const NavigationScreen(), // dashboard
       },
-      home: const LoginScreen(),
+      home: NavigationScreen(),
 
     );
 

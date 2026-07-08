@@ -13,9 +13,11 @@ import 'package:sharebridge/repo/item_detail_repo_impl.dart';
 import 'package:sharebridge/repo/review_repo_impl.dart';
 import 'package:sharebridge/view/donation_chat_screen.dart';
 import 'package:sharebridge/view/review.dart';
+import 'package:sharebridge/view/user.dart';
 import 'package:sharebridge/view/user_report_screen.dart';
 import 'package:sharebridge/viewmodel/item_detail_view_model.dart';
 import 'package:sharebridge/viewmodel/review_view_model.dart';
+import 'package:sharebridge/viewmodel/block_view_model.dart';
 import 'package:sharebridge/utils/chat_helper.dart';
 import '../model/notification_model.dart';
 import '../service/notification_service.dart';
@@ -55,6 +57,24 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
   void initState() {
     super.initState();
     _calculateDistance();
+    _checkIfDonorBlocked();
+  }
+
+  Future<void> _checkIfDonorBlocked() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final vm = context.read<ItemDetailViewModel>();
+    final donorId = vm.item['donorId'] ?? '';
+    if (donorId.isEmpty || donorId == currentUser.uid) return;
+
+    final blocked = await context
+        .read<BlockViewModel>()
+        .isBlocked(currentUser.uid, donorId);
+
+    if (mounted) {
+      setState(() => _isDonorBlocked = blocked);
+    }
   }
 
   Future<void> _calculateDistance() async {
@@ -181,6 +201,9 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
 
   void _showMoreMenu(BuildContext context) {
     final vm = context.read<ItemDetailViewModel>();
+    final blockVm = context.read<BlockViewModel>();
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -249,15 +272,36 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                     ),
                     onTap: () async {
                       Navigator.pop(ctx);
+
+                      if (currentUser == null) return;
+                      final donorId = vm.item['donorId'] ?? '';
+                      if (donorId.isEmpty) return;
+
                       if (_isDonorBlocked) {
-                        await vm.blockDonor();
-                        setState(() => _isDonorBlocked = false);
-                        _snack(context, 'Donor unblocked');
+                        final success = await blockVm.unblockUser(
+                          currentUser.uid,
+                          donorId,
+                        );
+                        if (success) {
+                          setState(() => _isDonorBlocked = false);
+                          if (context.mounted) {
+                            _snack(context, 'Donor unblocked');
+                          }
+                        }
                       } else {
-                        await vm.blockDonor();
-                        setState(() => _isDonorBlocked = true);
-                        _snack(context,
-                            'Donor blocked. You can no longer message them.');
+                        final success = await blockVm.blockUser(
+                          currentUser.uid,
+                          donorId,
+                          fullName: vm.item['donorName'] ?? 'Unknown',
+                          profilePicture: vm.donorProfilePicture,
+                        );
+                        if (success) {
+                          setState(() => _isDonorBlocked = true);
+                          if (context.mounted) {
+                            _snack(context,
+                                'Donor blocked. You can no longer message them.');
+                          }
+                        }
                       }
                     },
                   ),
@@ -1031,11 +1075,17 @@ class _DonorCard extends StatelessWidget {
           children: [
             Stack(
               children: [
+                // AFTER:
                 GestureDetector(
                   onTap: () {
-                    // TODO: navigate to donor profile screen once your
-                    // friend's view-profile screen is ready.
-                    // final donorId = item['donorId'] ?? '';
+                    final donorId = item['donorId']?.toString() ?? '';
+                    if (donorId.isEmpty) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(uid: donorId),
+                      ),
+                    );
                   },
                   child: ProfileAvatar(
                     imageUrl: donorProfilePicture,

@@ -9,6 +9,7 @@ import 'package:sharebridge/components/filter_chip_button.dart';
 import 'package:sharebridge/components/category_pill.dart';
 import 'package:sharebridge/components/browse_item_card.dart';
 import 'package:sharebridge/repo/browse_repo_impl.dart';
+import 'package:sharebridge/repo/block_repo.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
 import 'package:sharebridge/view/saved_items.dart';
 import 'package:sharebridge/viewmodel/browse_view_model.dart';
@@ -21,8 +22,11 @@ class BrowseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) =>
-          BrowseViewModel(BrowseRepoImpl(), initialCategory: initialCategory),
+      create: (context) => BrowseViewModel(
+        BrowseRepoImpl(),
+        context.read<BlockRepo>(),
+        initialCategory: initialCategory,
+      ),
       child: _BrowseView(initialCategory: initialCategory),
     );
   }
@@ -63,8 +67,6 @@ class _BrowseViewState extends State<_BrowseView> {
     );
   }
 
-  // Actively requests location (permission + GPS) right when "Nearest" is
-  // tapped, instead of relying only on the silent fetch from app start.
   Future<void> _handleNearestTap(BuildContext context) async {
     final vm = context.read<BrowseViewModel>();
     final ready = await vm.ensureLocationForNearest();
@@ -103,7 +105,7 @@ class _BrowseViewState extends State<_BrowseView> {
           shape: BoxShape.circle,
         ),
         child: const Icon(
-          Icons.favorite_border,
+          Icons.favorite,
           color: AppColors.darkGreen,
           size: 26,
         ),
@@ -268,8 +270,6 @@ class _BrowseViewState extends State<_BrowseView> {
                           d,
                           tempDistance == d,
                               () async {
-                            // Distance filter needs location too — request
-                            // it up front so results aren't silently empty.
                             if (d != 'Anywhere') {
                               final vm = context.read<BrowseViewModel>();
                               final ready = await vm.ensureLocationForNearest();

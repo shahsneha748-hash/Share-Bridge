@@ -81,19 +81,20 @@ class BlockViewModel extends ChangeNotifier {
 
 
 
+
   Future<bool> blockUser(
       String currentUid,
-      String blockedUid
-      ) {
-
-
+      String blockedUid, {
+        String? fullName,
+        String? profilePicture,
+      }) {
     return repo.blockUser(
-        currentUid,
-        blockedUid
+      currentUid,
+      blockedUid,
+      fullName: fullName,
+      profilePicture: profilePicture,
     );
-
   }
-
 
 
   Future<bool> isBlocked(
