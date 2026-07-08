@@ -49,11 +49,13 @@ import 'package:sharebridge/viewmodel/user_view_model.dart';
 import 'package:sharebridge/viewmodel/volunteer_task_viewmodel.dart';
 import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
 import 'firebase_options.dart';
+import 'package:timezone/data/latest.dart' as tz;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.initialize(navigatorKey);
 

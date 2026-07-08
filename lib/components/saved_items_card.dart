@@ -73,7 +73,7 @@ class SavedItemCard extends StatelessWidget {
     final addedTime = item["addedTime"] ?? "";
 
     return SizedBox(
-      height: 250,
+      height: 245,
       width: double.infinity,
       child: GestureDetector(onTap: () async {
         final donationId = item["id"];
@@ -202,56 +202,47 @@ class SavedItemCard extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(
-                      Icons.bookmark,
+                      Icons.favorite_sharp,
                       color: Color(0XFF414439),
                     ),
-                    onPressed: () async {
-                      final uid =
-                          FirebaseAuth.instance.currentUser!.uid;
-
-                      await SavedItemRepoImpl(
-                        firestore: FirebaseFirestore.instance,
-                      ).removeBookmark(
-                        uid,
-                        title,
-                      );
-
-                      context
-                          .read<BrowseViewModel>()
-                          .toggleFavorite(title);
-
+                    onPressed: () {
+                      // ✅ Just tell the parent to remove this card
                       onBookmarkToggle?.call(false);
+
+                      // Optionally also update BrowseViewModel if you want
+                      context.read<BrowseViewModel>().toggleFavorite(title);
                     },
                   ),
+
                 ],
               ),
 
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 18,
-                      color: Color(0XFF435944),
-                    ),
-                    Text(
-                      miles,
-                      style: const TextStyle(
-                        color: Color(0XFF435944),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Text(
-                      addedTime,
-                      style: const TextStyle(
-                        color: Color(0XFF435944),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Padding(
+              //   padding:
+              //   const EdgeInsets.symmetric(horizontal: 8),
+              //   child: Row(
+              //     children: [
+              //       const Icon(
+              //         Icons.location_on_outlined,
+              //         size: 18,
+              //         color: Color(0XFF435944),
+              //       ),
+              //       Text(
+              //         miles,
+              //         style: const TextStyle(
+              //           color: Color(0XFF435944),
+              //         ),
+              //       ),
+              //       const SizedBox(width: 20),
+              //       Text(
+              //         addedTime,
+              //         style: const TextStyle(
+              //           color: Color(0XFF435944),
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
 
               // Expanded(
               //   child: ElevatedButton(
