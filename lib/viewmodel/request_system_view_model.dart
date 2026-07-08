@@ -54,6 +54,7 @@ class RequestSystemViewModel extends ChangeNotifier {
         notifyListeners();
       },
       onError: (e) {
+        _allRequests = [];
         errorMessage = 'Failed to load requests.';
         isLoading = false;
         notifyListeners();

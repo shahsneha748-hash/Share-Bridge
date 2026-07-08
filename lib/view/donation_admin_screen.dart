@@ -59,16 +59,11 @@ class _DonationBody extends StatelessWidget {
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top,
-        left: 4, right: 16, bottom: 12,
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20, right: 16, bottom: 14,
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left,
-                color: Colors.white, size: 28),
-            onPressed: () => Navigator.pop(context),
-          ),
           const Expanded(
             child: Text('Donations',
                 style: TextStyle(
@@ -104,36 +99,35 @@ class _DonationBody extends StatelessWidget {
     final colors = {
       'Total':     AppColors.primary,
       'Available': AppColors.successText,
-      'Taken':     AppColors.primary,
-      'Food':      AppColors.successText,
+      'Taken':     AppColors.blueText,
+      'Food':      AppColors.amberText,
     };
 
-    return Container(
-      color: AppColors.primary,
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
       child: Row(
         children: stats.entries.map((e) {
+          final color = colors[e.key]!;
           return Expanded(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withOpacity(0.3)),
               ),
               child: Column(
                 children: [
                   Text(e.value.toString(),
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors[e.key],
-                      )),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: color)),
                   const SizedBox(height: 2),
                   Text(e.key,
                       style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted)),
+                          fontSize: 10, color: AppColors.textMuted)),
                 ],
               ),
             ),
@@ -142,6 +136,7 @@ class _DonationBody extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildSearchBar(BuildContext context, DonationAdminViewModel vm) {
     return Container(
@@ -366,10 +361,14 @@ class _DonationCard extends StatelessWidget {
               const Icon(Icons.location_on_outlined,
                   size: 12, color: AppColors.textMuted),
               const SizedBox(width: 3),
-              Text(donation.location,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textMuted)),
-              const Spacer(),
+              Expanded(
+                child: Text(donation.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textMuted)),
+              ),
+              const SizedBox(width: 8),
               const Icon(Icons.access_time_outlined,
                   size: 12, color: AppColors.textMuted),
               const SizedBox(width: 3),

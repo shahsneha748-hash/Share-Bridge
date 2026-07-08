@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/user_admin_viewmodel.dart';
 import '../model/user_admin_model.dart';
-import 'admin_dashboard_view.dart';
 import '../constants/colors.dart';
 
 class UsersAdminScreen extends StatelessWidget {
@@ -62,16 +61,11 @@ class _UsersBody extends StatelessWidget {
     return Container(
       color: AppColors.primary,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top,
-        left: 4, right: 16, bottom: 12,
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20, right: 16, bottom: 14,
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left,
-                color: Colors.white, size: 28),
-            onPressed: () => Navigator.pop(context),
-          ),
           const Expanded(
             child: Text('Users',
                 style: TextStyle(color: Colors.white,
@@ -98,50 +92,41 @@ class _UsersBody extends StatelessWidget {
   // ── SUMMARY ROW ────────────────────────────────────────────────────────────
 
   Widget _buildSummaryRow(UserAdminViewModel controller) {
-    final stats = {
-      'Total':  controller.totalUsers,
-      'Active': controller.activeUsers,
-      'Donors': controller.donorCount,
-      'Banned': controller.bannedUsers,
-    };
-    final colors = {
-      'Total':  AppColors.primary,
-      'Active': AppColors.successText,
-      'Donors': AppColors.blueText,
-      'Banned': AppColors.dangerText,
-    };
-
-    return Container(
-      color: AppColors.primary,
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
       child: Row(
-        children: stats.entries.map((e) {
-          return Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  Text(e.value.toString(),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: colors[e.key],
-                      )),
-                  const SizedBox(height: 2),
-                  Text(e.key,
-                      style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted)),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+        children: [
+          _statCard('Active', controller.activeUsers,
+              AppColors.successText),
+          const SizedBox(width: 10),
+          _statCard('Banned', controller.bannedUsers,
+              AppColors.dangerText),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCard(String label, int count, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Text('$count',
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: color)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textMuted)),
+          ],
+        ),
       ),
     );
   }
@@ -151,7 +136,7 @@ class _UsersBody extends StatelessWidget {
   Widget _buildSearchBar(
       BuildContext context, UserAdminViewModel controller) {
     return Container(
-      color: Colors.white,
+      color: Colors.transparent,
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
       child: TextField(
         onChanged: controller.search,
@@ -162,7 +147,7 @@ class _UsersBody extends StatelessWidget {
           prefixIcon: const Icon(Icons.search,
               color: AppColors.textMuted, size: 20),
           filled: true,
-          fillColor: AppColors.background,
+          fillColor: Colors.white,
           contentPadding:
           const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
@@ -184,37 +169,39 @@ class _UsersBody extends StatelessWidget {
       'Volunteers': UserRole.volunteer,
     };
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(bottom: 10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
+            ...roleFilters.entries.map((e) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _FilterChip(
+                label: e.key,
+                isActive: controller.filterRole == e.value &&
+                    controller.filterStatus != UserStatus.banned,
+                activeColor: Colors.white,
+                activeBg: AppColors.primary,
+                onTap: () {
+                  controller.setStatusFilter(null);
+                  controller.setRoleFilter(e.value);
+                },
+              ),
+            )),
             _FilterChip(
               label: 'Banned',
               isActive:
               controller.filterStatus == UserStatus.banned,
-              activeColor: AppColors.dangerText,
-              activeBg: AppColors.dangerBg,
+              activeColor: Colors.white,
+              activeBg: AppColors.dangerText,
               onTap: () => controller.setStatusFilter(
                 controller.filterStatus == UserStatus.banned
                     ? null
                     : UserStatus.banned,
               ),
             ),
-            const SizedBox(width: 8),
-            ...roleFilters.entries.map((e) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _FilterChip(
-                label: e.key,
-                isActive: controller.filterRole == e.value,
-                activeColor: Colors.white,
-                activeBg: AppColors.primary,
-                onTap: () => controller.setRoleFilter(e.value),
-              ),
-            )),
           ],
         ),
       ),
@@ -546,8 +533,13 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isActive ? activeBg : AppColors.light2,
+          color: isActive ? activeBg : Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? activeBg
+                : const Color(0xFFB8C8B0),
+          ),
         ),
         child: Text(label,
             style: TextStyle(
@@ -555,7 +547,7 @@ class _FilterChip extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: isActive
                   ? activeColor
-                  : AppColors.successText,
+                  : AppColors.textDark,
             )),
       ),
     );

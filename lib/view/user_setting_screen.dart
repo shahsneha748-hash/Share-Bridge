@@ -7,6 +7,7 @@ import 'edit_profile_screen.dart';
 import 'help_faq_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'about_screen.dart';
+import 'blocked_users_screen.dart';
 
 
 
@@ -145,6 +146,13 @@ class UserSettingsScreen extends StatelessWidget {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()));
 
             }),
+
+            _tile(icon: Icons.block_outlined, label: "Blocked Users", onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const BlockedUsersScreen(),
+                  ),
+                );
+              },
+            ),
             _tile(icon: Icons.info_outline, label: "About Share Bridge", onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));
 
