@@ -10,6 +10,7 @@ import 'package:sharebridge/view/item_detail_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/volunteer_intro_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
+import 'package:sharebridge/utils/expiry_helper.dart';
 import '../viewmodel/dashboard_view_model.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -437,6 +438,7 @@ class _FeaturedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final List images = item['images'] ?? [];
     final bool available = item['isDonated'] != true;
+    final bool expired = isItemExpired(item);
 
     return GestureDetector(
       onTap: onTap,
@@ -505,13 +507,17 @@ class _FeaturedCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: available
+                        color: expired
+                            ? Colors.redAccent
+                            : (available
                             ? AppColors.darkGreen
-                            : Colors.redAccent,
+                            : Colors.redAccent),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        available ? 'Available' : 'Taken',
+                        expired
+                            ? 'Expired'
+                            : (available ? 'Available' : 'Taken'),
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,

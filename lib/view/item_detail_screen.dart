@@ -158,6 +158,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
     }
 
     final vm = context.read<ItemDetailViewModel>();
+
+    if (vm.isExpired) {
+      _snack(context, 'This item has expired');
+      return;
+    }
+
     final item = vm.item;
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
@@ -349,28 +355,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
             onPressed: () async {
               final notifVm = context.read<NotificationViewModel>();
               final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+              await vm.sendRequest();   // 👈 THIS was missing — creates the Firestore doc
+
               final senderInfo = await notifVm.getUserById(currentUid);
               final receiverId = vm.item['donorId'] ?? '';
               final receiverInfo = await notifVm.getUserById(receiverId);
-
-              final request = RequestSystemModel(
-                id: '',
-                itemName: vm.item['title'] ??
-                    vm.item['itemName'] ??
-                    '',
-                donorId: receiverId,
-                donorName: receiverInfo.fullName,
-                donationId: vm.item['id'] ?? '',
-                category: vm.item['category'] ?? '',
-                location: vm.item['location'] ?? '',
-                note: '',
-                images: List<String>.from(vm.item['images'] ?? []),
-                tags: List<String>.from(vm.item['tags'] ?? []),
-                status: 'pending',
-                createdAt: DateTime.now(),
-              );
-
-              await RequestSystemRepoImpl().createRequest(request);
 
               final model = NotificationModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -380,8 +370,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                 receiverId: receiverId,
                 receiverName: receiverInfo.fullName,
                 type: NotificationType.request,
-                body:
-                '${senderInfo.fullName} has requested for your donation',
+                body: '${senderInfo.fullName} has requested for your donation',
                 createdAt: DateTime.now(),
                 isRead: false,
                 postId: vm.item['id'] ?? '',
@@ -390,6 +379,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               final success = await notifVm.sendNotification(model);
 
               if (success) {
+                Navigator.pop(context); // close dialog
                 await NotificationService.display(
                   body: model.body,
                   createdAt: model.createdAt,
@@ -397,14 +387,8 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                   buildContext: context,
                 );
                 Fluttertoast.showToast(msg: 'Request sent successfully');
-                Navigator.pop(ctx); // close the confirmation dialog
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NavigationScreen()),
-                      (route) => false,
-                );
               } else {
-                Fluttertoast.showToast(msg: 'Failed to send request');
+                Fluttertoast.showToast(msg: 'Failed to send notification');
               }
             },
             child: const Text(
@@ -465,6 +449,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
   Widget build(BuildContext context) {
     final vm = context.watch<ItemDetailViewModel>();
     final item = vm.item;
+    final isExpired = vm.isExpired;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -534,6 +519,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       item: item,
                       available: vm.available,
                       showExpiry: vm.showExpiry,
+                      isExpired: isExpired,
                       onImageTap: (images, index) =>
                           _openFullImage(context, images, index),
                     ),
@@ -699,10 +685,11 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
             _BottomActionBar(
               available: vm.available,
               isBlocked: _isDonorBlocked,
-              onMessageTap: _isDonorBlocked
+              isExpired: isExpired,
+              onMessageTap: (_isDonorBlocked || isExpired)
                   ? null
                   : () => _handleMessageTap(context),
-              onRequestTap: vm.available && !_isDonorBlocked
+              onRequestTap: vm.available && !_isDonorBlocked && !isExpired
                   ? () => _showRequestDialog(context)
                   : null,
             ),
@@ -868,12 +855,14 @@ class _HeroImage extends StatefulWidget {
   final Map<String, dynamic> item;
   final bool available;
   final bool showExpiry;
+  final bool isExpired;
   final void Function(List<String> images, int startIndex) onImageTap;
 
   const _HeroImage({
     required this.item,
     required this.available,
     required this.showExpiry,
+    required this.isExpired,
     required this.onImageTap,
   });
 
@@ -969,7 +958,14 @@ class _HeroImageState extends State<_HeroImage> {
               ),
               if (widget.showExpiry) ...[
                 const SizedBox(height: 8),
-                _FloatingBadge(
+                widget.isExpired
+                    ? const _FloatingBadge(
+                  icon: Icons.event_busy,
+                  text: 'Expired',
+                  bg: Colors.redAccent,
+                  fg: Colors.white,
+                )
+                    : _FloatingBadge(
                   icon: Icons.access_time,
                   // FIX: was reading a nonexistent 'expires' key. The real
                   // field saved by CreateDonationViewModel is 'expiryDate'.
@@ -1388,12 +1384,14 @@ class _MapDecorPainter extends CustomPainter {
 class _BottomActionBar extends StatelessWidget {
   final bool available;
   final bool isBlocked;
+  final bool isExpired;
   final VoidCallback? onMessageTap;
   final VoidCallback? onRequestTap;
 
   const _BottomActionBar({
     required this.available,
     required this.isBlocked,
+    required this.isExpired,
     required this.onMessageTap,
     required this.onRequestTap,
   });
@@ -1402,6 +1400,8 @@ class _BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messageDisabled = isBlocked || isExpired;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
@@ -1426,12 +1426,12 @@ class _BottomActionBar extends StatelessWidget {
                   height: _buttonHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isBlocked
+                    color: messageDisabled
                         ? Colors.grey.shade200
                         : AppColors.backgroundGreen,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: isBlocked
+                        color: messageDisabled
                             ? Colors.grey.shade300
                             : AppColors.paleGreen,
                         width: 1),
@@ -1442,17 +1442,21 @@ class _BottomActionBar extends StatelessWidget {
                       Icon(
                         isBlocked
                             ? Icons.block
-                            : Icons.chat_bubble_outline,
-                        color: isBlocked
+                            : (isExpired
+                            ? Icons.event_busy
+                            : Icons.chat_bubble_outline),
+                        color: messageDisabled
                             ? Colors.grey.shade500
                             : AppColors.darkText,
                         size: 18,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isBlocked ? 'Blocked' : 'Message',
+                        isBlocked
+                            ? 'Blocked'
+                            : (isExpired ? 'Expired' : 'Message'),
                         style: TextStyle(
-                            color: isBlocked
+                            color: messageDisabled
                                 ? Colors.grey.shade500
                                 : AppColors.darkText,
                             fontSize: 14,
@@ -1499,15 +1503,22 @@ class _BottomActionBar extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.volunteer_activism,
-                          color: Colors.white, size: 20),
+                      Icon(
+                        isExpired
+                            ? Icons.event_busy
+                            : Icons.volunteer_activism,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         isBlocked
                             ? 'Donor Blocked'
+                            : (isExpired
+                            ? 'Item Expired'
                             : (onRequestTap != null
                             ? 'Request Item'
-                            : 'Not Available'),
+                            : 'Not Available')),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,

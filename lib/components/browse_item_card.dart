@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/utils/expiry_helper.dart';
 
 class BrowseItemCard extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -18,6 +19,7 @@ class BrowseItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool available = item['available'] == true;
+    final bool expired = isItemExpired(item);
     final List images = item['images'] ?? [];
     final String? imageUrl = images.isNotEmpty
         ? images[0]
@@ -43,26 +45,34 @@ class BrowseItemCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: available ? AppColors.paleGreen : AppColors.takenBg,
+                      color: expired
+                          ? Colors.red.shade50
+                          : (available
+                          ? AppColors.paleGreen
+                          : AppColors.takenBg),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      available ? 'Available' : 'Taken',
+                      expired
+                          ? 'Expired'
+                          : (available ? 'Available' : 'Taken'),
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: available
+                        color: expired
+                            ? Colors.redAccent
+                            : (available
                             ? AppColors.availableText
-                            : Colors.redAccent,
+                            : Colors.redAccent),
                       ),
                     ),
                   ),
                   GestureDetector(
-                    onTap: available ? onFavoriteTap : null,
+                    onTap: (available && !expired) ? onFavoriteTap : null,
                     child: SizedBox(
                       width: 22,
                       height: 22,
-                      child: available
+                      child: (available && !expired)
                           ? AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         transitionBuilder: (child, anim) =>

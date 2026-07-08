@@ -28,9 +28,9 @@ class ItemDetailRepoImpl implements ItemDetailRepo {
     if (currentUser == null) {
       throw Exception('You must be logged in to request an item.');
     }
-
     await _firestore.collection('requests').add({
-      'donorId': currentUser.uid,
+      'donorId': item['donorId'] ?? '',   // the donation owner
+      'userId': currentUser.uid,          // the requester (you)
       'donationId': item['id'] ?? '',
       'itemName': item['itemName'] ?? item['title'] ?? '',
       'category': item['category'] ?? '',
