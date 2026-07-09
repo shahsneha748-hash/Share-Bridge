@@ -4,6 +4,7 @@ import '../repo/admin_report_repo.dart';
 import '../repo/admin_report_repo_impl.dart';
 
 enum ReportCategory { user, donationPost, volunteer }
+
 enum ReportStatus { pending, reviewed, actionTaken, dismissed }
 
 class AdminReport {
@@ -16,6 +17,7 @@ class AdminReport {
   final String submittedBy;
   final bool isAnonymous;
   final String timeAgo;
+  final String reportedId;
   ReportStatus status;
 
   AdminReport({
@@ -28,31 +30,42 @@ class AdminReport {
     required this.submittedBy,
     required this.isAnonymous,
     required this.timeAgo,
+    required this.reportedId,
     this.status = ReportStatus.pending,
   });
 
   String get categoryLabel {
     switch (category) {
-      case ReportCategory.user:         return 'User';
-      case ReportCategory.donationPost: return 'Donation Post';
-      case ReportCategory.volunteer:    return 'Volunteer';
+      case ReportCategory.user:
+        return 'User';
+      case ReportCategory.donationPost:
+        return 'Donation Post';
+      case ReportCategory.volunteer:
+        return 'Volunteer';
     }
   }
 
   static ReportCategory _parseCategory(String type) {
     switch (type.toLowerCase()) {
-      case 'a donation post': return ReportCategory.donationPost;
-      case 'a volunteer':     return ReportCategory.volunteer;
-      default:                return ReportCategory.user;
+      case 'a donation post':
+        return ReportCategory.donationPost;
+      case 'a volunteer':
+        return ReportCategory.volunteer;
+      default:
+        return ReportCategory.user;
     }
   }
 
   static ReportStatus _parseStatus(String status) {
     switch (status.toLowerCase()) {
-      case 'reviewed':     return ReportStatus.reviewed;
-      case 'actiontaken':  return ReportStatus.actionTaken;
-      case 'dismissed':    return ReportStatus.dismissed;
-      default:             return ReportStatus.pending;
+      case 'reviewed':
+        return ReportStatus.reviewed;
+      case 'actiontaken':
+        return ReportStatus.actionTaken;
+      case 'dismissed':
+        return ReportStatus.dismissed;
+      default:
+        return ReportStatus.pending;
     }
   }
 
@@ -66,23 +79,24 @@ class AdminReport {
     }
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24)   return '${diff.inHours} hr ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
     return '${diff.inDays} day ago';
   }
 
   factory AdminReport.fromMap(Map<String, dynamic> map) {
     final name = map['reportedName'] as String? ?? 'Unknown';
     return AdminReport(
-      id:            map['id'] as String? ?? '',
-      reportedName:  name,
+      id: map['id'] as String? ?? '',
+      reportedName: name,
       reportedInitial: name.isNotEmpty ? name[0].toUpperCase() : '?',
-      category:      _parseCategory(map['reportType'] as String? ?? ''),
-      reason:        map['reason'] as String? ?? '',
-      details:       map['details'] as String? ?? '',
-      submittedBy:   map['reporterName'] as String? ?? 'Anonymous',
-      isAnonymous:   map['isAnonymous'] as bool? ?? false,
-      timeAgo:       _timeAgo(map['createdAt']),
-      status:        _parseStatus(map['status'] as String? ?? 'pending'),
+      category: _parseCategory(map['reportType'] as String? ?? ''),
+      reason: map['reason'] as String? ?? '',
+      details: map['details'] as String? ?? '',
+      submittedBy: map['reporterName'] as String? ?? 'Anonymous',
+      isAnonymous: map['isAnonymous'] as bool? ?? false,
+      timeAgo: _timeAgo(map['createdAt']),
+      reportedId: map['reportedId'] as String? ?? '',
+      status: _parseStatus(map['status'] as String? ?? 'pending'),
     );
   }
 }
@@ -99,12 +113,16 @@ class AdminReportViewModel extends ChangeNotifier {
     return _allReports.where((r) => r.status == filterStatus).toList();
   }
 
-  int get totalReports    => _allReports.length;
-  int get pendingCount    => _allReports.where((r) => r.status == ReportStatus.pending).length;
-  int get reviewedCount   => _allReports.where((r) => r.status == ReportStatus.reviewed).length;
-  int get resolvedCount   => _allReports.where((r) =>
+  int get totalReports => _allReports.length;
+  int get pendingCount =>
+      _allReports.where((r) => r.status == ReportStatus.pending).length;
+  int get reviewedCount =>
+      _allReports.where((r) => r.status == ReportStatus.reviewed).length;
+  int get resolvedCount => _allReports
+      .where((r) =>
   r.status == ReportStatus.actionTaken ||
-      r.status == ReportStatus.dismissed).length;
+      r.status == ReportStatus.dismissed)
+      .length;
 
   Future<void> fetchReports() async {
     isLoading = true;
@@ -135,6 +153,20 @@ class AdminReportViewModel extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error updating status: $e');
+    }
+  }
+
+  /// Ban the reported user directly from the report, then mark actionTaken
+  Future<void> banUserFromReport(AdminReport report) async {
+    try {
+      await _repo.banReportedUser(report.reportedId, report.id);
+      final index = _allReports.indexWhere((r) => r.id == report.id);
+      if (index != -1) {
+        _allReports[index].status = ReportStatus.actionTaken;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error banning user from report: $e');
     }
   }
 }

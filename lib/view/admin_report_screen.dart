@@ -48,6 +48,7 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
                   report: _vm.filteredReports[i],
                   onStatusChanged: (reportId, newStatus) =>
                       _vm.updateStatus(reportId, newStatus),
+                  onBanUser: (report) => _vm.banUserFromReport(report),
                 ),
               ),
             ),
@@ -222,10 +223,12 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
 class _ReportCard extends StatelessWidget {
   final AdminReport report;
   final Function(String, ReportStatus) onStatusChanged;
+  final Function(AdminReport) onBanUser;
 
   const _ReportCard({
     required this.report,
     required this.onStatusChanged,
+    required this.onBanUser,
   });
 
   Color get _statusColor {
@@ -485,11 +488,16 @@ class _ReportCard extends StatelessWidget {
                 iconBg: AppColors.dangerBg,
                 iconColor: AppColors.dangerText,
                 title: 'Ban user',
-                subtitle: 'Permanently restrict this account',
-                onTap: () {
+                subtitle: report.reportedId.isEmpty
+                    ? 'No user linked to this report'
+                    : 'Permanently restrict this account',
+                onTap: report.reportedId.isEmpty
+                    ? () {}
+                    : () {
                   Navigator.pop(ctx);
-                  onStatusChanged(report.id, ReportStatus.actionTaken);
-                  _showConfirmation(context, 'User banned successfully');
+                  onBanUser(report); // REAL ban
+                  _showConfirmation(
+                      context, '${report.reportedName} banned successfully');
                 },
               ),
               const SizedBox(height: 10),
