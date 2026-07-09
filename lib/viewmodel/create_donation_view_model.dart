@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sharebridge/service/notification_service.dart';
-import 'package:geocoding/geocoding.dart'; // NEW: for fallback address→lat/lng
 
 import '../model/create_donation_model.dart';
 import '../repo/create_donation_repo.dart';
@@ -15,7 +13,7 @@ class CreateDonationViewModel extends ChangeNotifier {
   CreateDonationViewModel(this._repo, this._imageRepo) {
     model.userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     model.donorId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    model.id = DateTime.now().millisecondsSinceEpoch.toString();  }
+  }
 
   CreateDonationModel model = CreateDonationModel();
 
@@ -26,6 +24,10 @@ class CreateDonationViewModel extends ChangeNotifier {
 
   // ================= DONOR INFO (resolved right before submit) =================
 
+  /// Fetches the current user's fullName/rating/totalDonations from
+  /// Firestore `users` collection and stamps them onto the donation model.
+  /// Tries doc-id-as-uid first, then falls back to querying by an 'id' field,
+  /// so it works regardless of how the users collection was structured.
   Future<void> _ensureDonorInfo() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -46,6 +48,7 @@ class CreateDonationViewModel extends ChangeNotifier {
         data = directDoc.data();
         debugPrint('✅ Found user doc by direct id: ${user.uid}');
       } else {
+        // 2nd try: doc ID is random, but there's an 'id' field matching the uid.
         final query = await FirebaseFirestore.instance
             .collection('users')
             .where('id', isEqualTo: user.uid)
@@ -71,36 +74,13 @@ class CreateDonationViewModel extends ChangeNotifier {
       debugPrint('Failed to load donor profile: $e');
     }
 
+    // Fallbacks so it's never literally "Unknown" even if the users doc is missing.
     if (model.donorName.trim().isEmpty || model.donorName == 'Unknown') {
       model.donorName = user.displayName ??
           (user.email != null ? user.email!.split('@').first : 'Donor');
     }
 
     debugPrint('🏁 Final donorName resolved to: ${model.donorName}');
-  }
-
-  Future<void> _ensureCoordinates() async {
-    if (model.mapLat != null && model.mapLng != null) {
-      // Already captured via GPS button or map picker — nothing to do.
-      return;
-    }
-    if (model.location.trim().isEmpty) return;
-
-    try {
-      final results = await locationFromAddress(model.location);
-      if (results.isNotEmpty) {
-        model.mapLat = results.first.latitude;
-        model.mapLng = results.first.longitude;
-        debugPrint('📍 Geocoded "${model.location}" → ${model.mapLat}, ${model.mapLng}');
-      } else {
-        debugPrint('⚠️ Geocoding returned no results for "${model.location}"');
-      }
-    } catch (e) {
-      // Geocoding can fail (no internet, address not found, API limits).
-      // We deliberately do NOT block submission on this — better to post
-      // the donation without coordinates than to lose it entirely.
-      debugPrint('⚠️ Geocoding failed for "${model.location}": $e');
-    }
   }
 
   // ================= CATEGORIES =================
@@ -111,13 +91,13 @@ class CreateDonationViewModel extends ChangeNotifier {
     {'id': 'other', 'label': 'Other', 'icon': Icons.category},
   ];
 
+  // ================= CONDITIONS =================
   final List<String> conditions = const ['New', 'Gently Used', 'Used'];
 
+  // ================= GETTERS =================
   bool get isFood => model.category == 'food';
-  bool get showConditionField {
-    return model.category != 'food';
-  }
 
+  // ================= SETTERS =================
 
   void setLocation(String value) {
     model.location = value;
@@ -132,7 +112,7 @@ class CreateDonationViewModel extends ChangeNotifier {
 
   void setItemName(String value) {
     model.itemName = value;
-    model.title = value;
+    model.title = value; // keep title in sync with itemName
     notifyListeners();
   }
 
@@ -182,6 +162,8 @@ class CreateDonationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ================= PORTION =================
+
   void incrementPortion() {
     model.portionCount++;
     notifyListeners();
@@ -194,6 +176,8 @@ class CreateDonationViewModel extends ChangeNotifier {
     }
   }
 
+  // ================= TAGS =================
+
   void addTag(String tag) {
     if (tag.trim().isEmpty) return;
     model.tags = [...model.tags, tag.trim()];
@@ -204,6 +188,8 @@ class CreateDonationViewModel extends ChangeNotifier {
     model.tags = model.tags.where((t) => t != tag).toList();
     notifyListeners();
   }
+
+  // ================= IMAGE UPLOAD =================
 
   Future<void> addImage(String filePath) async {
     if (model.images.length >= 5) return;
@@ -227,39 +213,26 @@ class CreateDonationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ================= VALIDATION =================
+
   bool get canSubmit {
-    final conditionOk = isFood || model.condition.isNotEmpty;
     return model.location.isNotEmpty &&
         model.itemName.isNotEmpty &&
         model.category.isNotEmpty &&
-        conditionOk;
+        model.condition.isNotEmpty;
   }
-  Future<bool> submit() async {
-    if (!canSubmit) {
-      return false;
-    }
 
+  // ================= SUBMIT =================
+
+  Future<bool> submit() async {
     loading = true;
     notifyListeners();
 
     bool success = false;
 
     try {
-      await _ensureDonorInfo();
-      await _ensureCoordinates(); // NEW: geocode fallback before writing to Firestore
-      await _ensureDonorInfo();
-
+      await _ensureDonorInfo(); // guarantees donor info is resolved before writing
       success = await _repo.submitDonation(model);
-
-      // 👇 ADD HERE
-      if (success && isFood && model.expiryDate.isNotEmpty) {
-        await NotificationService.scheduleExpiryNotifications(
-          itemName: model.itemName,
-          expiryDate: model.expiryDate,
-          donationId: model.userId,
-        );
-      }
-
     } catch (e) {
       debugPrint("Submit error: $e");
       success = false;
@@ -270,8 +243,4 @@ class CreateDonationViewModel extends ChangeNotifier {
 
     return success;
   }
-
-  // ================= SUBMIT =================
-
-
 }

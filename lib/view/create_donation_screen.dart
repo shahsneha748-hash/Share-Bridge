@@ -15,8 +15,6 @@ import '../viewmodel/create_donation_view_model.dart';
 import 'navigation_screen.dart';
 import 'pickup_location_field.dart';
 
-// ── Screen (creates a fresh ViewModel every time it's opened) ───────────────
-
 class CreateDonationScreen extends StatelessWidget {
   const CreateDonationScreen({super.key});
 
@@ -32,7 +30,6 @@ class CreateDonationScreen extends StatelessWidget {
   }
 }
 
-// ── View ──────────────────────────────────────────────────────────────────
 
 class _CreateDonationView extends StatefulWidget {
   const _CreateDonationView();
@@ -85,7 +82,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
-      // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: AppColors.darkGreen,
         elevation: 0,
@@ -106,8 +102,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ================= ITEM NAME (TOP) =================
             CustomSection(
               title: "Item Name",
               child: CustomTextField(
@@ -118,7 +112,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= CATEGORY =================
             CustomSection(
               title: "Category",
               child: SingleChildScrollView(
@@ -143,7 +136,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= EXPIRY (ONLY FOOD) =================
             if (vm.isFood)
               CustomSection(
                 title: "Expiry Date",
@@ -179,7 +171,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
             if (vm.isFood)
               const SizedBox(height: 12),
 
-            // ================= SUB CATEGORY =================
             CustomSection(
               title: "Sub Category",
               child: CustomTextField(
@@ -190,7 +181,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= LOCATION (Pin Map Picker) =================
             CustomSection(
               title: "Pickup Location",
               child: PickupLocationField(
@@ -202,25 +192,22 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= CONDITION =================
-            if (vm.showConditionField)
-              CustomSection(
-                title: "Condition",
-                child: Wrap(
-                  spacing: 8,
-                  children: vm.conditions.map((c) {
-                    return RadioChip(
-                      label: c,
-                      isSelected: vm.model.condition == c,
-                      onTap: () => vm.setCondition(c),
-                    );
-                  }).toList(),
-                ),
+            CustomSection(
+              title: "Condition",
+              child: Wrap(
+                spacing: 8,
+                children: vm.conditions.map((c) {
+                  return RadioChip(
+                    label: c,
+                    isSelected: vm.model.condition == c,
+                    onTap: () => vm.setCondition(c),
+                  );
+                }).toList(),
               ),
+            ),
 
             const SizedBox(height: 12),
 
-            // ================= PORTION =================
             PortionSection(
               quantity: vm.model.portionCount,
               unit: vm.model.unit,
@@ -231,7 +218,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= WEIGHT =================
             CustomSection(
               title: "Weight",
               child: CustomTextField(
@@ -242,7 +228,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= DESCRIPTION =================
             CustomSection(
               title: "Description",
               child: CustomTextField(
@@ -254,7 +239,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= NOTE =================
             CustomSection(
               title: "Note",
               child: CustomTextField(
@@ -266,7 +250,7 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= IMAGES =================
+
             UploadPhotosSection(
               photoUrls: vm.images,
               uploading: vm.uploadingImage,
@@ -279,7 +263,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 12),
 
-            // ================= TAGS =================
             TagSection(
               tags: vm.model.tags,
               onAddTag: () =>
@@ -289,7 +272,6 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
 
             const SizedBox(height: 20),
 
-            // ================= SUBMIT =================
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

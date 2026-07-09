@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../model/create_donation_model.dart';
 import '../model/request_system_model.dart';
 import 'request_system_repo.dart';
 
@@ -55,10 +56,6 @@ class RequestSystemRepoImpl implements RequestSystemRepo {
   @override
   Future<void> updateStatus(String requestId, String status) async {
     await _collection.doc(requestId).update({'status': status});
-
-    // When a donor accepts, mark the linked donation as claimed
-    // so it disappears from browse/dashboard (but stays in DB for
-    // the receiver/donor's "My Donations" history).
     if (status == 'accepted') {
       final requestDoc = await _collection.doc(requestId).get();
       final data = requestDoc.data() as Map<String, dynamic>?;
@@ -72,4 +69,25 @@ class RequestSystemRepoImpl implements RequestSystemRepo {
       }
     }
   }
+
+  @override
+  Future<CreateDonationModel?> getDonationById(String id) async {
+    try {
+      final doc = await _donationsCollection
+          .doc(id)
+          .get();
+      if (!doc.exists) {
+        return null;
+      }
+      return CreateDonationModel.fromMap(
+        doc.data() as Map<String, dynamic>,
+      );
+    } catch (e) {
+      throw Exception(
+        "Failed to fetch donation: $e",
+      );
+    }
+  }
+
+
 }

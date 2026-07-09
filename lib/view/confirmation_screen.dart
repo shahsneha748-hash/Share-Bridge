@@ -18,7 +18,6 @@ class ConfirmationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
-      // ── APP BAR ──
       appBar: AppBar(
         title: const Text(
           "Confirm Donation",
@@ -28,13 +27,10 @@ class ConfirmationScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
 
-      // ── BODY ──
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-
-            // ── TITLE ──
             const Text(
               "Please review your donation details",
               style: TextStyle(
@@ -45,7 +41,6 @@ class ConfirmationScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ── DETAILS CARD ──
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -92,7 +87,6 @@ class ConfirmationScreen extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      // ── IMAGES ──
                       if (donation.images.isNotEmpty)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,11 +124,9 @@ class ConfirmationScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // ── BUTTONS ──
             Row(
               children: [
 
-                // EDIT BUTTON
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
@@ -146,7 +138,6 @@ class ConfirmationScreen extends StatelessWidget {
 
                 const SizedBox(width: 10),
 
-                // CONFIRM BUTTON
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -181,7 +172,6 @@ class ConfirmationScreen extends StatelessWidget {
     );
   }
 
-  // ── REUSABLE ROW UI ──
   Widget _buildRow(String title, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
