@@ -2,7 +2,9 @@ import 'package:app_settings/app_settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:http/http.dart';
+import 'package:provider/provider.dart';
+import '../viewmodel/notification_view_model.dart';
 import 'edit_profile_screen.dart';
 import 'help_faq_screen.dart';
 import 'privacy_policy_screen.dart';

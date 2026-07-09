@@ -10,7 +10,7 @@ import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
 class PickupNotificationScreen extends StatefulWidget {
-  final String receiverUid; // volunteer's UID passed in
+  final String receiverUid;
 
   const PickupNotificationScreen({super.key, required this.receiverUid});
 
@@ -80,20 +80,20 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
     final diff = now.difference(createdAt);
 
     if (diff.inMinutes < 60) {
-      return "${diff.inMinutes}m"; // minutes
+      return "${diff.inMinutes}m";
     } else if (diff.inHours < 24) {
-      return "${diff.inHours}h"; // hours
+      return "${diff.inHours}h";
     } else if (diff.inDays < 30) {
-      return "${diff.inDays}d"; // days
+      return "${diff.inDays}d";
     } else {
-      return "30d"; // cap at 30 days
+      return "30d";
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser!.uid; // logged-in user (donor)
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(title: const Text("Pickup Notification")),
@@ -113,7 +113,7 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                 ),
 
                 const SizedBox(width: 10),
-                // Title field
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
@@ -125,7 +125,6 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                   ),
                 ),
 
-                // Body field
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
@@ -147,23 +146,20 @@ class _PickupNotificationScreenState extends State<PickupNotificationScreen> {
                     }
 
                     final vm = context.read<NotificationViewModel>();
-
-                    // Sender = logged-in user (donor)
                     final senderInfo = await vm.getUserById(currentUserId);
                     final senderName = senderInfo.fullName;
                     final senderPic = senderInfo.profilePicture;
 
-                    // Receiver = volunteer (UID passed into this screen)
-                    final receiverId = "TGkOS5JmBsXMgGVtA1RaifvNKXl2";                // "BmbWYHtwszNrTbRiVgRovbKeEZk2";    //widget.receiverUid;
+                    final receiverId = "TGkOS5JmBsXMgGVtA1RaifvNKXl2";
                     final receiverInfo = await vm.getUserById(receiverId);
 
                     final model = NotificationModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
                       body: BodyController.text.trim(),
-                      senderId: currentUserId,          // donor UID
+                      senderId: currentUserId,
                       senderName: senderName,
                       profilePicture: senderPic,
-                      receiverId: receiverId,          // final replace with --> widget.receiverUid,         // volunteer UID
+                      receiverId: receiverId,
                       receiverName: receiverInfo.fullName,
                       createdAt: DateTime.now(),
                       isRead: false,

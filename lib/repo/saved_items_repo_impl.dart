@@ -39,8 +39,8 @@ class SavedItemRepoImpl implements SavedItemRepo {
         .set({
       "id": item.id,
       "title": item.title,
-      "images": item.images,   // 👈 full Cloudinary list
-      "image": item.images.isNotEmpty ? item.images[0] : "", // 👈 first image
+      "images": item.images,
+      "image": item.images.isNotEmpty ? item.images[0] : "",
       "category": item.category,
       "miles": item.miles,
       "addedTime": item.addedTime,

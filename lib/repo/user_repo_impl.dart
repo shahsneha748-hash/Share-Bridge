@@ -2,7 +2,7 @@ import 'package:sharebridge/model/user_model.dart';
 import 'package:sharebridge/repo/user_repo.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../service/notification_service.dart'; // import your NotificationService
+import '../service/notification_service.dart';
 
 class UserRepoImpl implements UserRepo {
   final auth = FirebaseAuth.instance;
@@ -36,7 +36,6 @@ class UserRepoImpl implements UserRepo {
     final users = await firestore.collection("users").get();
     List<UserModel> data = [];
 
-    // FIX: use < instead of <= to avoid out-of-range error
     for (int i = 0; i < users.docs.length; i++) {
       data.add(UserModel.fromMap(users.docs[i].data()));
     }
@@ -63,7 +62,6 @@ class UserRepoImpl implements UserRepo {
       throw Exception("Login failed");
     }
 
-    // ✅ Check Firestore flag for notification permission
     final doc = await firestore.collection("users").doc(userId).get();
     final asked = doc.data()?["notificationsAsked"] ?? false;
 
@@ -91,7 +89,6 @@ class UserRepoImpl implements UserRepo {
       throw Exception("Registration failed");
     }
 
-    // ✅ Create Firestore doc with notificationsAsked = false
     await firestore.collection("users").doc(userId).set({
       "email": email,
       "notificationsAsked": false,
@@ -123,11 +120,3 @@ class UserRepoImpl implements UserRepo {
 
 }
 
-// register garda createUserWithEmailAndPassword (login garda signin, register garda create account ho similar ho just copy paste gareko code logic and then just added createUserWithEmailAndPassword )
-
-
-
-// 1st ko authenctication function call huncha ani yesleh hamro email ra password matra lancha. ani response ma userid dincha.
-// 2nd ma firestore (database) ma tyo userid lai liyera as a primary key database ma rakcham. ani baki ko details tei "users" bhanneh table bhitra add garcham .
-
-// how data is stored in signup ko lagi: 1st authentication call huncha in signup function ani 2nd firestore ko lagi yo add user function call huncha

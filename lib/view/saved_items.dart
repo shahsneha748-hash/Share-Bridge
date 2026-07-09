@@ -111,8 +111,6 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
               else
                 ...filteredItems.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-
-                  // Ensure document id exists
                   data["id"] ??= doc.id;
 
                   return Padding(

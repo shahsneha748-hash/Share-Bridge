@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SavedItemsModel {
   final String id;
   final String title;
-  final List<String> images; // 👈 Cloudinary list
+  final List<String> images;
   final String category;
   final String miles;
   final String addedTime;
@@ -24,7 +24,7 @@ class SavedItemsModel {
       "id": id,
       "title": title,
       "category": category,
-      "images": images,   // 👈 save the full list
+      "images": images,
       "image": images.isNotEmpty ? images[0] : "",
       "miles": miles,
       "addedTime": addedTime,

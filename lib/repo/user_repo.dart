@@ -7,8 +7,8 @@ abstract class UserRepo {
   Future<void> forgetpassword(String email);
   Future<void> addUser(UserModel userModel);
   Future<void> deleteUser(String id);
-  Future<List<UserModel>> getAllUsers();          // list of usermodel leh derai string id return garcha
-  Future<UserModel> getUserById(String id);       // usermodel leh euta matrai string id return garcha
+  Future<List<UserModel>> getAllUsers();
+  Future<UserModel> getUserById(String id);
   Future<void> editProfile(UserModel userModel);
   Future<String> getReceiverName(String receiverId);
   Future<String?> getProfilePicture(String senderId);

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum NotificationType { request, pickup, alert, normal_alert, accepted, rejected, volunteer_request, request_rejected, request_accepted }
+enum NotificationType { request, pickup, alert, normal_alert, volunteer_request, request_accepted, request_rejected }
 
 class NotificationModel {
   final String id;
@@ -44,7 +44,7 @@ class NotificationModel {
     required this.postId,
   });
 
-  /// Convert to Firestore map
+
   Map<String, dynamic> toMap() {
     return {
       "id": id,
@@ -68,7 +68,7 @@ class NotificationModel {
     };
   }
 
-  /// Convert from Firestore map
+
   factory NotificationModel.fromMap(Map<String, dynamic> map) {
     return NotificationModel(
       id: map["id"] ?? "",
@@ -90,26 +90,26 @@ class NotificationModel {
       imageUrl: map["imageUrl"],
       senderName: map["senderName"],
       receiverName: map["receiverName"],
-      postId: map["postId"],
+      postId: map["postId"] ?? "",
 
     );
   }
 
-  /// Helper to map Firestore string to enum
+
   static NotificationType _mapStringToType(String? type) {
     switch (type) {
       case 'request': return NotificationType.request;
       case 'pickup': return NotificationType.pickup;
       case 'alert': return NotificationType.alert;
       case 'normal_alert': return NotificationType.normal_alert;
-      case 'accepted': return NotificationType.accepted;
-      case 'rejected': return NotificationType.rejected;
+      case 'request_accepted': return NotificationType.request_accepted;
+      case 'request_rejected': return NotificationType.request_rejected;
       case 'volunteer_request': return NotificationType.volunteer_request;
       default: return NotificationType.alert;
     }
   }
 
-  /// Copy with new values
+
   NotificationModel copyWith({
     String? id,
     String? senderId,
@@ -153,7 +153,3 @@ class NotificationModel {
     );
   }
 }
-
-
-
-// Note: Model = raw data only (like a database row).

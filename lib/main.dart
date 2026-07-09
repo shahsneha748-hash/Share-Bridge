@@ -56,18 +56,19 @@ import 'package:sharebridge/viewmodel/volunteer_request_viewmodel.dart';
 import 'package:sharebridge/viewmodel/volunteer_task_viewmodel.dart';
 import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
 import 'firebase_options.dart';
+import 'package:timezone/data/latest.dart' as tz;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.initialize(navigatorKey);
 
   runApp(
     MultiProvider(
       providers: [
-        // Register repos first
         Provider<UserRepo>(create: (_) => UserRepoImpl()),
         Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
         Provider<SavedItemRepo>(create: (_) => SavedItemRepoImpl(firestore: FirebaseFirestore.instance)),
@@ -75,7 +76,6 @@ Future<void> main() async {
         Provider<ProfileRepo>(create: (_) => ProfileRepoImpl()),
         Provider<BlockRepo>(create: (_) => BlockRepoImpl()),
 
-        // Create Donation repos
         Provider<FirebaseFirestore>(create: (_) => FirebaseFirestore.instance),
         Provider<CreateDonationRepository>(
           create: (context) =>
@@ -83,12 +83,10 @@ Future<void> main() async {
         ),
         Provider<ImageRepo>(create: (_) => ImageRepoImpl()),
 
-        // Request System repo
         Provider<RequestSystemRepo>(
           create: (_) => RequestSystemRepoImpl(),
         ),
 
-        // ViewModels depend on repos
         ChangeNotifierProvider(
           create: (context) => UserViewModel(
             userRepo: context.read<UserRepo>(),
@@ -108,7 +106,6 @@ Future<void> main() async {
           ),
         ),
 
-        // Create Donation ViewModel
         ChangeNotifierProvider(
           create: (context) => CreateDonationViewModel(
             context.read<CreateDonationRepository>(),
@@ -116,7 +113,6 @@ Future<void> main() async {
           ),
         ),
 
-        // Request System ViewModel
         ChangeNotifierProvider(
           create: (context) => RequestSystemViewModel(
             repository: context.read<RequestSystemRepo>(),
@@ -127,9 +123,6 @@ Future<void> main() async {
           create: (_) => VolunteerRepoImpl(),
         ),
 
-        // Provider<VolunteerTaskRepo>(
-        //   create: (_) => VolunteerTaskRepoImpl(),
-        // ),
 
         ChangeNotifierProvider(
           create: (_) => VolunteerViewModel(
@@ -138,9 +131,6 @@ Future<void> main() async {
           ),
         ),
 
-        // Provider<VolunteerTaskRepo>(
-        //   create: (_) => VolunteerTaskRepoImpl(),
-        // ),
 
         ChangeNotifierProvider(
           create: (_) => ReviewViewModel(

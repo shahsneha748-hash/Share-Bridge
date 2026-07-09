@@ -1,6 +1,6 @@
 class LoginModel {
-  final String id; // unique identifier (UUID or Firebase UID)
-  final String email; // login credential
+  final String id;
+  final String email;
   final String password;
 
   const LoginModel({

@@ -11,6 +11,8 @@ import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/volunteer_intro_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/utils/expiry_helper.dart';
+import '../repo/notification_repo_impl.dart';
+import '../repo/user_repo_impl.dart';
 import '../viewmodel/dashboard_view_model.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -45,7 +47,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ── View ──────────────────────────────────────────────────────────────────────
 
 class _DashboardView extends StatelessWidget {
   final void Function({String? category})? onGoToBrowse;
@@ -90,7 +91,15 @@ class _DashboardView extends StatelessWidget {
   void _openNotifications(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => NotificationViewModel(
+            repo: NotificationRepoImpl(),
+            userRepo: UserRepoImpl(),
+          ),
+          child: const NotificationScreen(),
+        ),
+      ),
     );
   }
 
@@ -305,7 +314,6 @@ class _DashboardView extends StatelessWidget {
   }
 }
 
-// ── Search Bar ────────────────────────────────────────────────────────────────
 
 class _SearchBar extends StatelessWidget {
   final VoidCallback onTap;
@@ -340,8 +348,6 @@ class _SearchBar extends StatelessWidget {
     );
   }
 }
-
-// ── Volunteer Banner ─────────────────────────────────────────────────────────
 
 class _VolunteerBanner extends StatelessWidget {
   final VoidCallback onTap;
@@ -425,8 +431,6 @@ class _VolunteerBanner extends StatelessWidget {
     );
   }
 }
-
-// ── Featured Card ─────────────────────────────────────────────────────────────
 
 class _FeaturedCard extends StatelessWidget {
   final Map<String, dynamic> item;
