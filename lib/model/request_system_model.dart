@@ -21,7 +21,6 @@ class RequestSystemModel {
   final String receiverName;
   final String receiverAddress;
 
-
   final String weight;
   final String portion;
   final int portionCount;
@@ -47,20 +46,18 @@ class RequestSystemModel {
     this.receiverId = '',
     this.receiverName = '',
     this.receiverAddress = '',
-
-
-
     this.weight = '',
     this.portion = '',
     this.portionCount = 1,
     this.receiverPhone = '',
-
   });
 
   factory RequestSystemModel.fromFirestore(
       Map<String, dynamic> data,
       String id, {
         String donorName = '',
+        String? userName,
+        String? userProfilePicture,
       }) {
     return RequestSystemModel(
       id: id,
@@ -79,20 +76,21 @@ class RequestSystemModel {
           : DateTime.now(),
       userId: data['userId'] ?? '',
       donorProfilePicture: data['donorProfilePicture'],
-      userName: data['userName'] ?? 'Unknown',
-      userProfilePicture: data['userProfilePicture'],
+      userName: (userName != null && userName.isNotEmpty)
+          ? userName
+          : (data['userName'] ?? 'Unknown'),
+      userProfilePicture: (userProfilePicture != null && userProfilePicture.isNotEmpty)
+          ? userProfilePicture
+          : data['userProfilePicture'],
       receiverId: data['receiverId'] ?? '',
       receiverName: data['receiverName'] ?? '',
       receiverAddress: data['receiverAddress'] ?? '',
-
       weight: data['weight'] ?? '',
       portion: data['portion'] ?? '',
       portionCount: data['portionCount'] ?? 1,
       receiverPhone: data['receiverPhone'] ?? '',
     );
   }
-
-
 
   Map<String, dynamic> toMap() {
     return {
@@ -106,18 +104,17 @@ class RequestSystemModel {
       'tags': tags,
       'status': status,
       'createdAt': createdAt,
+      'userId': userId,
       'donorProfilePicture': donorProfilePicture,
       'userName': userName,
       'userProfilePicture': userProfilePicture,
       'receiverId': receiverId,
       'receiverName': receiverName,
       'receiverAddress': receiverAddress,
-
       'weight': weight,
       'portion': portion,
       'portionCount': portionCount,
       'receiverPhone': receiverPhone,
-
     };
   }
 
@@ -142,12 +139,10 @@ class RequestSystemModel {
       receiverId: receiverId,
       receiverName: receiverName,
       receiverAddress: receiverAddress,
-
       weight: weight,
       portion: portion,
       portionCount: portionCount,
       receiverPhone: receiverPhone,
-
     );
   }
 }

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../model/create_donation_model.dart';
 import '../model/request_system_model.dart';
 import '../repo/request_system_repo.dart';
 
@@ -22,14 +20,8 @@ class RequestSystemViewModel extends ChangeNotifier {
   RequestFilter get filter => _filter;
   String get searchQuery => _searchQuery;
 
-
-  List<RequestSystemModel> get _myRequests {
-    final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    return _allRequests.where((r) => r.donorId == currentUid).toList();
-  }
-
   List<RequestSystemModel> get filteredRequests {
-    List<RequestSystemModel> result = _myRequests;
+    List<RequestSystemModel> result = _allRequests;
 
     if (_filter == RequestFilter.all) {
       result = result.where((r) => r.status == 'pending').toList();
@@ -50,8 +42,8 @@ class RequestSystemViewModel extends ChangeNotifier {
     return result;
   }
 
-  int get acceptedCount => _myRequests.where((r) => r.status == 'accepted').length;
-  int get rejectedCount => _myRequests.where((r) => r.status == 'rejected').length;
+  int get acceptedCount => _allRequests.where((r) => r.status == 'accepted').length;
+  int get rejectedCount => _allRequests.where((r) => r.status == 'rejected').length;
 
   void _listenToRequests() {
     repository.getRequests().listen(
@@ -87,8 +79,5 @@ class RequestSystemViewModel extends ChangeNotifier {
       errorMessage = 'Failed to update status.';
       notifyListeners();
     }
-  }
-  Future<CreateDonationModel?> getDonationById(String donationId) async {
-    return await repository.getDonationById(donationId);
   }
 }

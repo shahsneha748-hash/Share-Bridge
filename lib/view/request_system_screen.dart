@@ -10,7 +10,6 @@ import '../constants/colors.dart';
 import '../model/request_system_model.dart';
 import '../utils/chat_helper.dart';
 import '../viewmodel/request_system_view_model.dart';
-import 'assign_volunteer_screen.dart';
 import 'donation_chat_screen.dart';
 
 class RequestSystemScreen extends StatelessWidget {
@@ -247,12 +246,15 @@ class _RequestCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => UserProfileScreen(uid: request.userId),
+                      builder: (_) => UserProfileScreen(
+                        uid: request.donorId,
+                      ),
                     ),
                   );
                 },
@@ -261,7 +263,9 @@ class _RequestCard extends StatelessWidget {
                   imageUrl: request.userProfilePicture,
                 ),
               ),
+
               const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,28 +273,44 @@ class _RequestCard extends StatelessWidget {
                     Text(
                       request.userName,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
+
                     const SizedBox(height: 4),
+
                     Text(
                       request.itemName,
                       style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
-                    Text("Category: ${request.category}", style: const TextStyle(fontSize: 12)),
+
                     const SizedBox(height: 4),
-                    Text("Location: ${request.location}", style: const TextStyle(fontSize: 12)),
+
+                    Text(
+                      "Category: ${request.category}",
+                      style: const TextStyle(fontSize: 12),
+                    ),
+
                     const SizedBox(height: 4),
-                    Text(_formatDate(request.createdAt), style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+
+                    Text(
+                      "Location: ${request.location}",
+                      style: const TextStyle(fontSize: 12),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      _formatDate(request.createdAt),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
                   ],
                 ),
               ),
-              if (request.status != 'pending') _StatusPill(status: request.status),
+
+              if (request.status != 'pending')
+                _StatusPill(status: request.status),
             ],
           ),
+
 
           const SizedBox(height: 14),
 
@@ -438,35 +458,18 @@ class _RequestCard extends StatelessWidget {
                   ),
 
                   const SizedBox(width: 6),
+
                   Expanded(
                     child: _ActionButton(
                       label: 'Assign',
                       icon: Icons.person_add,
-                      onTap: () async {
-                        final donation = await vm.getDonationById(request.donationId);
-
-                        if (donation == null) return;
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AssignVolunteerScreen(
-                              donation: donation,
-                              receiverId: request.userId,
-                              receiverName: request.donorName,
-                              receiverAddress: request.location,
-                            ),
-                          ),
-                        );
+                      onTap: () {
+                        // Assign action later
                       },
                       color: AppColors.darkGreen,
                       bgColor: AppColors.paleGreen,
                     ),
                   ),
-
-
-
-
 
                   const SizedBox(width: 6),
 
@@ -615,46 +618,28 @@ class _Avatar extends StatelessWidget {
 
   String get initials {
     final parts = name.trim().split(' ');
-    if (parts.isEmpty || parts[0].isEmpty) return '?';
+
     if (parts.length == 1) {
       return parts[0][0].toUpperCase();
     }
+
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.paleGreen, width: 1.5),
-      ),
-      child: ClipOval(
-        child: imageUrl != null && imageUrl!.isNotEmpty
-            ? Image.network(
-          imageUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _initialsFallback(),
-        )
-            : _initialsFallback(),
-      ),
-    );
-  }
-
-  Widget _initialsFallback() {
-    return Container(
-      color: AppColors.darkGreen,
-      alignment: Alignment.center,
-      child: Text(
+    return CircleAvatar(
+      radius: 24, // was 22
+      backgroundColor: AppColors.darkGreen,
+      backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
+          ? NetworkImage(imageUrl!)
+          : null,
+      child: imageUrl == null || imageUrl!.isEmpty
+          ? Text(
         initials,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-      ),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      )
+          : null,
     );
   }
 }
