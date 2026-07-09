@@ -47,7 +47,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ── View ──────────────────────────────────────────────────────────────────────
 
 class _DashboardView extends StatelessWidget {
   final void Function({String? category})? onGoToBrowse;
@@ -315,7 +314,6 @@ class _DashboardView extends StatelessWidget {
   }
 }
 
-// ── Search Bar ────────────────────────────────────────────────────────────────
 
 class _SearchBar extends StatelessWidget {
   final VoidCallback onTap;
@@ -350,8 +348,6 @@ class _SearchBar extends StatelessWidget {
     );
   }
 }
-
-// ── Volunteer Banner ─────────────────────────────────────────────────────────
 
 class _VolunteerBanner extends StatelessWidget {
   final VoidCallback onTap;
@@ -435,8 +431,6 @@ class _VolunteerBanner extends StatelessWidget {
     );
   }
 }
-
-// ── Featured Card ─────────────────────────────────────────────────────────────
 
 class _FeaturedCard extends StatelessWidget {
   final Map<String, dynamic> item;

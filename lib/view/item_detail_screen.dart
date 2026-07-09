@@ -97,16 +97,10 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
           return;
         }
       }
-
-      // Step 1: show an immediate estimate using the last cached fix,
-      // if the OS has one. This is usually instant (no waiting for GPS).
       final lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null && mounted) {
         _updateDistanceText(lastKnown.latitude, lastKnown.longitude, lat, lng);
       }
-
-      // Step 2: get a fresh fix, but with a hard timeout so a bad signal
-      // can't hang or silently fail this call forever.
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
         timeLimit: const Duration(seconds: 8),
@@ -115,8 +109,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
       if (!mounted) return;
       _updateDistanceText(position.latitude, position.longitude, lat, lng);
     } on TimeoutException {
-      // Fresh fix took too long — that's fine, we already showed the
-      // last-known estimate in Step 1 if one existed. Nothing more to do.
       debugPrint('Distance calc: fresh GPS fix timed out, kept last-known estimate.');
     } catch (e) {
       debugPrint('Distance calculation error: $e');
@@ -353,11 +345,11 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               ),
             ),
             onPressed: () async {
-              print("Button pressed");  // 👈 check if this shows in console
+              print("Button pressed");
               final notifVm = context.read<NotificationViewModel>();
               final currentUid = FirebaseAuth.instance.currentUser!.uid;
 
-              await vm.sendRequest();   // 👈 THIS was missing — creates the Firestore doc
+              await vm.sendRequest();
 
               final senderInfo = await notifVm.getUserById(currentUid);
               final receiverId = vm.item['donorId'] ?? '';
@@ -371,8 +363,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                 receiverId: receiverId,
                 receiverName: receiverInfo.fullName,
                 type: NotificationType.request,
-                body: '${senderInfo.fullName} has requested your donation',
-                createdAt: DateTime.now(),
+                body: '${senderInfo.fullName} has requested your donation for "${vm.item['title']}" ',                createdAt: DateTime.now(),
                 isRead: false,
                 postId: vm.item['id'] ?? '',
               );
@@ -701,8 +692,6 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
   }
 }
 
-// ── Full Screen Image Viewer ──────────────────────────────────────────────────
-
 class _FullImageView extends StatefulWidget {
   final List<String> images;
   final int initialIndex;
@@ -785,8 +774,6 @@ class _FullImageViewState extends State<_FullImageView> {
   }
 }
 
-// ── Private Widgets ───────────────────────────────────────────────────────────
-
 class _SectionHeader extends StatelessWidget {
   final String text;
   const _SectionHeader(this.text);
@@ -836,9 +823,6 @@ class _FloatingBadge extends StatelessWidget {
   }
 }
 
-/// Formats the raw `expiryDate` value (stored as an ISO 8601 string by
-/// CreateDonationViewModel.setExpiry) into a short, readable date like
-/// "8/7/2026". Falls back gracefully if parsing fails or the value is empty.
 String _formatExpiry(dynamic raw) {
   if (raw == null) return '';
   final str = raw.toString();
@@ -847,7 +831,6 @@ String _formatExpiry(dynamic raw) {
     final date = DateTime.parse(str);
     return '${date.day}/${date.month}/${date.year}';
   } catch (_) {
-    // Fallback: strip the time portion off a raw ISO string if parsing fails.
     return str.split('T').first;
   }
 }
