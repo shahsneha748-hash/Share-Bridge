@@ -11,9 +11,6 @@ class ItemDetailViewModel extends ChangeNotifier {
     _loadDonorProfilePicture();
   }
 
-  bool _isFollowing = false;
-  bool get isFollowing => _isFollowing;
-
   String? _donorProfilePicture;
   String? get donorProfilePicture => _donorProfilePicture;
 
@@ -34,20 +31,9 @@ class ItemDetailViewModel extends ChangeNotifier {
           item['expiryDate'] != null &&
           item['expiryDate'].toString().isNotEmpty;
 
-  /// True when this is a food item whose expiry date has passed.
-  /// Once expired, the item can no longer be requested or messaged about.
   bool get isExpired => isItemExpired(item);
 
   String get donorInitial => (item['donorName'] ?? 'U')[0].toString().toUpperCase();
-
-  Future<void> toggleFollow() async {
-    final newState = await _repo.toggleFollow(
-      item['donorName'] ?? '',
-      _isFollowing,
-    );
-    _isFollowing = newState;
-    notifyListeners();
-  }
 
   Future<void> reportItem() async {
     await _repo.reportItem(item['itemName'] ?? '');
@@ -61,8 +47,6 @@ class ItemDetailViewModel extends ChangeNotifier {
     await _repo.sendRequest(item);
   }
 
-  /// Opens Maps using lat/lng if available, otherwise falls back to
-  /// searching by the text location string.
   Future<bool> openInMaps() async {
     final double? lat = (item['mapLat'] as num?)?.toDouble();
     final double? lng = (item['mapLng'] as num?)?.toDouble();
@@ -99,7 +83,6 @@ class ItemDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// Builds the feature list (portion/weight/tag/condition) for the grid.
   List<Map<String, dynamic>> get features {
     final list = <Map<String, dynamic>>[];
     if (item['portion'] != null && item['portion'].toString().isNotEmpty) {
