@@ -31,10 +31,16 @@ class NotificationViewModel extends ChangeNotifier {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       ExpiryAlertService.checkAndCreateAlerts(uid);
-      _repo.getNotifications(uid).listen((list) {
-        _notifications = list;
-        notifyListeners();
-      });
+      _repo.getNotifications(uid).listen(
+            (list) {
+          _notifications = list;
+          notifyListeners();
+        },
+        onError: (e) {
+          debugPrint('Notification stream error: $e');
+          setError(e.toString());
+        },
+      );
     }
   }
 
