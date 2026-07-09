@@ -90,7 +90,7 @@ class NotificationModel {
       imageUrl: map["imageUrl"],
       senderName: map["senderName"],
       receiverName: map["receiverName"],
-      postId: map["postId"],
+      postId: map["postId"] ?? "",
 
     );
   }

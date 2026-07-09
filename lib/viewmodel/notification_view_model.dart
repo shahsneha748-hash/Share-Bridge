@@ -4,6 +4,7 @@ import 'package:sharebridge/repo/user_repo.dart';
 import '../model/notification_model.dart';
 import '../model/user_model.dart';
 import '../repo/notification_repo.dart';
+import 'package:sharebridge/service/expiry_alert_service.dart';
 
 /// Tracks the decision state for volunteer requests
 enum VolunteerDecision {
@@ -29,10 +30,17 @@ class NotificationViewModel extends ChangeNotifier {
         _userRepo = userRepo {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      _repo.getNotifications(uid).listen((list) {
-        _notifications = list;
-        notifyListeners();
-      });
+      ExpiryAlertService.checkAndCreateAlerts(uid);
+      _repo.getNotifications(uid).listen(
+            (list) {
+          _notifications = list;
+          notifyListeners();
+        },
+        onError: (e) {
+          debugPrint('Notification stream error: $e');
+          setError(e.toString());
+        },
+      );
     }
   }
 
@@ -78,7 +86,7 @@ class NotificationViewModel extends ChangeNotifier {
 
       // vanish rules
       if (n.type == NotificationType.alert) {
-        if (age.inDays < 1) {
+        if (age.inDays < 1) {          // ← remove the && !n.isRead
           grouped["Urgent"]!.add(n);
         }
       } else {
@@ -281,6 +289,7 @@ class NotificationViewModel extends ChangeNotifier {
   Future<void> getAllNotifications() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
+      await ExpiryAlertService.checkAndCreateAlerts(uid);   // ← ADD
       await fetchNotificationsByUser(uid);
     }
   }

@@ -48,10 +48,10 @@ class NotificationCard extends StatelessWidget {
         );
         break;
       case NotificationType.alert:
-        bgColor = const Color(0xFFeed2d2);
+        bgColor = const Color(0xFFF9DBDB); // medium soft pink
         cardShape = RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFFe8a4a4)),
+          side: const BorderSide(color: Color(0xFFE89B9B)),
         );
         cardElevation = 6;
         break;

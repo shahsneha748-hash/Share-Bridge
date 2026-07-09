@@ -17,8 +17,8 @@ class _AdminNavigationScreenState extends State<AdminNavigationScreen> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
 
-  final List<Widget> _screens = [
-    const AdminDashboardScreen(),
+  List<Widget> get _screens => [
+    AdminDashboardScreen(onNavigateToTab: _onTabTapped),
     const UsersAdminScreen(),
     const DonationAdminScreen(),
     const AdminReportScreen(),

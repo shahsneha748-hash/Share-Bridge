@@ -1,15 +1,20 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sharebridge/components/notification_card.dart'; // use the clean card
-import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/item_detail_screen.dart';
+import 'package:sharebridge/components/notification_card.dart';
 import 'package:sharebridge/view/request_system_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
-import '../model/notification_model.dart'; // make sure this imports your enum
+import '../model/notification_model.dart';
 
-class NotificationScreen extends StatelessWidget {
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
+
+  @override
+  State<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  bool _urgentExpanded = false;
+  static const int _urgentCollapsedCount = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -77,49 +82,70 @@ class NotificationScreen extends StatelessWidget {
                 ),
                 // Cards for this section
                 Column(
-                  children: items.map((n) {
-                    return InkWell(
-                      onTap: () {
-                        if (n.type == NotificationType.request) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RequestSystemScreen(),
+                  children: () {
+                    // For Urgent: show limited items unless expanded
+                    var visibleItems = items;
+                    final isUrgentSection = section == "Urgent";
+                    if (isUrgentSection &&
+                        !_urgentExpanded &&
+                        items.length > _urgentCollapsedCount) {
+                      visibleItems =
+                          items.take(_urgentCollapsedCount).toList();
+                    }
+
+                    final cards = visibleItems.map<Widget>((n) {
+                      return InkWell(
+                        onTap: () {
+                          if (n.type == NotificationType.request) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                const RequestSystemScreen(),
+                              ),
+                            );
+                          }
+                          // alerts stay until midnight — no tap action
+                        },
+                        child: NotificationCard(
+                          notification: n,
+                          type: n.type,
+                          body: n.body ?? "",
+                          createdAt: n.createdAt,
+                          profilePicture: n.profilePicture ?? "",
+                          onMarkAsRead: () => vm.markAsRead(n.id),
+                        ),
+                      );
+                    }).toList();
+
+                    // See more / See less button for Urgent
+                    if (isUrgentSection &&
+                        items.length > _urgentCollapsedCount) {
+                      cards.add(
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() =>
+                              _urgentExpanded = !_urgentExpanded);
+                            },
+                            child: Text(
+                              _urgentExpanded
+                                  ? 'See less ▲'
+                                  : 'See more (${items.length - _urgentCollapsedCount}) ▼',
+                              style: const TextStyle(
+                                color: Color(0xFF3A5C2E),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
-                          );
-                        }
+                          ),
+                        ),
+                      );
+                    }
 
-                        // else if (n.type == NotificationType.alert ||
-                        //     n.type == NotificationType.normal_alert) {
-                        //   Navigator.push(
-                        //     context,
-                        //     MaterialPageRoute(
-                        //       builder: (_) => ItemDetailScreen(postId: n.postId, item: {},),   // create posId in ItemDetailScreen and model too i think and pass it here
-                        //     ),
-                        //   );
-                        // }
-                        //
-                        // else if (n.type == NotificationType.pickup) {
-                        //   // Navigate to sender profile
-                        //   Navigator.push(
-                        //     context,
-                        //     MaterialPageRoute(
-                        //       builder: (_) => ProfileScreen(userId: n.senderId),   // create parameter in ProfileScreen in view
-                        // }
-                      },
-                      child: NotificationCard(
-                        notification: n,
-                        type: n.type,
-                        body: n.body ?? "",
-                        createdAt: n.createdAt,
-                        profilePicture: n.profilePicture ?? "",
-                        onMarkAsRead: () => vm.markAsRead(n.id),
-
-                      ),
-                    );
-                  }).toList(),
+                    return cards;
+                  }(),
                 ),
-
               ],
             );
           },
@@ -129,12 +155,6 @@ class NotificationScreen extends StatelessWidget {
   }
 }
 
-
-
-
-
-
-//
 // Note: ⚡ Flow Recap
 // Model → defines notification data. (Eg: Model = raw data only (like a database row).)
 // Repo → fetches/saves notifications from Firestore. (Eg: repo = only defines what function exits with hiding implementation of functions. Eg: addUser, deleteUser, etc. so that MVVM architecture is clean)

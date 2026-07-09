@@ -24,6 +24,7 @@ import 'package:sharebridge/repo/volunteer_repo_impl.dart';
 import 'package:sharebridge/repo/volunteer_task_repo.dart';
 import 'package:sharebridge/repo/volunteer_task_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
+import 'package:sharebridge/view/admin_navigation_screen.dart';
 import 'package:sharebridge/view/chat_list_screen.dart';
 import 'package:sharebridge/view/confirmation_screen.dart';
 import 'package:sharebridge/view/create_donation_screen.dart';
@@ -35,6 +36,7 @@ import 'package:sharebridge/view/user.dart';
 import 'package:sharebridge/view/user_profile.dart';
 import 'package:sharebridge/view/volunteer_intro_screen.dart';
 import 'package:sharebridge/view/volunteer_verification_screen.dart';
+import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
 import 'package:sharebridge/viewmodel/create_donation_view_model.dart';
 import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
@@ -49,6 +51,8 @@ import 'package:sharebridge/viewmodel/user_view_model.dart';
 import 'package:sharebridge/viewmodel/volunteer_task_viewmodel.dart';
 import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
 import 'firebase_options.dart';
+
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
@@ -148,6 +152,12 @@ Future<void> main() async {
           create: (_) => MyDonationsViewModel(repository: MyDonationsRepoImpl()),
         ),
 
+        ChangeNotifierProvider(
+          create: (_) => AdminDashboardViewModel(
+            // pass required repositories here
+          ),
+        ),
+
 
 
 
@@ -171,7 +181,7 @@ class MyHomePage extends StatelessWidget {
 
       routes: {
         '/login': (_) => const LoginScreen(),
-        '/home': (_) => const NavigationScreen(), // your dashboard
+        '/home': (_) => const NavigationScreen(),
       },
     );
   }
