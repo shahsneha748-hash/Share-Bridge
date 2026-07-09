@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../model/review_model.dart';
+import '../viewmodel/other_profile_view_model.dart';
 import '../viewmodel/review_view_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -9,6 +11,7 @@ class RatingsReviewsPage extends StatefulWidget {
   final String donationId;
   final String targetUserId; // donor/volunteer id
   final String reviewType;
+
   const RatingsReviewsPage({
     super.key,
     required this.donationId,
@@ -33,7 +36,12 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
       if (!mounted) return;
       context
           .read<ReviewViewModel>()
-          .getReviewsForUser(widget.targetUserId);    });
+          .getReviewsForUser(widget.targetUserId);
+      context
+          .read<OtherProfileViewModel>()
+          .fetchProfile(widget.targetUserId);
+
+    });
   }
 
   @override
@@ -52,6 +60,17 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
       return;
     }
 
+    // Get current user's profile
+    final userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    final userData = userDoc.data();
+
+    final userName = userData?['fullName'] ?? "User";
+
+
     final model = ReviewModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
 
@@ -60,8 +79,10 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
       reviewType: widget.reviewType,
 
       reviewerId: user.uid,
-      reviewerName: user.displayName ?? "User",
-      reviewerInitials: "U",
+      reviewerName: userName,
+      reviewerInitials: userName.isNotEmpty
+          ? userName[0].toUpperCase()
+          : "U",
 
       rating: selectedRating.toDouble(),
       review: reviewController.text,
@@ -89,6 +110,9 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ReviewViewModel>();
+    final profileVM = context.watch<OtherProfileViewModel>();
+
+    final profile = profileVM.profile;
 
     final filteredReviews = selectedFilter == 0
         ? vm.reviews
@@ -116,9 +140,10 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── ITEM CARD ──────────────────────────────────────────────
+            // ── USER CARD ──────────────────────────────────────────────
             Container(
               width: double.infinity,
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
@@ -131,62 +156,73 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                    ),
-                    child: Image.network(
-                      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1200",
-                      height: 220,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.green.shade100,
+                    backgroundImage: profile?.profilePicture != null &&
+                        profile!.profilePicture!.isNotEmpty
+                        ? NetworkImage(profile.profilePicture!)
+                        : null,
+                    child: profile?.profilePicture == null ||
+                        profile!.profilePicture!.isEmpty
+                        ? Text(
+                      profile?.fullName.isNotEmpty == true
+                          ? profile!.fullName[0].toUpperCase()
+                          : "U",
+                      style: TextStyle(
+                        color: Colors.green.shade900,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                        : null,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
+
+                  const SizedBox(width: 15),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Oversized Cotton T-Shirt",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade900,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                "Clothing",
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          profile?.fullName ?? "User",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade900,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(20),
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          profile?.address ?? "Location not set",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
                           ),
-                          child: const Text(
-                            "Available",
-                            style: TextStyle(
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.volunteer_activism_outlined,
+                              size: 16,
                               color: Colors.green,
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
+                            const SizedBox(width: 5),
+                            Text(
+                              "${profile?.totalDonations ?? 0} donations shared",
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -194,6 +230,8 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 15),
 
             const SizedBox(height: 15),
 

@@ -1,39 +1,46 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class SavedItemsModel {
   final String id;
   final String title;
-  final String itemImage;
+  final List<String> images;
   final String category;
   final String miles;
-  final DateTime addedTime;
+  final String addedTime;
+  final String image;
 
-  const SavedItemsModel({
+  SavedItemsModel({
     required this.id,
     required this.title,
-    required this.itemImage,
+    required this.images,
     required this.category,
     required this.miles,
     required this.addedTime,
+    required this.image,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': this.id,
-      'title': this.title,
-      'itemImage': this.itemImage,
-      'category': this.category,
-      'miles': this.miles,
-      'addedTime': this.addedTime,
+      "id": id,
+      "title": title,
+      "category": category,
+      "images": images,
+      "image": images.isNotEmpty ? images[0] : "",
+      "miles": miles,
+      "addedTime": addedTime,
+      "createdAt": FieldValue.serverTimestamp(),
     };
   }
 
   factory SavedItemsModel.fromMap(Map<String, dynamic> map) {
     return SavedItemsModel(
-      id: map['id'] as String,
-      title: map['title'] as String,
-      itemImage: map['itemImage'] as String,
-      category: map['category'] as String,
-      miles: map['miles'] as String,
-      addedTime: map['addedTime'] as DateTime,
+      id: map["id"] ?? "",
+      title: map["title"] ?? "",
+      images: List<String>.from(map["images"] ?? []),
+      category: map["category"] ?? "Others",
+      miles: map["miles"] ?? "",
+      addedTime: map["addedTime"] ?? "",
+      image: map["image"] ?? "",
     );
   }
 }

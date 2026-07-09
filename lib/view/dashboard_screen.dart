@@ -3,12 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/repo/dashboard_repo_impl.dart';
+import 'package:sharebridge/repo/block_repo.dart';
 import 'package:sharebridge/components/app_header.dart';
 import 'package:sharebridge/components/category_card.dart';
 import 'package:sharebridge/view/item_detail_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/volunteer_intro_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
+import 'package:sharebridge/utils/expiry_helper.dart';
+import '../repo/notification_repo_impl.dart';
+import '../repo/user_repo_impl.dart';
 import '../viewmodel/dashboard_view_model.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -24,26 +28,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // One-time setup on first load goes here (e.g. mark notifications
-    // as seen, fetch a badge count, log analytics, etc.)
   }
 
   @override
   void dispose() {
-    // Clean up any controllers/subscriptions started in initState here.
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => DashboardViewModel(DashboardRepoImpl()),
+      create: (context) => DashboardViewModel(
+        DashboardRepoImpl(),
+        context.read<BlockRepo>(),
+      ),
       child: _DashboardView(onGoToBrowse: widget.onGoToBrowse),
     );
   }
 }
 
-// ── View ──────────────────────────────────────────────────────────────────────
 
 class _DashboardView extends StatelessWidget {
   final void Function({String? category})? onGoToBrowse;
@@ -68,12 +71,14 @@ class _DashboardView extends StatelessWidget {
     }
   }
 
-  void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
-    Navigator.push(
+  void _openItemDetail(BuildContext context, Map<String, dynamic> item) async {
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)
-      ),
+      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
     );
+    if (context.mounted) {
+      context.read<DashboardViewModel>().refreshBlockedUsers();
+    }
   }
 
   void _openVolunteer(BuildContext context) {
@@ -86,7 +91,15 @@ class _DashboardView extends StatelessWidget {
   void _openNotifications(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => NotificationViewModel(
+            repo: NotificationRepoImpl(),
+            userRepo: UserRepoImpl(),
+          ),
+          child: const NotificationScreen(),
+        ),
+      ),
     );
   }
 
@@ -110,7 +123,6 @@ class _DashboardView extends StatelessWidget {
                   size: 26,
                 ),
               ),
-              // Show badge only if unreadCount > 0
               if (vm.unreadCount > 0)
                 Positioned(
                   right: 8,
@@ -160,141 +172,136 @@ class _DashboardView extends StatelessWidget {
               Expanded(
                 child: Container(
                   color: Colors.white,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 18),
-
-                        _SearchBar(onTap: () => _goToBrowse(context)),
-
-                        const SizedBox(height: 26),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _VolunteerBanner(
-                            onTap: () => _openVolunteer(context),
-                          ),
-                        ),
-
-                        const SizedBox(height: 26),
-
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            'Browse by Category',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.darkText,
+                  child: RefreshIndicator(
+                    color: AppColors.darkGreen,
+                    onRefresh: vm.refresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 18),
+                          _SearchBar(onTap: () => _goToBrowse(context)),
+                          const SizedBox(height: 26),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: _VolunteerBanner(
+                              onTap: () => _openVolunteer(context),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: CategoryCard(
-                                  icon: Icons.restaurant,
-                                  label: 'Food',
-                                  onTap: () =>
-                                      _goToBrowse(context, category: 'Food'),
-                                ),
+                          const SizedBox(height: 26),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              'Browse by Category',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.darkText,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: CategoryCard(
-                                  icon: Icons.edit,
-                                  label: 'Stationery',
-                                  onTap: () => _goToBrowse(context,
-                                      category: 'Stationery'),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: CategoryCard(
-                                  icon: Icons.checkroom,
-                                  label: 'Clothes',
-                                  onTap: () => _goToBrowse(context,
-                                      category: 'Clothes'),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-
-                        const SizedBox(height: 26),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'New Arrivals',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.darkText,
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CategoryCard(
+                                    icon: Icons.restaurant,
+                                    label: 'Food',
+                                    onTap: () =>
+                                        _goToBrowse(context, category: 'Food'),
+                                  ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _goToBrowse(context),
-                                child: const Text(
-                                  'View all →',
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: CategoryCard(
+                                    icon: Icons.edit,
+                                    label: 'Stationery',
+                                    onTap: () => _goToBrowse(context,
+                                        category: 'Stationery'),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: CategoryCard(
+                                    icon: Icons.checkroom,
+                                    label: 'Clothes',
+                                    onTap: () => _goToBrowse(context,
+                                        category: 'Clothes'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 26),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'New Arrivals',
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.darkGreen,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
+                                    color: AppColors.darkText,
                                   ),
                                 ),
-                              ),
-                            ],
+                                GestureDetector(
+                                  onTap: () => _goToBrowse(context),
+                                  child: const Text(
+                                    'View all →',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.darkGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 220,
-                          child: Builder(builder: (context) {
-                            if (vm.isLoading) {
-                              return const Center(
-                                child: CircularProgressIndicator(color: AppColors.darkGreen),
-                              );
-                            }
-                            if (vm.featuredItems.isEmpty) {
-                              return const Center(
-                                child: Text(
-                                  'No items available.',
-                                  style: TextStyle(color: Colors.grey, fontSize: 13),
-                                ),
-                              );
-                            }
-                            return ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: vm.featuredItems.length,
-                              itemBuilder: (context, index) {
-                                final item = vm.featuredItems[index];
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    right: index == vm.featuredItems.length - 1 ? 0 : 12,
-                                  ),
-                                  child: _FeaturedCard(
-                                    item: item,
-                                    onTap: () => _openItemDetail(context, item),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 220,
+                            child: Builder(builder: (context) {
+                              if (vm.isLoading) {
+                                return const Center(
+                                  child: CircularProgressIndicator(color: AppColors.darkGreen),
+                                );
+                              }
+                              if (vm.featuredItems.isEmpty) {
+                                return const Center(
+                                  child: Text(
+                                    'No items available.',
+                                    style: TextStyle(color: Colors.grey, fontSize: 13),
                                   ),
                                 );
-                              },
-                            );
-                          }),
-                        ),
-
-
-                      ],
+                              }
+                              return ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                itemCount: vm.featuredItems.length,
+                                itemBuilder: (context, index) {
+                                  final item = vm.featuredItems[index];
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      right: index == vm.featuredItems.length - 1 ? 0 : 12,
+                                    ),
+                                    child: _FeaturedCard(
+                                      item: item,
+                                      onTap: () => _openItemDetail(context, item),
+                                    ),
+                                  );
+                                },
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -307,7 +314,6 @@ class _DashboardView extends StatelessWidget {
   }
 }
 
-// ── Search Bar ────────────────────────────────────────────────────────────────
 
 class _SearchBar extends StatelessWidget {
   final VoidCallback onTap;
@@ -342,8 +348,6 @@ class _SearchBar extends StatelessWidget {
     );
   }
 }
-
-// ── Volunteer Banner ─────────────────────────────────────────────────────────
 
 class _VolunteerBanner extends StatelessWidget {
   final VoidCallback onTap;
@@ -428,8 +432,6 @@ class _VolunteerBanner extends StatelessWidget {
   }
 }
 
-// ── Featured Card ─────────────────────────────────────────────────────────────
-
 class _FeaturedCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback onTap;
@@ -440,6 +442,7 @@ class _FeaturedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final List images = item['images'] ?? [];
     final bool available = item['isDonated'] != true;
+    final bool expired = isItemExpired(item);
 
     return GestureDetector(
       onTap: onTap,
@@ -508,13 +511,17 @@ class _FeaturedCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: available
+                        color: expired
+                            ? Colors.redAccent
+                            : (available
                             ? AppColors.darkGreen
-                            : Colors.redAccent,
+                            : Colors.redAccent),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        available ? 'Available' : 'Taken',
+                        expired
+                            ? 'Expired'
+                            : (available ? 'Available' : 'Taken'),
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,

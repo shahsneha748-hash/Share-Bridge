@@ -29,8 +29,14 @@ class ItemDetailRepoImpl implements ItemDetailRepo {
       throw Exception('You must be logged in to request an item.');
     }
 
+    final donorId = item['donorId'] ?? '';
+    final donorProfilePicture = await getDonorProfilePicture(donorId);
+
     await _firestore.collection('requests').add({
-      'donorId': currentUser.uid,
+      'donorId': donorId,
+      'donorName': item['donorName'] ?? '',
+      'donorProfilePicture': donorProfilePicture ?? '',
+      'userId': currentUser.uid,
       'donationId': item['id'] ?? '',
       'itemName': item['itemName'] ?? item['title'] ?? '',
       'category': item['category'] ?? '',
@@ -41,5 +47,18 @@ class ItemDetailRepoImpl implements ItemDetailRepo {
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  @override
+  Future<String?> getDonorProfilePicture(String donorId) async {
+    if (donorId.isEmpty) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(donorId).get();
+      final data = doc.data();
+      if (data == null) return null;
+      return data['profilePicture'] as String?;
+    } catch (e) {
+      return null;
+    }
   }
 }

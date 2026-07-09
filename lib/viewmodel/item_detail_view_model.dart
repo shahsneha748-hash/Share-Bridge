@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sharebridge/repo/item_detail_repo.dart';
+import 'package:sharebridge/utils/expiry_helper.dart';
 
 class ItemDetailViewModel extends ChangeNotifier {
   final ItemDetailRepo _repo;
   final Map<String, dynamic> item;
 
-  ItemDetailViewModel(this._repo, this.item);
+  ItemDetailViewModel(this._repo, this.item) {
+    _loadDonorProfilePicture();
+  }
 
-  bool _isFollowing = false;
-  bool get isFollowing => _isFollowing;
+  String? _donorProfilePicture;
+  String? get donorProfilePicture => _donorProfilePicture;
+
+  Future<void> _loadDonorProfilePicture() async {
+    final donorId = item['donorId']?.toString() ?? '';
+    if (donorId.isEmpty) return;
+    final url = await _repo.getDonorProfilePicture(donorId);
+    if (url != null && url.isNotEmpty) {
+      _donorProfilePicture = url;
+      notifyListeners();
+    }
+  }
 
   bool get available => item['isDonated'] != true;
 
@@ -18,16 +31,9 @@ class ItemDetailViewModel extends ChangeNotifier {
           item['expiryDate'] != null &&
           item['expiryDate'].toString().isNotEmpty;
 
-  String get donorInitial => (item['donorName'] ?? 'U')[0].toString().toUpperCase();
+  bool get isExpired => isItemExpired(item);
 
-  Future<void> toggleFollow() async {
-    final newState = await _repo.toggleFollow(
-      item['donorName'] ?? '',
-      _isFollowing,
-    );
-    _isFollowing = newState;
-    notifyListeners();
-  }
+  String get donorInitial => (item['donorName'] ?? 'U')[0].toString().toUpperCase();
 
   Future<void> reportItem() async {
     await _repo.reportItem(item['itemName'] ?? '');
@@ -41,8 +47,6 @@ class ItemDetailViewModel extends ChangeNotifier {
     await _repo.sendRequest(item);
   }
 
-  /// Opens Maps using lat/lng if available, otherwise falls back to
-  /// searching by the text location string.
   Future<bool> openInMaps() async {
     final double? lat = (item['mapLat'] as num?)?.toDouble();
     final double? lng = (item['mapLng'] as num?)?.toDouble();
@@ -79,7 +83,6 @@ class ItemDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// Builds the feature list (portion/weight/tag/condition) for the grid.
   List<Map<String, dynamic>> get features {
     final list = <Map<String, dynamic>>[];
     if (item['portion'] != null && item['portion'].toString().isNotEmpty) {

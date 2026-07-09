@@ -3,8 +3,8 @@ import 'image_repo.dart';
 
 class ImageRepoImpl implements ImageRepo {
   final cloudinary = CloudinaryPublic(
-    "dszqopqgg", // cloud name
-    "sharebridge", // ✅ MUST be upload preset (NOT folder name)
+    "dszqopqgg",
+    "sharebridge",
     cache: false,
   );
 

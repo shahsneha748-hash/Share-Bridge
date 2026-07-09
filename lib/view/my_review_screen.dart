@@ -122,7 +122,10 @@ class _ReviewsScreenState extends State<MyReviewsScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  review.reviewerName.isNotEmpty ? review.reviewerName : 'Anonymous',
+                    review.reviewerName.isNotEmpty
+                        ? review.reviewerName
+                        : "User",
+
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.darkText),
                 ),
               ),

@@ -15,7 +15,6 @@ class BrowseRepoImpl implements BrowseRepo {
       final items = await Future.wait(snapshot.docs.map((doc) async {
         final data = doc.data();
 
-        // ── Map Firestore fields to browse item fields ──────────
         final rawCategory = data['category']?.toString() ?? '';
         final category = _mapCategory(rawCategory);
 
@@ -27,7 +26,6 @@ class BrowseRepoImpl implements BrowseRepo {
         final status = data['status'] ?? 'available';
         final userId = data['userId'] ?? '';
 
-        // ── Look up donor info from users collection (keyed by uid) ──
         String donorName = 'Unknown';
         double donorRating = 0.0;
         int donorDonations = 0;
@@ -47,7 +45,7 @@ class BrowseRepoImpl implements BrowseRepo {
                   : 0;
             }
           } catch (e) {
-            // keep defaults if lookup fails
+
           }
         }
 
@@ -57,13 +55,14 @@ class BrowseRepoImpl implements BrowseRepo {
           'images': images,
           'image': images.isNotEmpty ? images[0] : null,
           'available': status == 'available',
-          // isDonated drives the Available/Taken badge on Item Detail
           'isDonated': status == 'claimed',
           'status': status,
           'acceptedAt': acceptedAt,
           'category': category,
           'location': data['location'] ?? '',
           'shortLocation': _shortLocation(data['location'] ?? ''),
+          'mapLat': data['mapLat'],
+          'mapLng': data['mapLng'],
           'description': data['description'] ?? '',
           'condition': data['condition'] ?? '',
           'weight': data['weight'] ?? '',
@@ -84,8 +83,6 @@ class BrowseRepoImpl implements BrowseRepo {
       return BrowseModel(allItems: items);
     });
   }
-
-  // Maps Firestore lowercase category to UI display category
   String _mapCategory(String raw) {
     switch (raw.toLowerCase()) {
       case 'food':
@@ -99,7 +96,6 @@ class BrowseRepoImpl implements BrowseRepo {
     }
   }
 
-  // Shortens location to first part before comma
   String _shortLocation(String location) {
     if (location.isEmpty) return '';
     return location.split(',').first.trim();

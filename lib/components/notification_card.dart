@@ -7,7 +7,6 @@ import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:provider/provider.dart';
 
-/// Single card widget
 class NotificationCard extends StatelessWidget {
   final NotificationModel notification;
   final NotificationType type;
@@ -48,12 +47,20 @@ class NotificationCard extends StatelessWidget {
         );
         break;
       case NotificationType.alert:
-        bgColor = const Color(0xFFF9DBDB); // medium soft pink
+        bgColor = const Color(0xFFF9DBDB);
         cardShape = RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: Color(0xFFE89B9B)),
         );
         cardElevation = 6;
+        break;
+      case NotificationType.normal_alert:
+        cardElevation = 5;
+        bgColor = Colors.white;
+        cardShape = RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Colors.grey),
+        );
         break;
       default:
         break;
@@ -105,7 +112,6 @@ class NotificationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
 
-                  // 🔑 Accept/Reject buttons for volunteer request
                   if (notification.type == NotificationType.volunteer_request)
                     Consumer<NotificationViewModel>(
                       builder: (context, vm, _) {
@@ -114,8 +120,8 @@ class NotificationCard extends StatelessWidget {
                         return Row(
                           children: [
                             ElevatedButton(
-                              onPressed: decision == VolunteerDecision.accepted
-                                  ? null // disable once accepted
+                              onPressed: decision == VolunteerDecision.request_accepted
+                                  ? null
                                   : () async {
                                 final success = await vm.acceptVolunteer(notification);
                                 if (success) {
@@ -131,13 +137,13 @@ class NotificationCard extends StatelessWidget {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: decision == VolunteerDecision.accepted
+                                backgroundColor: decision == VolunteerDecision.request_accepted
                                     ? Colors.green.shade700
                                     : Colors.green.shade400,
                                 foregroundColor: Colors.white,
                               ),
                               child: Text(
-                                decision == VolunteerDecision.accepted ? "Accepted" : "Accept",
+                                decision == VolunteerDecision.request_accepted ? "Accepted" : "Accept",
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -157,13 +163,13 @@ class NotificationCard extends StatelessWidget {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: decision == VolunteerDecision.rejected
+                                backgroundColor: decision == VolunteerDecision.request_rejected
                                     ? Colors.red.shade700
                                     : Colors.red.shade400,
                                 foregroundColor: Colors.white,
                               ),
                               child: Text(
-                                decision == VolunteerDecision.rejected ? "Rejected" : "Reject",
+                                decision == VolunteerDecision.request_rejected ? "Rejected" : "Reject",
                               ),
                             ),
                           ],
@@ -198,7 +204,6 @@ class NotificationCard extends StatelessWidget {
   }
 }
 
-/// List widget with grouping + vanish rules
 class NotificationList extends StatelessWidget {
   final List<NotificationCard> allCards;
 
@@ -270,10 +275,3 @@ class NotificationList extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-

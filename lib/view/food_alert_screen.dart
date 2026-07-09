@@ -7,7 +7,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/model/notification_model.dart';
 import 'package:sharebridge/service/notification_service.dart';
-import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 
 class FoodAlertScreen extends StatefulWidget {
@@ -81,13 +80,13 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
     final diff = now.difference(createdAt);
 
     if (diff.inMinutes < 60) {
-      return "${diff.inMinutes}m"; // minutes
+      return "${diff.inMinutes}m";
     } else if (diff.inHours < 24) {
-      return "${diff.inHours}h"; // hours
+      return "${diff.inHours}h";
     } else if (diff.inDays < 30) {
-      return "${diff.inDays}d"; // days
+      return "${diff.inDays}d";
     } else {
-      return "30d"; // cap at 30 days
+      return "30d";
     }
   }
 
@@ -114,7 +113,7 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                 ),
                 SizedBox(width: 10),
 
-                // Title
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
@@ -128,7 +127,6 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                   ),
                 ),
 
-                // Body
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                   child: TextFormField(
@@ -155,23 +153,20 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                     final vm = context.read<NotificationViewModel>();
                     final currentUid = FirebaseAuth.instance.currentUser!.uid;
 
-                    // 🔑 Sender = the one who clicked (requester)
                     final senderInfo = await vm.getUserById(currentUid);
                     final senderName = senderInfo.fullName;
                     final senderPic = senderInfo.profilePicture;
 
-                    // 🔑 Receiver = the post owner (donor)
                     final receiverId = "BmbWYHtwszNrTbRiVgRovbKeEZk2";
                     final receiverInfo = await vm.getUserById(receiverId);
 
-                    // Build notification model
                     final model = NotificationModel(
                       id: DateTime.now().millisecondsSinceEpoch.toString(),
                       body: BodyController.text.trim(),
-                      senderId: currentUid,        // requester UID
+                      senderId: currentUid,
                       senderName: senderName,
                       profilePicture: senderPic,
-                      receiverId: receiverId,      // donor UID
+                      receiverId: receiverId,
                       receiverName: receiverInfo.fullName,
                       createdAt: DateTime.now(),
                       isRead: false,
@@ -199,7 +194,6 @@ class _FoodAlertScreenState extends State<FoodAlertScreen> {
                   },
                   child: Text("Send Notification"),
                 )
-
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:sharebridge/components/saved_items_card.dart';
 
 class SavedItemsScreen extends StatefulWidget {
@@ -21,10 +22,13 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0XFF435944),
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0XFFF5F0E8),
         title: const Text(
           "Wishlist",
-          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -36,36 +40,50 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
+
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No saved items yet."));
+            return const Center(
+              child: Text("No saved items yet."),
+            );
           }
 
           final docs = snapshot.data!.docs;
 
-          // Filter by category
           final filteredItems = selectedCategory == "All"
               ? docs
-              : docs.where((d) => d["category"] == selectedCategory).toList();
+              : docs
+              .where(
+                (doc) =>
+            (doc.data() as Map<String, dynamic>)["category"] ==
+                selectedCategory,
+          )
+              .toList();
 
           return ListView(
             padding: const EdgeInsets.all(10),
             children: [
-              const Text("My Collection",
-                  style: TextStyle(
-                      color: Color(0XFF435944),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700)),
-              const Text("Items you have bookmarked for later.",
-                  style: TextStyle(
-                      color: Color(0XFF435944),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500)),
+              const Text(
+                "My Collection",
+                style: TextStyle(
+                  color: Color(0XFF435944),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Text(
+                "Items you have bookmarked for later.",
+                style: TextStyle(
+                  color: Color(0XFF435944),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 15),
 
-              // Filter buttons
-              // Replace your Row with this:
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -79,25 +97,30 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
 
-              // Saved items list
               if (filteredItems.isEmpty)
-                const Center(child: Text("No saved items in this category."))
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 30),
+                    child: Text(
+                      "No saved items in this category.",
+                    ),
+                  ),
+                )
               else
                 ...filteredItems.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
+                  data["id"] ??= doc.id;
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 15),
                     child: SavedItemCard(
-                      title: data["title"] ?? "",
-                      imagePath: data["image"] ?? "",
-                      miles: data["miles"] ?? "",
-                      addedTime: data["addedTime"] ?? "",
+                      item: data,
                       isBookmarked: true,
-                      onBookmarkToggle: (isBookmarked) {
+                      onBookmarkToggle: (isBookmarked) async {
                         if (!isBookmarked) {
-                          FirebaseFirestore.instance
+                          await FirebaseFirestore.instance
                               .collection("users")
                               .doc(uid)
                               .collection("saved_items")
@@ -116,13 +139,15 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
   }
 
   Widget buildFilterButton(String category) {
-    final bool isSelected = selectedCategory == category;
+    final isSelected = selectedCategory == category;
+
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-          isSelected ? const Color(0XFF435944) : const Color(0XFFf2ead3),
+          backgroundColor: isSelected
+              ? const Color(0XFF435944)
+              : const Color(0XFFF2EAD3),
           foregroundColor:
           isSelected ? Colors.white : const Color(0XFF435944),
           elevation: 5,
@@ -140,5 +165,4 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
     );
   }
 }
-
 

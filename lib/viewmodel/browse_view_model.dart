@@ -1,23 +1,42 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:sharebridge/model/browse_model.dart';
 import 'package:sharebridge/repo/browse_repo.dart';
+import 'package:sharebridge/repo/block_repo.dart';
 import 'package:sharebridge/view/item_data.dart';
 
 class BrowseViewModel extends ChangeNotifier {
   final BrowseRepo _repo;
+  final BlockRepo _blockRepo;
   BrowseModel _model = BrowseModel(allItems: []);
   StreamSubscription? _subscription;
+  List<String> _blockedUserIds = [];
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  BrowseViewModel(this._repo, {String? initialCategory}) {
+  double? _userLat;
+  double? _userLng;
+
+  BrowseViewModel(this._repo, this._blockRepo, {String? initialCategory}) {
     _listenToBrowseData();
+    _loadUserLocation();
+    _loadBlockedUsers();
     if (initialCategory != null) {
       _selectedCategory = initialCategory;
     }
   }
+
+  Future<void> _loadBlockedUsers() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    _blockedUserIds = await _blockRepo.getBlockedUserIds(uid);
+    notifyListeners();
+  }
+
+  Future<void> refreshBlockedUsers() => _loadBlockedUsers();
 
   void _listenToBrowseData() {
     _subscription = _repo.getBrowseData().listen(
@@ -34,18 +53,81 @@ class BrowseViewModel extends ChangeNotifier {
     );
   }
 
+  String? _locationError;
+  String? get locationError => _locationError;
+
+  bool get hasUserLocation => _userLat != null && _userLng != null;
+
+  Future<bool> _loadUserLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _locationError = 'service_disabled';
+        notifyListeners();
+        return false;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _locationError = 'permission_denied';
+        notifyListeners();
+        return false;
+      }
+
+      _locationError = null;
+
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        _userLat = lastKnown.latitude;
+        _userLng = lastKnown.longitude;
+        notifyListeners();
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 8),
+      );
+      _userLat = position.latitude;
+      _userLng = position.longitude;
+      notifyListeners();
+      return true;
+    } on TimeoutException {
+      debugPrint('Browse location: fresh GPS fix timed out, kept last-known.');
+      return hasUserLocation;
+    } catch (e) {
+      debugPrint('Browse location error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> ensureLocationForNearest() async {
+    if (hasUserLocation) return true;
+    return _loadUserLocation();
+  }
+
+  double? _distanceKmTo(Map<String, dynamic> item) {
+    if (_userLat == null || _userLng == null) return null;
+    final itemLat = (item['mapLat'] as num?)?.toDouble();
+    final itemLng = (item['mapLng'] as num?)?.toDouble();
+    if (itemLat == null || itemLng == null) return null;
+
+    final meters =
+    Geolocator.distanceBetween(_userLat!, _userLng!, itemLat, itemLng);
+    return meters / 1000;
+  }
+
   String _selectedCategory = 'All';
   String _sortBy = 'Newest';
   String _distanceFilter = 'Anywhere';
-  bool _availableOnly = false;
-  bool _todayOnly = false;
   String _searchQuery = '';
 
   String get selectedCategory => _selectedCategory;
   String get sortBy => _sortBy;
   String get distanceFilter => _distanceFilter;
-  bool get availableOnly => _availableOnly;
-  bool get todayOnly => _todayOnly;
   String get searchQuery => _searchQuery;
 
   void setCategory(String category) {
@@ -65,23 +147,8 @@ class BrowseViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleSortNearest() {
-    _sortBy = _sortBy == 'Nearest' ? 'Newest' : 'Nearest';
-    notifyListeners();
-  }
-
   void setSearchQuery(String query) {
     _searchQuery = query;
-    notifyListeners();
-  }
-
-  void toggleAvailableOnly() {
-    _availableOnly = !_availableOnly;
-    notifyListeners();
-  }
-
-  void toggleTodayOnly() {
-    _todayOnly = !_todayOnly;
     notifyListeners();
   }
 
@@ -95,12 +162,10 @@ class BrowseViewModel extends ChangeNotifier {
   void applyFilters({
     required String category,
     required String distance,
-    required bool available,
     required String sort,
   }) {
     _selectedCategory = category;
     _distanceFilter = distance;
-    _availableOnly = available;
     _sortBy = sort;
     notifyListeners();
   }
@@ -108,40 +173,39 @@ class BrowseViewModel extends ChangeNotifier {
   void resetFilters() {
     _selectedCategory = 'All';
     _distanceFilter = 'Anywhere';
-    _availableOnly = false;
     _sortBy = 'Newest';
     notifyListeners();
   }
 
-  List<Map<String, dynamic>> get filteredItems {
-    final now = DateTime.now();
+  double? _maxKmFor(String distanceLabel) {
+    switch (distanceLabel) {
+      case '1 km':
+        return 1.0;
+      case '5 km':
+        return 5.0;
+      default:
+        return null;
+    }
+  }
 
+  bool _isToday(DateTime? d) {
+    if (d == null) return false;
+    final today = DateTime.now();
+    return d.year == today.year && d.month == today.month && d.day == today.day;
+  }
+
+  List<Map<String, dynamic>> get filteredItems {
     var list = List<Map<String, dynamic>>.from(_model.allItems)
-    // ── 12-hour claimed-item grace period ───────────────────────
-    // Show item if:
-    // 1. It is still available
-    // 2. OR it was claimed less than 12 hours ago (still visible)
-    // Items claimed more than 12 hours ago are hidden from browse
-        .where((e) {
-      final status = e['status']?.toString() ?? 'available';
-      if (status == 'available') return true;
-      if (status == 'claimed') {
-        final acceptedAt = e['acceptedAt'] as DateTime?;
-        if (acceptedAt == null) return false;
-        return now.difference(acceptedAt).inHours < 12;
-      }
-      return false;
-    })
+        .where((e) => (e['status']?.toString() ?? 'available') == 'available')
+        .where((e) => !_blockedUserIds.contains(e['donorId']))
         .toList();
 
-    // ── Category filter ──────────────────────────────────────────
     if (_selectedCategory != 'All') {
       list = list
           .where((i) => i['category'] == _selectedCategory)
           .toList();
     }
 
-    // ── Search filter ────────────────────────────────────────────
     if (_searchQuery.isNotEmpty) {
       list = list.where((i) {
         return i['title']
@@ -151,25 +215,28 @@ class BrowseViewModel extends ChangeNotifier {
       }).toList();
     }
 
-    // ── Available only filter ────────────────────────────────────
-    if (_availableOnly) {
-      list = list.where((i) => i['status'] == 'available').toList();
-    }
-
-    // ── Today only filter ────────────────────────────────────────
-    if (_todayOnly) {
-      final today = DateTime.now();
+    final maxKm = _maxKmFor(_distanceFilter);
+    if (maxKm != null) {
       list = list.where((i) {
-        final createdAt = i['createdAt'] as DateTime?;
-        if (createdAt == null) return false;
-        return createdAt.year == today.year &&
-            createdAt.month == today.month &&
-            createdAt.day == today.day;
+        final d = _distanceKmTo(i);
+        if (d == null) return false;
+        return d <= maxKm;
       }).toList();
     }
 
-    // ── Sort ─────────────────────────────────────────────────────
-    if (_sortBy == 'Newest') {
+    if (_sortBy == 'Nearest') {
+      list.sort((a, b) {
+        final aD = _distanceKmTo(a);
+        final bD = _distanceKmTo(b);
+        if (aD == null && bD == null) return 0;
+        if (aD == null) return 1;
+        if (bD == null) return -1;
+        return aD.compareTo(bD);
+      });
+    } else if (_sortBy == 'Today') {
+      list = list
+          .where((i) => _isToday(i['createdAt'] as DateTime?))
+          .toList();
       list.sort((a, b) {
         final aDate = a['createdAt'] as DateTime?;
         final bDate = b['createdAt'] as DateTime?;
@@ -178,12 +245,14 @@ class BrowseViewModel extends ChangeNotifier {
         if (bDate == null) return -1;
         return bDate.compareTo(aDate);
       });
-    } else if (_sortBy == 'Available') {
+    } else {
       list.sort((a, b) {
-        final aAvail = a['status'] == 'available';
-        final bAvail = b['status'] == 'available';
-        if (aAvail == bAvail) return 0;
-        return aAvail ? -1 : 1;
+        final aDate = a['createdAt'] as DateTime?;
+        final bDate = b['createdAt'] as DateTime?;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return bDate.compareTo(aDate);
       });
     }
 
@@ -193,26 +262,39 @@ class BrowseViewModel extends ChangeNotifier {
   int previewCount({
     required String category,
     required String distance,
-    required bool available,
+    required String sort,
   }) {
-    var list = List<Map<String, dynamic>>.from(_model.allItems);
+    var list = List<Map<String, dynamic>>.from(_model.allItems)
+        .where((e) => (e['status']?.toString() ?? 'available') == 'available')
+        .where((e) => !_blockedUserIds.contains(e['donorId']))
+        .toList();
+
     if (category != 'All') {
       list = list.where((i) => i['category'] == category).toList();
     }
-    if (available) {
-      list = list.where((i) => i['status'] == 'available').toList();
+
+    final maxKm = _maxKmFor(distance);
+    if (maxKm != null) {
+      list = list.where((i) {
+        final d = _distanceKmTo(i);
+        if (d == null) return false;
+        return d <= maxKm;
+      }).toList();
     }
+
+    if (sort == 'Today') {
+      list = list
+          .where((i) => _isToday(i['createdAt'] as DateTime?))
+          .toList();
+    }
+
     return list.length;
   }
 
-  double _parseDistance(dynamic d) {
-    if (d == null) return 999;
-    final s = d.toString().replaceAll(RegExp(r'[^0-9.]'), '');
-    return double.tryParse(s) ?? 999;
-  }
-
-  void refresh() {
+  Future<void> refresh() async {
+    await _loadBlockedUsers();
     notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   @override

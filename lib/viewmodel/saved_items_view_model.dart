@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:sharebridge/model/saved_items_model.dart';
 import 'package:sharebridge/repo/saved_items_repo.dart';
@@ -59,5 +60,19 @@ class SavedItemViewModel extends ChangeNotifier {
     }
     notifyListeners();
   }
-}
 
+  Stream<List<String>> getSavedTitles() {
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("saved_items")
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => doc.data()["title"] as String)
+        .toList());
+  }
+
+  bool isSaved(String title, List<String> savedTitles) {
+    return savedTitles.contains(title);
+  }
+}

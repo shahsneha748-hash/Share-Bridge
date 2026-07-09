@@ -2,10 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-
 import 'package:sharebridge/constants/colors.dart'; // adjust path to match your project
 import 'package:sharebridge/viewmodel/my_profile_viewmodel.dart';
-
+import 'package:sharebridge/components/app_header.dart'; // adjust path to match your project
 import '../constants/colors.dart';
 import 'my_donation_screen.dart';
 import 'my_review_screen.dart';
@@ -13,14 +12,11 @@ import 'user_setting_screen.dart';
 
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
-
   @override
   State<MyProfileScreen> createState() => _MyProfileScreenState();
 }
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
-
-
   @override
   void initState() {
     super.initState();
@@ -33,17 +29,36 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   Widget build(BuildContext context) {
     final vm = context.watch<MyProfileViewModel>();
     final profile = vm.profile;
-
     return Scaffold(
       backgroundColor: AppColors.profileLight,
       body: SafeArea(
-        child: (vm.loading && profile == null)
-            ? const Center(child: CircularProgressIndicator(color: AppColors.profilePrimary))
-            : Column(
+        child: Column(
           children: [
-            _buildAppBar(),
+            AppHeader(
+              title: 'My Profile',
+              trailing: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UserSettingsScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ),
             Expanded(
-              child: RefreshIndicator(
+              child: (vm.loading && profile == null)
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.profilePrimary))
+                  : RefreshIndicator(
                 onRefresh: () => context.read<MyProfileViewModel>().fetchProfile(),
                 color: AppColors.profilePrimary,
                 child: SingleChildScrollView(
@@ -69,6 +84,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       ),
     );
   }
+
   Future<void> _showImageSourceSheet() async {
     await showModalBottomSheet(
       context: context,
@@ -107,11 +123,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source, imageQuality: 80);
     if (pickedFile == null) return;
-
     if (!mounted) return;
     context.read<MyProfileViewModel>().updateProfilePicture(pickedFile.path);
   }
-
 
   void _openFullScreenImage(String imageUrl) {
     Navigator.push(
@@ -153,50 +167,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     );
   }
 
-
-
-  // ─────────────────────────────────────────────────────────────
-  // APP BAR
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildAppBar() {
-    return Container(
-      color: AppColors.profilePrimary,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          const Text(
-            'My Profile',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UserSettingsScreen()),
-                );
-              },
-              icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // PROFILE HEADER
   Widget _buildProfileHeader(profile) {
     final name = (profile?.fullName.isNotEmpty ?? false) ? profile!.fullName : 'Guest User';
@@ -206,7 +176,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final hasPic = profile?.profilePicture != null && profile!.profilePicture!.isNotEmpty;
     final isVerified = profile?.isVerified ?? false;
     final memberSinceYear = profile?.memberSinceYear ?? DateTime.now().year;
-
     return Container(
       color: AppColors.profilePrimary,
       width: double.infinity,
@@ -326,7 +295,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   Widget _buildBioCard(profile) {
     final bio = profile?.bio ?? '';
     final hasBio = bio.trim().isNotEmpty;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Container(
@@ -345,7 +313,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top accent bar
             Container(
               height: 4,
               decoration: BoxDecoration(
@@ -361,13 +328,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header row
                   Row(
                     children: [
                       Icon(
@@ -386,25 +351,17 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
-
-                  // Bio content
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 200),
                     style: TextStyle(
                       fontSize: 13.5,
                       height: 1.5,
-                      color: hasBio
-                          ? AppColors.darkText
-                          : AppColors.textMuted,
-                      fontStyle:
-                      hasBio ? FontStyle.normal : FontStyle.italic,
+                      color: hasBio ? AppColors.darkText : AppColors.textMuted,
+                      fontStyle: hasBio ? FontStyle.normal : FontStyle.italic,
                     ),
                     child: Text(
-                      hasBio
-                          ? bio
-                          : "No bio yet. Tell people a bit about yourself ",
+                      hasBio ? bio : "No bio yet. Tell people a bit about yourself ",
                     ),
                   ),
                 ],
@@ -416,16 +373,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     );
   }
 
-
   // STATS ROW
   Widget _buildStatsRow(profile) {
     final totalDonations = profile?.totalDonations ?? 0;
     final stats = [
       {'label': 'Items Shared', 'value': '$totalDonations', 'icon': Icons.volunteer_activism},
-      {'label': 'Received',     'value': '0', 'icon': Icons.card_giftcard},
-      {'label': 'Wishlist',        'value': '0', 'icon': Icons.favorite_outline},
+      {'label': 'Received', 'value': '0', 'icon': Icons.card_giftcard},
+      {'label': 'Wishlist', 'value': '0', 'icon': Icons.favorite_outline},
     ];
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -474,7 +429,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final totalDonations = profile?.totalDonations ?? 0;
     const goal = 100;
     final progress = (totalDonations / goal).clamp(0.0, 1.0);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -528,7 +482,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   Widget _buildMenuSection(profile) {
     final totalDonations = profile?.totalDonations ?? 0;
     final rating = profile?.rating ?? 0;
-
     final sections = [
       {
         'title': 'Activity',
@@ -568,7 +521,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         ],
       },
     ];
-
     return Column(
       children: sections.map((section) {
         return Padding(
