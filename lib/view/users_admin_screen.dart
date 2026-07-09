@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodel/user_admin_viewmodel.dart';
 import '../model/user_admin_model.dart';
 import '../constants/colors.dart';
+import '../view/admin_user_detail_screen.dart';
 
 class UsersAdminScreen extends StatelessWidget {
   const UsersAdminScreen({super.key});
@@ -44,9 +45,23 @@ class _UsersBody extends StatelessWidget {
               itemCount: controller.filteredUsers.length,
               separatorBuilder: (_, __) =>
               const SizedBox(height: 10),
-              itemBuilder: (_, i) => _UserCard(
-                user: controller.filteredUsers[i],
-              ),
+              itemBuilder: (_, i) {
+                final user = controller.filteredUsers[i];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: controller,
+                          child: AdminUserDetailScreen(user: user),
+                        ),
+                      ),
+                    );
+                  },
+                  child: _UserCard(user: user),
+                );
+              },
             ),
           ),
         ],
@@ -54,7 +69,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── TOP BAR ────────────────────────────────────────────────────────────────
+  // Top bar
 
   Widget _buildTopBar(
       BuildContext context, UserAdminViewModel controller) {
@@ -319,7 +334,8 @@ class _UserCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ── Info ─────────────────────────────────────────────
+          // Info
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

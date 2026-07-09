@@ -1,7 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'admin_dashboard_view.dart';
-import '../viewmodel/admin_report_viewmodel.dart';
+import 'admin_user_detail_screen.dart';
 import '../constants/colors.dart';
+import '../model/user_admin_model.dart';
+import '../viewmodel/admin_report_viewmodel.dart';
+import '../viewmodel/user_admin_viewmodel.dart';
 
 class AdminReportScreen extends StatefulWidget {
   const AdminReportScreen({super.key});
