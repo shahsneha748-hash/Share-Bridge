@@ -1,14 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Checks the current user's donations for upcoming expiry dates
-/// and creates alert notifications (runs when notifications load).
-/// Uses deterministic doc IDs so the same alert is never duplicated.
 class ExpiryAlertService {
   static Future<void> checkAndCreateAlerts(String uid) async {
     final firestore = FirebaseFirestore.instance;
 
     try {
-      // Get this user's active donations
       final snapshot = await firestore
           .collection('donations')
           .where('donorId', isEqualTo: uid)
@@ -20,10 +16,10 @@ class ExpiryAlertService {
       for (final doc in snapshot.docs) {
         final data = doc.data();
 
-        // Skip taken/donated items
+
         if (data['isDonated'] == true) continue;
 
-        // Only items with an expiry date
+
         final expiryRaw = data['expiryDate'];
         if (expiryRaw == null || expiryRaw.toString().isEmpty) continue;
 
@@ -31,7 +27,7 @@ class ExpiryAlertService {
         try {
           expiry = DateTime.parse(expiryRaw.toString());
         } catch (_) {
-          continue; // unparseable date — skip
+          continue;
         }
         final expiryDay =
         DateTime(expiry.year, expiry.month, expiry.day);
@@ -64,7 +60,6 @@ class ExpiryAlertService {
 
         if (body == null || type == null) continue;
 
-        // Deterministic ID: one alert per donation per day — no duplicates
         final dateKey =
             '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
         final notifId = 'expiry_${doc.id}_$dateKey';
@@ -72,7 +67,6 @@ class ExpiryAlertService {
         final notifRef =
         firestore.collection('notifications').doc(notifId);
 
-        // Only create if it doesn't already exist
         final existing = await notifRef.get();
         if (existing.exists) continue;
 
@@ -98,8 +92,6 @@ class ExpiryAlertService {
         });
       }
     } catch (e) {
-      // Silent fail — alerts are non-critical
-      // ignore: avoid_print
       print('Expiry alert check failed: $e');
     }
   }

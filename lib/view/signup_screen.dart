@@ -89,7 +89,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 const SizedBox(height: 20),
 
 
-                                // Form fields
                                 _buildField(nameController, "Full Name"),
                                 _buildField(addressController, "Address"),
                                 _buildField(emailController, "Email", icon: Icons.email_outlined),
@@ -102,10 +101,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 }),
 
 
-                                const Spacer(), // 👈 pushes button to bottom
+                                const Spacer(),
 
 
-                                // Signup Button
                                 SizedBox(
                                   width: double.infinity,
                                   height: 57,
@@ -115,7 +113,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                       foregroundColor: Colors.white,
                                     ),
                                     onPressed: () async {
-                                      // Validation
                                       if (emailController.text.trim().isEmpty ||
                                           passwordController.text.trim().isEmpty ||
                                           confirmPasswordController.text.trim().isEmpty ||
@@ -203,7 +200,6 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
 
-  // Helpers
   Widget _buildField(TextEditingController controller, String hint, {IconData? icon}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -258,19 +254,3 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 }
-
-
-
-
-
-// ⚡ In short (summary of the "Create Account button clicked logic" code above):
-// Validate inputs → show toast if empty.
-//
-// Signup with FirebaseAuth → get uid.
-//
-// Create UserModel → store extra info.
-//
-// Save to Firestore → persist profile.
-//
-// Show toast + navigate → feedback + redirect.
-

@@ -5,7 +5,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sharebridge/view/dashboard_screen.dart';
-import 'package:sharebridge/view/homescreentest.dart';
 import 'package:sharebridge/view/navigation_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
 import 'package:sharebridge/view/forgot_password_screen.dart';
@@ -46,7 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Greeting
               Padding(
                 padding: const EdgeInsets.only(left: 30),
                 child: Column(
@@ -74,7 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               SizedBox(height: 30),
 
-              // Login form container
               Container(
                 width: 393,
                 height: 500,
@@ -104,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                        SizedBox(height: 20),
 
-                      // Email field
                       TextFormField(
                         controller: emailController,
                         decoration: InputDecoration(
@@ -138,7 +134,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 30),
 
-                      // Password field
                       TextFormField(
                         controller: passwordController,
                         obscureText: !visibility,
@@ -183,7 +178,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 10),
 
-                      // Forgot password link
                       Align(
                         alignment: Alignment.centerRight,
                         child: InkWell(
@@ -226,7 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             }
 
                             try {
-                              // 🔑 Step 1: Login with FirebaseAuth
                               await FirebaseAuth.instance.signInWithEmailAndPassword(
                                 email: email,
                                 password: password,
@@ -234,16 +227,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               Fluttertoast.showToast(msg: "Login successful");
 
-                              // 🔑 Step 2: Request notification permission
                               final settings = await FirebaseMessaging.instance.getNotificationSettings();
                               if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
                                 await FirebaseMessaging.instance.requestPermission();
                               }
 
-                              // 🔑 Step 3: Get the logged-in user's UID
                               final uid = FirebaseAuth.instance.currentUser!.uid;
 
-                              // 🔑 Step 4: Fetch user document from Firestore
                               final userDoc = await FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(uid)
@@ -251,7 +241,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               final role = userDoc.data()?['role'];
 
-                              // 🔑 Step 5: Get FCM token and save it
                               final token = await FirebaseMessaging.instance.getToken();
                               if (token != null) {
                                 await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -260,7 +249,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 }, SetOptions(merge: true));
                               }
 
-                              // 🔑 Step 6: Navigate based on role
                               if (role == 'admin') {
                                 Navigator.pushReplacement(
                                   context,
@@ -298,12 +286,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
 
-
-
-
                       SizedBox(height: 30),
 
-                      // Signup link
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

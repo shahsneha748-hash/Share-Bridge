@@ -44,7 +44,7 @@ class NotificationModel {
     required this.postId,
   });
 
-  /// Convert to Firestore map
+
   Map<String, dynamic> toMap() {
     return {
       "id": id,
@@ -68,7 +68,7 @@ class NotificationModel {
     };
   }
 
-  /// Convert from Firestore map
+
   factory NotificationModel.fromMap(Map<String, dynamic> map) {
     return NotificationModel(
       id: map["id"] ?? "",
@@ -95,7 +95,7 @@ class NotificationModel {
     );
   }
 
-  /// Helper to map Firestore string to enum
+
   static NotificationType _mapStringToType(String? type) {
     switch (type) {
       case 'request': return NotificationType.request;
@@ -109,7 +109,7 @@ class NotificationModel {
     }
   }
 
-  /// Copy with new values
+
   NotificationModel copyWith({
     String? id,
     String? senderId,
@@ -153,7 +153,3 @@ class NotificationModel {
     );
   }
 }
-
-
-
-// Note: Model = raw data only (like a database row).

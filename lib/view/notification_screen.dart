@@ -69,7 +69,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Section header
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
@@ -80,10 +79,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     ),
                   ),
                 ),
-                // Cards for this section
+
                 Column(
                   children: () {
-                    // For Urgent: show limited items unless expanded
                     var visibleItems = items;
                     final isUrgentSection = section == "Urgent";
                     if (isUrgentSection &&
@@ -105,7 +103,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               ),
                             );
                           }
-                          // alerts stay until midnight — no tap action
                         },
                         child: NotificationCard(
                           notification: n,
@@ -118,7 +115,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       );
                     }).toList();
 
-                    // See more / See less button for Urgent
                     if (isUrgentSection &&
                         items.length > _urgentCollapsedCount) {
                       cards.add(
@@ -142,7 +138,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ),
                       );
                     }
-
                     return cards;
                   }(),
                 ),
@@ -154,14 +149,3 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 }
-
-// Note: ⚡ Flow Recap
-// Model → defines notification data. (Eg: Model = raw data only (like a database row).)
-// Repo → fetches/saves notifications from Firestore. (Eg: repo = only defines what function exits with hiding implementation of functions. Eg: addUser, deleteUser, etc. so that MVVM architecture is clean)
-// ViewModel → manages state, exposes clean methods.
-// View → displays notifications, calls ViewModel methods.   (Eg: Notification Screen => Pure UI, listens to ViewModel via Provider.)
-// Note: ⚡ Flow Recap
-// Model → defines notification data. (Eg: Model = raw data only (like a database row).)
-// Repo → fetches/saves notifications from Firestore. (Eg: repo = only defines what function exits with hiding implementation of functions. Eg: addUser, deleteUser, etc. so that MVVM architecture is clean)
-// ViewModel → manages state, exposes clean methods.
-// View → displays notifications, calls ViewModel methods.   (Eg: Notification Screen => Pure UI, listens to ViewModel via Provider.)

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../constants/colors.dart';
 import '../repo/saved_items_repo_impl.dart';
 import '../view/donation_chat_screen.dart';
@@ -102,8 +101,6 @@ class SavedItemCard extends StatelessWidget {
         }
 
         final data = doc.data()!;
-
-        // Get donor information
         final userId = data["userId"] ?? "";
 
         String donorName = "Unknown";
@@ -206,83 +203,13 @@ class SavedItemCard extends StatelessWidget {
                       color: Color(0XFF414439),
                     ),
                     onPressed: () {
-                      // ✅ Just tell the parent to remove this card
                       onBookmarkToggle?.call(false);
-
-                      // Optionally also update BrowseViewModel if you want
                       context.read<BrowseViewModel>().toggleFavorite(title);
                     },
                   ),
 
                 ],
               ),
-
-              // Padding(
-              //   padding:
-              //   const EdgeInsets.symmetric(horizontal: 8),
-              //   child: Row(
-              //     children: [
-              //       const Icon(
-              //         Icons.location_on_outlined,
-              //         size: 18,
-              //         color: Color(0XFF435944),
-              //       ),
-              //       Text(
-              //         miles,
-              //         style: const TextStyle(
-              //           color: Color(0XFF435944),
-              //         ),
-              //       ),
-              //       const SizedBox(width: 20),
-              //       Text(
-              //         addedTime,
-              //         style: const TextStyle(
-              //           color: Color(0XFF435944),
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-
-              // Expanded(
-              //   child: ElevatedButton(
-              //     style: ElevatedButton.styleFrom(backgroundColor: const Color(0XFF435944),
-              //       foregroundColor: const Color(0XFFF5F0E8),),
-              //     onPressed: () {
-              //       Navigator.push(
-              //         context,
-              //         MaterialPageRoute(
-              //           builder: (_) => DonationChatScreen(
-              //             chatId:
-              //             "savedItem_${donorId}_${item["id"]}",
-              //             otherUserId: donorId,
-              //             otherUserName: donorName,
-              //             itemName: title,
-              //           ),
-              //         ),
-              //       );
-              //     },
-              //     child: Row(
-              //       mainAxisAlignment:
-              //       MainAxisAlignment.center,
-              //       children: const [
-              //         Icon(
-              //           Icons.chat_bubble_outline,
-              //           color: Color(0XFFF5F0E8),
-              //           size: 18,
-              //         ),
-              //         SizedBox(width: 6),
-              //         Text(
-              //           "Message",
-              //           style: TextStyle(
-              //             color: Color(0XFFF5F0E8),
-              //             fontWeight: FontWeight.bold,
-              //           ),
-              //         ),
-              //       ],
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         ),

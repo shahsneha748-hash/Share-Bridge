@@ -13,13 +13,11 @@ class NotificationRepoImpl implements NotificationRepo {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  /// Request Firebase Messaging permissions
   @override
   Future<NotificationSettings> requestPermission() {
     return messaging.requestPermission(alert: true, badge: true, sound: true);
   }
 
-  /// Save FCM token for current user
   Future<void> saveUserFcmToken() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -33,14 +31,12 @@ class NotificationRepoImpl implements NotificationRepo {
     }
   }
 
-  /// Get FCM token for a user
   @override
   Future<String?> getFcmToken(String uid) async {
     final doc = await firestore.collection("users").doc(uid).get();
     return doc.data()?["fcmToken"];
   }
 
-  /// Send push notification using FCM HTTP v1 API
   @override
   Future<bool> sendPushNotification({
     required String deviceToken,
@@ -77,7 +73,6 @@ class NotificationRepoImpl implements NotificationRepo {
     }
   }
 
-  /// Stream notifications for current user
   @override
   Stream<List<NotificationModel>> getNotifications(String uid) {
     return firestore
@@ -89,19 +84,18 @@ class NotificationRepoImpl implements NotificationRepo {
         snapshot.docs.map((doc) => NotificationModel.fromMap(doc.data())).toList());
   }
 
-  /// Add a new notification
   @override
   Future<bool> addNotification(NotificationModel model) async {
     try {
       await firestore.collection("notifications").doc(model.id).set({
         "id": model.id,
-        "receiverId": model.receiverId,   // ✅ must match the user who should see it
+        "receiverId": model.receiverId,
         "senderId": model.senderId,
         "senderName": model.senderName,
         "type": model.type.toString().split('.').last,
         "body": model.body,
         "createdAt": model.createdAt,
-        "isRead": model.isRead,           // ✅ must be false for new notifications
+        "isRead": model.isRead,
         "profilePicture": model.profilePicture,
       });
       return true;
@@ -111,7 +105,6 @@ class NotificationRepoImpl implements NotificationRepo {
   }
 
 
-  /// Get notifications by type
   @override
   Future<List<NotificationModel>> getNotificationsByType(String type) async {
     final snapshot = await firestore
@@ -122,7 +115,6 @@ class NotificationRepoImpl implements NotificationRepo {
     return snapshot.docs.map((doc) => NotificationModel.fromMap(doc.data())).toList();
   }
 
-  /// Get single notification by ID
   @override
   Future<NotificationModel> getNotificationById(String id) async {
     final doc = await firestore.collection("notifications").doc(id).get();
@@ -130,7 +122,6 @@ class NotificationRepoImpl implements NotificationRepo {
     return NotificationModel.fromMap(doc.data()!);
   }
 
-  /// Get notifications by userId
   @override
   Future<List<NotificationModel>> getNotificationsByUser(String userId) async {
     final snapshot = await firestore
@@ -141,19 +132,17 @@ class NotificationRepoImpl implements NotificationRepo {
     return snapshot.docs.map((doc) => NotificationModel.fromMap(doc.data())).toList();
   }
 
-  /// Edit notification
+
   @override
   Future<void> editNotification(NotificationModel notification) async {
     await firestore.collection("notifications").doc(notification.id).update(notification.toMap());
   }
 
-  /// Delete notification
   @override
   Future<void> deleteNotification(String id) async {
     await firestore.collection("notifications").doc(id).delete();
   }
 
-  /// Mark all notifications as read (batch update)
   @override
   Future<void> markAllAsRead(String userId) async {
     final query = await firestore
@@ -169,7 +158,6 @@ class NotificationRepoImpl implements NotificationRepo {
     await batch.commit();
   }
 
-  /// Send notification with FCM
   @override
   Future<bool> sendNotification(NotificationModel model) async {
     try {
@@ -192,7 +180,6 @@ class NotificationRepoImpl implements NotificationRepo {
     return doc.data()?['name'] ?? "Unknown User";
   }
 
-  /// Get all notifications safely
   @override
   Future<List<NotificationModel>> getAllNotifications() async {
     final snapshot = await firestore.collection("notifications").get();

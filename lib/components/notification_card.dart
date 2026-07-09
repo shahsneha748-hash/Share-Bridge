@@ -7,7 +7,6 @@ import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:provider/provider.dart';
 
-/// Single card widget
 class NotificationCard extends StatelessWidget {
   final NotificationModel notification;
   final NotificationType type;
@@ -48,7 +47,7 @@ class NotificationCard extends StatelessWidget {
         );
         break;
       case NotificationType.alert:
-        bgColor = const Color(0xFFF9DBDB); // medium soft pink
+        bgColor = const Color(0xFFF9DBDB);
         cardShape = RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: Color(0xFFE89B9B)),
@@ -113,7 +112,6 @@ class NotificationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
 
-                  // 🔑 Accept/Reject buttons for volunteer request
                   if (notification.type == NotificationType.volunteer_request)
                     Consumer<NotificationViewModel>(
                       builder: (context, vm, _) {
@@ -123,7 +121,7 @@ class NotificationCard extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: decision == VolunteerDecision.request_accepted
-                                  ? null // disable once accepted
+                                  ? null
                                   : () async {
                                 final success = await vm.acceptVolunteer(notification);
                                 if (success) {
@@ -206,7 +204,6 @@ class NotificationCard extends StatelessWidget {
   }
 }
 
-/// List widget with grouping + vanish rules
 class NotificationList extends StatelessWidget {
   final List<NotificationCard> allCards;
 
