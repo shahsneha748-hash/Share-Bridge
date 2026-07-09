@@ -12,9 +12,17 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
+class _NotificationScreenState extends State<NotificationScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   bool _urgentExpanded = false;
   static const int _urgentCollapsedCount = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +41,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
         ),
         backgroundColor: const Color(0XFF435944),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(35),
+          child: Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: Colors.grey, width: 1),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.black54,
+              tabs: const [
+                Tab(text: "All"),
+                Tab(text: "Requests"),
+              ],
+            ),
+          ),
+        ),
+
+
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -56,95 +87,120 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(right: 10, left: 10),
-        child: ListView.builder(
-          itemCount: sections.length,
-          itemBuilder: (context, sectionIndex) {
-            final section = sections[sectionIndex];
-            final items = grouped[section] ?? [];
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: ListView.builder(
+              itemCount: sections.length,
+              itemBuilder: (context, sectionIndex) {
+                final section = sections[sectionIndex];
+                final items = grouped[section] ?? [];
 
-            if (items.isEmpty) return const SizedBox.shrink();
+                if (items.isEmpty) return const SizedBox.shrink();
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    section,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                var visibleItems = items;
+                final isUrgentSection = section == "Urgent";
+                if (isUrgentSection &&
+                    !_urgentExpanded &&
+                    items.length > _urgentCollapsedCount) {
+                  visibleItems = items.take(_urgentCollapsedCount).toList();
+                }
+
+                final cards = visibleItems.map<Widget>((n) {
+                  return InkWell(
+                    onTap: () {
+                      if (n.type == NotificationType.request) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RequestSystemScreen(),
+                          ),
+                        );
+                      }
+                    },
+                    child: NotificationCard(
+                      notification: n,
+                      type: n.type,
+                      body: n.body ?? "",
+                      createdAt: n.createdAt,
+                      profilePicture: n.profilePicture ?? "",
+                      onMarkAsRead: () => vm.markAsRead(n.id),
                     ),
-                  ),
-                ),
+                  );
+                }).toList();
 
-                Column(
-                  children: () {
-                    var visibleItems = items;
-                    final isUrgentSection = section == "Urgent";
-                    if (isUrgentSection &&
-                        !_urgentExpanded &&
-                        items.length > _urgentCollapsedCount) {
-                      visibleItems =
-                          items.take(_urgentCollapsedCount).toList();
-                    }
-
-                    final cards = visibleItems.map<Widget>((n) {
-                      return InkWell(
-                        onTap: () {
-                          if (n.type == NotificationType.request) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                const RequestSystemScreen(),
-                              ),
-                            );
-                          }
+                if (isUrgentSection && items.length > _urgentCollapsedCount) {
+                  cards.add(
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() => _urgentExpanded = !_urgentExpanded);
                         },
-                        child: NotificationCard(
-                          notification: n,
-                          type: n.type,
-                          body: n.body ?? "",
-                          createdAt: n.createdAt,
-                          profilePicture: n.profilePicture ?? "",
-                          onMarkAsRead: () => vm.markAsRead(n.id),
-                        ),
-                      );
-                    }).toList();
-
-                    if (isUrgentSection &&
-                        items.length > _urgentCollapsedCount) {
-                      cards.add(
-                        Center(
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() =>
-                              _urgentExpanded = !_urgentExpanded);
-                            },
-                            child: Text(
-                              _urgentExpanded
-                                  ? 'See less ▲'
-                                  : 'See more (${items.length - _urgentCollapsedCount}) ▼',
-                              style: const TextStyle(
-                                color: Color(0xFF3A5C2E),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
+                        child: Text(
+                          _urgentExpanded
+                              ? 'See less ▲'
+                              : 'See more (${items.length - _urgentCollapsedCount}) ▼',
+                          style: const TextStyle(
+                            color: Color(0xFF3A5C2E),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
                         ),
-                      );
-                    }
-                    return cards;
-                  }(),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        section,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Column(children: cards),
+                  ],
+                );
+              },
+            ),
+          ),
+
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: ListView(
+              children: vm.notifications
+                  .where((n) => n.type == NotificationType.request)
+                  .map((n) => InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RequestSystemScreen(),
+                    ),
+                  );
+                },
+                child: NotificationCard(
+                  notification: n,
+                  type: n.type,
+                  body: n.body ?? "",
+                  createdAt: n.createdAt,
+                  profilePicture: n.profilePicture ?? "",
+                  onMarkAsRead: () => vm.markAsRead(n.id),
                 ),
-              ],
-            );
-          },
-        ),
+              ))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
