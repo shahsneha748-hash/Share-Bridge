@@ -12,6 +12,10 @@ import 'package:sharebridge/view/forgot_password_screen.dart';
 import 'package:sharebridge/viewmodel/user_view_model.dart';
 import 'package:sharebridge/view/admin_navigation_screen.dart';
 
+import '../repo/notification_repo.dart';
+import '../repo/user_repo.dart';
+import '../viewmodel/notification_view_model.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -265,8 +269,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               } else {
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const NavigationScreen()),
+                                  MaterialPageRoute(
+                                    builder: (_) => ChangeNotifierProvider(
+                                      create: (context) => NotificationViewModel(
+                                        repo: context.read<NotificationRepo>(),
+                                        userRepo: context.read<UserRepo>(),
+                                      ),
+                                      child: const NavigationScreen(),
+                                    ),
+                                  ),
                                 );
+
                               }
 
                             } on FirebaseAuthException catch (e) {

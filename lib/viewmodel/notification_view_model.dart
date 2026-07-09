@@ -4,13 +4,13 @@ import 'package:sharebridge/repo/user_repo.dart';
 import '../model/notification_model.dart';
 import '../model/user_model.dart';
 import '../repo/notification_repo.dart';
-import 'dart:async';
+import 'package:sharebridge/service/expiry_alert_service.dart';
 
 /// Tracks the decision state for volunteer requests
 enum VolunteerDecision {
   none,       // no action yet
-  accepted,   // accepted by donor
-  rejected,   // rejected by donor
+  request_accepted,   // accepted by donor
+  request_rejected,   // rejected by donor
 }
 
 class NotificationViewModel extends ChangeNotifier {
@@ -28,15 +28,13 @@ class NotificationViewModel extends ChangeNotifier {
     required UserRepo userRepo,
   })  : _repo = repo,
         _userRepo = userRepo {
-    // 👇 Listen to auth state changes (login/logout/reboot)
-    FirebaseAuth.instance.authStateChanges().listen((user) {
-      setUser(user);
-    });
-
-    // 👇 Also initialize immediately for the current user
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      _subscribeToNotifications(uid);
+      ExpiryAlertService.checkAndCreateAlerts(uid);
+      _repo.getNotifications(uid).listen((list) {
+        _notifications = list;
+        notifyListeners();
+      });
     }
   }
 
@@ -49,8 +47,6 @@ class NotificationViewModel extends ChangeNotifier {
 
   NotificationModel? _notification;
   NotificationModel? get notification => _notification;
-
-  StreamSubscription? _subscription;
 
   List<NotificationModel> _notifications = [];
   List<NotificationModel> get notifications => _notifications;
@@ -84,7 +80,7 @@ class NotificationViewModel extends ChangeNotifier {
 
       // vanish rules
       if (n.type == NotificationType.alert) {
-        if (age.inDays < 1) {
+        if (age.inDays < 1) {          // ← remove the && !n.isRead
           grouped["Urgent"]!.add(n);
         }
       } else {
@@ -111,23 +107,6 @@ class NotificationViewModel extends ChangeNotifier {
     return grouped;
   }
 
-  // ✅ Put timeAgo here, as a class method
-  String timeAgo(DateTime createdAt) {
-    final now = DateTime.now();
-    final difference = now.difference(createdAt);
-
-    if (difference.inDays >= 30) {
-      return "${createdAt.day} ${_monthName(createdAt.month)} ${createdAt.year}";
-    } else if (difference.inDays >= 1) {
-      return "${difference.inDays}d";
-    } else if (difference.inHours >= 1) {
-      return "${difference.inHours}h";
-    } else if (difference.inMinutes >= 1) {
-      return "${difference.inMinutes}m";
-    } else {
-      return "just now";
-    }
-  }
 
   String _monthName(int month) {
     const months = [
@@ -166,9 +145,9 @@ class NotificationViewModel extends ChangeNotifier {
         _notifications[index] = current.copyWith(
           type: newType,
           isRead: false,
-          body: newType == NotificationType.accepted
+          body: newType == NotificationType.request_accepted
               ? "Donor has accepted your donation request."
-              : newType == NotificationType.rejected
+              : newType == NotificationType.request_rejected
               ? "Donor has rejected your donation request."
               : current.body ?? "",
         );
@@ -304,6 +283,7 @@ class NotificationViewModel extends ChangeNotifier {
   Future<void> getAllNotifications() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
+      await ExpiryAlertService.checkAndCreateAlerts(uid);   // ← ADD
       await fetchNotificationsByUser(uid);
     }
   }
@@ -376,7 +356,7 @@ class NotificationViewModel extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       senderId: currentUid,
       senderName: senderInfo.fullName,
-      type: NotificationType.accepted,
+      type: NotificationType.request_accepted,
       body: "${senderInfo.fullName} has accepted your volunteering request for donation delivery.",
       createdAt: DateTime.now(),
       isRead: false,
@@ -385,7 +365,7 @@ class NotificationViewModel extends ChangeNotifier {
 
     final success = await sendNotification(acceptNotification);
     if (success) {
-      _decisions[notification.id] = VolunteerDecision.accepted;
+      _decisions[notification.id] = VolunteerDecision.request_accepted;
       notifyListeners();
     }
     return success; // 👈 return a bool
@@ -399,7 +379,7 @@ class NotificationViewModel extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       senderId: currentUid,
       senderName: senderInfo.fullName,
-      type: NotificationType.rejected,
+      type: NotificationType.request_rejected,
       body: "${senderInfo.fullName} has rejected your volunteering request for donation delivery.",
       createdAt: DateTime.now(),
       isRead: false,
@@ -408,38 +388,11 @@ class NotificationViewModel extends ChangeNotifier {
 
     final success = await sendNotification(rejectNotification);
     if (success) {
-      _decisions[notification.id] = VolunteerDecision.rejected;
+      _decisions[notification.id] = VolunteerDecision.request_rejected;
       notifyListeners();
     }
     return success; // 👈 return a bool
   }
 
-  void setUser(User? user) {
-    _subscription?.cancel(); // stop old listener
-    if (user != null) {
-      _subscribeToNotifications(user.uid);
-    } else {
-      _notifications = [];
-      notifyListeners();
-    }
-  }
-
-  void _subscribeToNotifications(String uid) {
-    _subscription?.cancel();
-    _subscription = _repo.getNotifications(uid).listen((list) {
-      _notifications = list;
-      notifyListeners();
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
 
 }
-
-
-
-

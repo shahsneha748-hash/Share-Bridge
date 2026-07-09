@@ -353,6 +353,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
               ),
             ),
             onPressed: () async {
+              print("Button pressed");  // 👈 check if this shows in console
               final notifVm = context.read<NotificationViewModel>();
               final currentUid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -370,7 +371,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                 receiverId: receiverId,
                 receiverName: receiverInfo.fullName,
                 type: NotificationType.request,
-                body: '${senderInfo.fullName} has requested for your donation',
+                body: '${senderInfo.fullName} has requested your donation',
                 createdAt: DateTime.now(),
                 isRead: false,
                 postId: vm.item['id'] ?? '',

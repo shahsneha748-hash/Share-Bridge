@@ -48,12 +48,20 @@ class NotificationCard extends StatelessWidget {
         );
         break;
       case NotificationType.alert:
-        bgColor = const Color(0xFFeed2d2);
+        bgColor = const Color(0xFFF9DBDB); // medium soft pink
         cardShape = RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFFe8a4a4)),
+          side: const BorderSide(color: Color(0xFFE89B9B)),
         );
         cardElevation = 6;
+        break;
+      case NotificationType.normal_alert:
+        cardElevation = 5;
+        bgColor = Colors.white;
+        cardShape = RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Colors.grey),
+        );
         break;
       default:
         break;
@@ -70,6 +78,16 @@ class NotificationCard extends StatelessWidget {
         return CircleAvatar(radius: 40, backgroundImage: FileImage(File(profilePicture)));
       }
       return CircleAvatar(radius: 40, backgroundImage: AssetImage(profilePicture));
+    }
+
+    String formatRelativeTime(DateTime createdAt) {
+      final now = DateTime.now();
+      final diff = now.difference(createdAt);
+
+      if (diff.inMinutes < 60) return "${diff.inMinutes}m";
+      if (diff.inHours < 24) return "${diff.inHours}h";
+      if (diff.inDays < 30) return "${diff.inDays}d";
+      return "30d";
     }
 
     return Card(
@@ -89,17 +107,10 @@ class NotificationCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(body),
-
-                  // ✅ Fixed timestamp using ViewModel
-                  Consumer<NotificationViewModel>(
-                    builder: (context, vm, _) {
-                      return Text(
-                        vm.timeAgo(notification.createdAt),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      );
-                    },
+                  Text(
+                    formatRelativeTime(createdAt),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-
                   const SizedBox(height: 5),
 
                   // 🔑 Accept/Reject buttons for volunteer request
@@ -107,11 +118,12 @@ class NotificationCard extends StatelessWidget {
                     Consumer<NotificationViewModel>(
                       builder: (context, vm, _) {
                         final decision = vm.getDecision(notification.id);
+
                         return Row(
                           children: [
                             ElevatedButton(
-                              onPressed: decision == VolunteerDecision.accepted
-                                  ? null
+                              onPressed: decision == VolunteerDecision.request_accepted
+                                  ? null // disable once accepted
                                   : () async {
                                 final success = await vm.acceptVolunteer(notification);
                                 if (success) {
@@ -127,13 +139,13 @@ class NotificationCard extends StatelessWidget {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: decision == VolunteerDecision.accepted
+                                backgroundColor: decision == VolunteerDecision.request_accepted
                                     ? Colors.green.shade700
                                     : Colors.green.shade400,
                                 foregroundColor: Colors.white,
                               ),
                               child: Text(
-                                decision == VolunteerDecision.accepted ? "Accepted" : "Accept",
+                                decision == VolunteerDecision.request_accepted ? "Accepted" : "Accept",
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -153,13 +165,13 @@ class NotificationCard extends StatelessWidget {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: decision == VolunteerDecision.rejected
+                                backgroundColor: decision == VolunteerDecision.request_rejected
                                     ? Colors.red.shade700
                                     : Colors.red.shade400,
                                 foregroundColor: Colors.white,
                               ),
                               child: Text(
-                                decision == VolunteerDecision.rejected ? "Rejected" : "Reject",
+                                decision == VolunteerDecision.request_rejected ? "Rejected" : "Reject",
                               ),
                             ),
                           ],
@@ -193,7 +205,6 @@ class NotificationCard extends StatelessWidget {
     );
   }
 }
-
 
 /// List widget with grouping + vanish rules
 class NotificationList extends StatelessWidget {
@@ -267,10 +278,3 @@ class NotificationList extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-

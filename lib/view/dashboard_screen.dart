@@ -11,6 +11,8 @@ import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/volunteer_intro_screen.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/utils/expiry_helper.dart';
+import '../repo/notification_repo_impl.dart';
+import '../repo/user_repo_impl.dart';
 import '../viewmodel/dashboard_view_model.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -90,7 +92,15 @@ class _DashboardView extends StatelessWidget {
   void _openNotifications(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (_) => NotificationViewModel(
+            repo: NotificationRepoImpl(),
+            userRepo: UserRepoImpl(),
+          ),
+          child: const NotificationScreen(),
+        ),
+      ),
     );
   }
 

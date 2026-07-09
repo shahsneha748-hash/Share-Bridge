@@ -17,7 +17,7 @@ abstract class NotificationRepo {
     required String serviceAccountPath,
   });
 
-  Stream<List<NotificationModel>> getNotifications(String userId);
+  Stream<List<NotificationModel>> getNotifications(String uid);
 
   // CRUD operations with Firestore
   Future<bool> addNotification(NotificationModel notification);
@@ -45,6 +45,8 @@ abstract class NotificationRepo {
   Future<void> markAsRead(String id);
 
   Future<void> updateType(String id, String typeString);
+
+
 }
 
 
