@@ -5,7 +5,7 @@ class RequestSystemModel {
   final String itemName;
   final String donorId;
   final String donorName;
-  final String donationId; // 👈 ADDED — links this request back to its donation
+  final String donationId;
   final String category;
   final String location;
   final String note;
@@ -13,13 +13,25 @@ class RequestSystemModel {
   final List<String> tags;
   final String status;
   final DateTime createdAt;
+  final String userId;
+  final String? donorProfilePicture;
+  final String userName;
+  final String? userProfilePicture;
+  final String receiverId;
+  final String receiverName;
+  final String receiverAddress;
+
+  final String weight;
+  final String portion;
+  final int portionCount;
+  final String receiverPhone;
 
   RequestSystemModel({
     required this.id,
     required this.itemName,
     required this.donorId,
     required this.donorName,
-    required this.donationId, // 👈 ADDED
+    required this.donationId,
     required this.category,
     required this.location,
     required this.note,
@@ -27,19 +39,32 @@ class RequestSystemModel {
     required this.tags,
     required this.status,
     required this.createdAt,
+    required this.userId,
+    required this.donorProfilePicture,
+    required this.userName,
+    this.userProfilePicture,
+    this.receiverId = '',
+    this.receiverName = '',
+    this.receiverAddress = '',
+    this.weight = '',
+    this.portion = '',
+    this.portionCount = 1,
+    this.receiverPhone = '',
   });
 
   factory RequestSystemModel.fromFirestore(
       Map<String, dynamic> data,
       String id, {
         String donorName = '',
+        String? userName,
+        String? userProfilePicture,
       }) {
     return RequestSystemModel(
       id: id,
       itemName: data['itemName'] ?? '',
       donorId: data['donorId'] ?? '',
       donorName: donorName,
-      donationId: data['donationId'] ?? '', // 👈 ADDED
+      donationId: data['donationId'] ?? '',
       category: data['category'] ?? '',
       location: data['location'] ?? '',
       note: data['note'] ?? '',
@@ -49,6 +74,21 @@ class RequestSystemModel {
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      userId: data['userId'] ?? '',
+      donorProfilePicture: data['donorProfilePicture'],
+      userName: (userName != null && userName.isNotEmpty)
+          ? userName
+          : (data['userName'] ?? 'Unknown'),
+      userProfilePicture: (userProfilePicture != null && userProfilePicture.isNotEmpty)
+          ? userProfilePicture
+          : data['userProfilePicture'],
+      receiverId: data['receiverId'] ?? '',
+      receiverName: data['receiverName'] ?? '',
+      receiverAddress: data['receiverAddress'] ?? '',
+      weight: data['weight'] ?? '',
+      portion: data['portion'] ?? '',
+      portionCount: data['portionCount'] ?? 1,
+      receiverPhone: data['receiverPhone'] ?? '',
     );
   }
 
@@ -56,7 +96,7 @@ class RequestSystemModel {
     return {
       'itemName': itemName,
       'donorId': donorId,
-      'donationId': donationId, // 👈 ADDED
+      'donationId': donationId,
       'category': category,
       'location': location,
       'note': note,
@@ -64,6 +104,17 @@ class RequestSystemModel {
       'tags': tags,
       'status': status,
       'createdAt': createdAt,
+      'userId': userId,
+      'donorProfilePicture': donorProfilePicture,
+      'userName': userName,
+      'userProfilePicture': userProfilePicture,
+      'receiverId': receiverId,
+      'receiverName': receiverName,
+      'receiverAddress': receiverAddress,
+      'weight': weight,
+      'portion': portion,
+      'portionCount': portionCount,
+      'receiverPhone': receiverPhone,
     };
   }
 
@@ -73,7 +124,7 @@ class RequestSystemModel {
       itemName: itemName,
       donorId: donorId,
       donorName: donorName,
-      donationId: donationId, // 👈 ADDED
+      donationId: donationId,
       category: category,
       location: location,
       note: note,
@@ -81,6 +132,17 @@ class RequestSystemModel {
       tags: tags,
       status: status ?? this.status,
       createdAt: createdAt,
+      userId: userId,
+      donorProfilePicture: donorProfilePicture,
+      userName: userName,
+      userProfilePicture: userProfilePicture,
+      receiverId: receiverId,
+      receiverName: receiverName,
+      receiverAddress: receiverAddress,
+      weight: weight,
+      portion: portion,
+      portionCount: portionCount,
+      receiverPhone: receiverPhone,
     );
   }
 }

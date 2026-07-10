@@ -185,6 +185,7 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
       routes: {

@@ -38,7 +38,6 @@ class SuccessScreen extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // 👇 SHOW REAL DATA
             Text(
               donation.itemName,
               style: const TextStyle(

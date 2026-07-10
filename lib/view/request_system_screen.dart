@@ -1,6 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:sharebridge/model/notification_model.dart';
+import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/user.dart';
+import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import '../constants/colors.dart';
 import '../model/request_system_model.dart';
 import '../utils/chat_helper.dart';
@@ -223,6 +228,8 @@ class _RequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.read<RequestSystemViewModel>();
+    final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final isDonor = currentUid == request.donorId;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -242,162 +249,257 @@ class _RequestCard extends StatelessWidget {
 
               GestureDetector(
                 onTap: () {
-                  // Profile screen will be connected by teammate later
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => UserProfileScreen(
+                        uid: request.donorId,
+                      ),
+                    ),
+                  );
                 },
-                child: _Avatar(name: request.donorName),
+                child: _Avatar(
+                  name: request.userName,
+                  imageUrl: request.userProfilePicture,
+                ),
               ),
+
+              const SizedBox(width: 12),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Text(
-                      request.itemName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      request.userName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
 
                     const SizedBox(height: 4),
 
                     Text(
-                      request.donorName,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMuted,
-                      ),
+                      request.itemName,
+                      style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                     ),
 
                     const SizedBox(height: 4),
 
                     Text(
                       "Category: ${request.category}",
-                      style: const TextStyle(
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(fontSize: 12),
                     ),
 
                     const SizedBox(height: 4),
 
                     Text(
                       "Location: ${request.location}",
-                      style: const TextStyle(
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(fontSize: 12),
                     ),
 
                     const SizedBox(height: 4),
 
                     Text(
                       _formatDate(request.createdAt),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                   ],
                 ),
               ),
 
-              // Show status only accepted/rejected
               if (request.status != 'pending')
                 _StatusPill(status: request.status),
-
             ],
           ),
 
 
           const SizedBox(height: 14),
 
+          if (isDonor)
+            Row(
+              children: [
 
-          Row(
-            children: [
+                // Pending
+                if (request.status == 'pending') ...[
 
-              // Pending
-              if (request.status == 'pending') ...[
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'Accept',
+                      icon: Icons.check,
+                      color: AppColors.darkGreen,
+                      bgColor: AppColors.paleGreen,
+                      onTap: () async {
+                        final requestVm = context.read<RequestSystemViewModel>();
+                        final notificationVm = context.read<NotificationViewModel>();
 
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Accept',
-                    icon: Icons.check,
-                    onTap: () =>
-                        vm.updateStatus(request.id, 'accepted'),
-                    color: AppColors.darkGreen,
-                    bgColor: AppColors.paleGreen,
+                        // Update request status
+                        await requestVm.updateStatus(request.id, 'accepted');
+                        final senderInfo =
+                        await notificationVm.getUserById(request.donorId);
+
+                        // Person who created the request
+                        final receiverInfo =
+                        await notificationVm.getUserById(request.userId);
+
+                        final model = NotificationModel(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          senderId: request.donorId,
+                          senderName: senderInfo.fullName,
+                          profilePicture: senderInfo.profilePicture,
+                          receiverId: request.userId,
+                          receiverName: receiverInfo.fullName,
+                          type: NotificationType.request_accepted,
+                          body:
+                          "${senderInfo.fullName} accepted your request.",
+                          createdAt: DateTime.now(),
+                          isRead: false,
+                          postId: request.id,
+                        );
+
+                        final success =
+                        await notificationVm.sendNotification(model);
+
+                        if (success) {
+                          await NotificationService.display(
+                            body: model.body,
+                            createdAt: model.createdAt,
+                            payload: "request_system_screen",
+                            buildContext: context,
+                          );
+
+                          Fluttertoast.showToast(
+                            msg: "Notification sent successfully",
+                          );
+                        } else {
+                          Fluttertoast.showToast(
+                            msg: "Failed to send notification",
+                          );
+                        }
+                      },
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
 
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Reject',
-                    icon: Icons.close,
-                    onTap: () =>
-                        vm.updateStatus(request.id, 'rejected'),
-                    color: AppColors.rejectedText,
-                    bgColor: AppColors.rejectedBg,
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'Reject',
+                      icon: Icons.close,
+                      color: AppColors.rejectedText,
+                      bgColor: AppColors.rejectedBg,
+                      onTap: () async {
+                        final requestVm = context.read<RequestSystemViewModel>();
+                        final notificationVm = context.read<NotificationViewModel>();
+
+                        await requestVm.updateStatus(request.id, 'rejected');
+
+                        // Sender = donor (the one who owns the donation)
+                        final senderInfo =
+                        await notificationVm.getUserById(request.donorId);
+
+                        // Receiver = requester
+                        final receiverInfo =
+                        await notificationVm.getUserById(request.userId);
+                        final model = NotificationModel(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          senderId: request.donorId,
+                          senderName: senderInfo.fullName,
+                          profilePicture: senderInfo.profilePicture,
+                          receiverId: request.userId,
+                          receiverName: receiverInfo.fullName,
+                          type: NotificationType.request_rejected,
+                          body:
+                          "${senderInfo.fullName} rejected your request.",
+                          createdAt: DateTime.now(),
+                          isRead: false,
+                          postId: request.id,
+                        );
+
+                        final success =
+                        await notificationVm.sendNotification(model);
+
+                        if (success) {
+                          await NotificationService.display(
+                            body: model.body,
+                            createdAt: model.createdAt,
+                            payload: "request_system_screen",
+                            buildContext: context,
+                          );
+
+                          Fluttertoast.showToast(
+                            msg: "Notification sent successfully",
+                          );
+                        } else {
+                          Fluttertoast.showToast(
+                            msg: "Failed to send notification",
+                          );
+                        }
+                      },
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
+                  _ChatIcon(request: request),
+                ],
+
+                // Accepted
+                if (request.status == 'accepted') ...[
+
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'Unaccept',
+                      icon: Icons.undo,
+                      onTap: () =>
+                          vm.updateStatus(request.id, 'pending'),
+                      color: AppColors.darkGreen,
+                      bgColor: AppColors.paleGreen,
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'Assign',
+                      icon: Icons.person_add,
+                      onTap: () {
+                        // Assign action later
+                      },
+                      color: AppColors.darkGreen,
+                      bgColor: AppColors.paleGreen,
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  _ChatIcon(request: request),
+
+                ],
+
+                // Rejected
+                if (request.status == 'rejected')
+
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'Unreject',
+                      icon: Icons.undo,
+                      onTap: () =>
+                          vm.updateStatus(request.id, 'pending'),
+                      color: AppColors.rejectedText,
+                      bgColor: AppColors.rejectedBg,
+                    ),
+                  ),
+
+              ],
+            )
+          else
+          // Requester's own view — just show a chat icon to follow up, no action buttons
+            Row(
+              children: [
                 _ChatIcon(request: request),
               ],
-
-              // Accepted
-              if (request.status == 'accepted') ...[
-
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Unaccept',
-                    icon: Icons.undo,
-                    onTap: () =>
-                        vm.updateStatus(request.id, 'pending'),
-                    color: AppColors.darkGreen,
-                    bgColor: AppColors.paleGreen,
-                  ),
-                ),
-
-                const SizedBox(width: 6),
-
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Assign',
-                    icon: Icons.person_add,
-                    onTap: () {
-                      // Assign action later
-                    },
-                    color: AppColors.darkGreen,
-                    bgColor: AppColors.paleGreen,
-                  ),
-                ),
-
-                const SizedBox(width: 6),
-
-                _ChatIcon(request: request),
-
-              ],
-
-              // Rejected
-               if (request.status == 'rejected')
-
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Unreject',
-                    icon: Icons.undo,
-                    onTap: () =>
-                        vm.updateStatus(request.id, 'pending'),
-                    color: AppColors.rejectedText,
-                    bgColor: AppColors.rejectedBg,
-                  ),
-                ),
-
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -413,7 +515,6 @@ class _RequestCard extends StatelessWidget {
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }
-
 // ─── Chat Icon ─────────────────────────────────────────────────────────────
 
 class _ChatIcon extends StatelessWidget {
@@ -508,22 +609,37 @@ class _ChatIcon extends StatelessWidget {
 
 class _Avatar extends StatelessWidget {
   final String name;
-  const _Avatar({required this.name});
+  final String? imageUrl;
+
+  const _Avatar({
+    required this.name,
+    this.imageUrl,
+  });
 
   String get initials {
-    final parts = name.trim().split(' ').where((w) => w.isNotEmpty).toList();
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
+    final parts = name.trim().split(' ');
+
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
     return CircleAvatar(
-      radius: 22,
+      radius: 24, // was 22
       backgroundColor: AppColors.darkGreen,
-      child: Text(initials,
-          style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+      backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
+          ? NetworkImage(imageUrl!)
+          : null,
+      child: imageUrl == null || imageUrl!.isEmpty
+          ? Text(
+        initials,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      )
+          : null,
     );
   }
 }
@@ -556,14 +672,12 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-// ─── Action Button ─────────────────────────────────────────────────────────
-
 class _ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  final Color color; // text + icon color
-  final Color? bgColor; // optional background color (pill style)
+  final Color color;
+  final Color? bgColor;
   const _ActionButton({
     required this.label,
     required this.icon,
@@ -574,24 +688,22 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: bgColor ?? AppColors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
-            ],
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: bgColor ?? AppColors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
+          ],
         ),
       ),
     );

@@ -61,7 +61,6 @@ class CreateDonationModel {
   })  : tags = tags ?? [],
         images = images ?? [];
 
-  // ================= FROM MAP =================
   factory CreateDonationModel.fromMap(Map<String, dynamic> map) {
     return CreateDonationModel(
       userId: map['userId'] ?? '',
@@ -95,7 +94,6 @@ class CreateDonationModel {
     );
   }
 
-  // ================= TO MAP =================
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -107,8 +105,7 @@ class CreateDonationModel {
       'mapLng': mapLng,
 
       'itemName': itemName,
-      // title mirrors itemName unless explicitly set — keeps ItemDetailScreen's
-      // item['title'] working without renaming everything.
+
       'title': title.isNotEmpty ? title : itemName,
 
       'description': description,
