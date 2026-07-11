@@ -102,7 +102,7 @@ class _VolunteerVerificationScreenState
             ),
           ),
 
-          // SCREEN CONTENT
+          // SCREEN CONTENT//
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),

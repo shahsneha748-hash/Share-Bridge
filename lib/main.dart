@@ -227,8 +227,6 @@ Future<void> main() async {
   );
 }
 
-//
-
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 
