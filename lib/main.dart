@@ -228,7 +228,7 @@ class MyHomePage extends StatelessWidget {
 
       routes: {
         '/login': (_) => const LoginScreen(),
-        '/home': (_) => const AdminNavigationScreen(),
+        '/home': (_) => const NavigationScreen(),
       },
       home: SplashScreen(),
     );
