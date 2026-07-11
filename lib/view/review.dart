@@ -87,7 +87,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Standard back indicator
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white), // Standard back indicator
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: false,               // Preserves normal left edge alignments next to the arrow

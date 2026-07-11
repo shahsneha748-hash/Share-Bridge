@@ -82,22 +82,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                     Row(
-                       children: [
-                         Text(
+                    Row(
+                      children: [
+                        Text(
                           "Login",
                           style: TextStyle(
                             color: Color(0XFF435944),
                             fontWeight: FontWeight.w600,
                             fontSize: 40,
                           ),
-                         ),
-                         SizedBox(width: 15),
-                         Image.asset('assets/images/loogo1.png', height: 70, width: 75),
-                       ],
-                     ),
+                        ),
+                        SizedBox(width: 15),
+                        Image.asset('assets/images/loogo1.png', height: 70, width: 75),
+                      ],
+                    ),
 
-                     SizedBox(height: 20),
+                    SizedBox(height: 20),
 
                     TextFormField(
                       controller: emailController,
@@ -223,8 +223,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               password: password,
                             );
 
-                            Fluttertoast.showToast(msg: "Login successful");
-
                             final settings = await FirebaseMessaging.instance.getNotificationSettings();
                             if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
                               await FirebaseMessaging.instance.requestPermission();
@@ -239,6 +237,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             final role = userDoc.data()?['role'];
 
+                            // Ban check
+                            final isBanned = userDoc.data()?['isBanned'] as bool? ?? false;
+
+                            if (isBanned) {
+                              await FirebaseAuth.instance.signOut();
+
+                              if (context.mounted) {
+                                Fluttertoast.showToast(
+                                  msg: "Your account has been restricted. Contact support.",
+                                );
+                              }
+                              return;
+                            }
+
+                            // Show success ONLY if user is not banned
+                            Fluttertoast.showToast(msg: "Login successful");
+
                             final token = await FirebaseMessaging.instance.getToken();
                             if (token != null) {
                               await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -250,7 +265,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (role == 'admin') {
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (_) => const AdminNavigationScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const AdminNavigationScreen(),
+                                ),
                               );
                             } else {
                               Navigator.pushReplacement(
@@ -265,7 +282,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               );
-
                             }
 
                           } on FirebaseAuthException catch (e) {
@@ -319,5 +335,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

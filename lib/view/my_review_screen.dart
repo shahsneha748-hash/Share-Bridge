@@ -25,36 +25,36 @@ class _ReviewsScreenState extends State<MyReviewsScreen> {
   Widget build(BuildContext context) {
     final vm = context.watch<ReviewViewModel>();
     return Scaffold(
-      backgroundColor: AppColors.backgroundGreen,
+      backgroundColor: AppColors.darkGreen, // 👈 matches dashboard
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              color: AppColors.darkGreen,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: AppColors.cream),
-                  ),
-                  const Expanded(child: AppHeader(title: 'Reviews')),
-                ],
-              ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.cream),
+                ),
+                const Expanded(child: AppHeader(title: 'Reviews')),
+              ],
             ),
             Expanded(
-              child: vm.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.darkGreen))
-                  : vm.reviews.isEmpty
-                  ? const Center(
-                child: Text('No reviews yet.', style: TextStyle(color: AppColors.textMuted)),
-              )
-                  : ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildSummaryCard(vm),
-                  const SizedBox(height: 16),
-                  ...vm.reviews.map(_buildReviewCard),
-                ],
+              child: Container(
+                color: Colors.white, // 👈 white content area, same as dashboard
+                child: vm.isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.darkGreen))
+                    : vm.reviews.isEmpty
+                    ? const Center(
+                  child: Text('No reviews yet.', style: TextStyle(color: AppColors.textMuted)),
+                )
+                    : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _buildSummaryCard(vm),
+                    const SizedBox(height: 16),
+                    ...vm.reviews.map(_buildReviewCard),
+                  ],
+                ),
               ),
             ),
           ],
@@ -62,6 +62,7 @@ class _ReviewsScreenState extends State<MyReviewsScreen> {
       ),
     );
   }
+
 
   Widget _buildSummaryCard(ReviewViewModel vm) {
     return Container(
