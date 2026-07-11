@@ -12,23 +12,21 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _NotificationScreenState extends State<NotificationScreen> {
+  String selectedCategory = "All";
   bool _urgentExpanded = false;
   static const int _urgentCollapsedCount = 2;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<NotificationViewModel>();
     final grouped = vm.groupNotifications();
     final sections = ["Urgent", "Today", "Yesterday"];
+
+    // Filter notifications based on category
+    final filtered = selectedCategory == "All"
+        ? vm.notifications
+        : vm.notifications.where((n) => n.type == NotificationType.request).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -41,29 +39,6 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
         ),
         backgroundColor: const Color(0XFF435944),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(35),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: Colors.grey, width: 1),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: Colors.black,
-              unselectedLabelColor: Colors.black54,
-              tabs: const [
-                Tab(text: "All"),
-                Tab(text: "Requests"),
-              ],
-            ),
-          ),
-        ),
-
-
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -77,7 +52,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 ),
               ),
               onPressed: () {
-                context.read<NotificationViewModel>().markAllAsRead();
+                vm.markAllAsRead();
               },
               child: const Text(
                 "Mark as Read",
@@ -87,121 +62,153 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: ListView(
+        padding: const EdgeInsets.all(10),
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: ListView.builder(
-              itemCount: sections.length,
-              itemBuilder: (context, sectionIndex) {
-                final section = sections[sectionIndex];
-                final items = grouped[section] ?? [];
 
-                if (items.isEmpty) return const SizedBox.shrink();
+          // Category filter buttons (same design as Saved Items)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                buildFilterButton("All"),
+                buildFilterButton("Requests"),
+              ],
+            ),
+          ),
 
-                var visibleItems = items;
-                final isUrgentSection = section == "Urgent";
-                if (isUrgentSection &&
-                    !_urgentExpanded &&
-                    items.length > _urgentCollapsedCount) {
-                  visibleItems = items.take(_urgentCollapsedCount).toList();
-                }
+          const SizedBox(height: 15),
 
-                final cards = visibleItems.map<Widget>((n) {
-                  return InkWell(
-                    onTap: () {
-                      if (n.type == NotificationType.request) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RequestSystemScreen(),
-                          ),
-                        );
-                      }
-                    },
-                    child: NotificationCard(
-                      notification: n,
-                      type: n.type,
-                      body: n.body ?? "",
-                      createdAt: n.createdAt,
-                      profilePicture: n.profilePicture ?? "",
-                      onMarkAsRead: () => vm.markAsRead(n.id),
-                    ),
-                  );
-                }).toList();
+          if (selectedCategory == "All")
+          // Show grouped sections (Urgent, Today, Yesterday)
+            ...sections.map((section) {
+              final items = grouped[section] ?? [];
+              if (items.isEmpty) return const SizedBox.shrink();
 
-                if (isUrgentSection && items.length > _urgentCollapsedCount) {
-                  cards.add(
-                    Center(
-                      child: TextButton(
-                        onPressed: () {
-                          setState(() => _urgentExpanded = !_urgentExpanded);
-                        },
-                        child: Text(
-                          _urgentExpanded
-                              ? 'See less ▲'
-                              : 'See more (${items.length - _urgentCollapsedCount}) ▼',
-                          style: const TextStyle(
-                            color: Color(0xFF3A5C2E),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+              var visibleItems = items;
+              final isUrgentSection = section == "Urgent";
+              if (isUrgentSection &&
+                  !_urgentExpanded &&
+                  items.length > _urgentCollapsedCount) {
+                visibleItems = items.take(_urgentCollapsedCount).toList();
+              }
+
+              final cards = visibleItems.map<Widget>((n) {
+                return InkWell(
+                  onTap: () {
+                    if (n.type == NotificationType.request) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RequestSystemScreen(),
                         ),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        section,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Column(children: cards),
-                  ],
+                      );
+                    }
+                  },
+                  child: NotificationCard(
+                    notification: n,
+                    type: n.type,
+                    body: n.body ?? "",
+                    createdAt: n.createdAt,
+                    profilePicture: n.profilePicture ?? "",
+                    onMarkAsRead: () => vm.markAsRead(n.id),
+                  ),
                 );
-              },
-            ),
-          ),
+              }).toList();
 
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: ListView(
-              children: vm.notifications
-                  .where((n) => n.type == NotificationType.request)
-                  .map((n) => InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RequestSystemScreen(),
+              if (isUrgentSection && items.length > _urgentCollapsedCount) {
+                cards.add(
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() => _urgentExpanded = !_urgentExpanded);
+                      },
+                      child: Text(
+                        _urgentExpanded
+                            ? 'See less ▲'
+                            : 'See more (${items.length - _urgentCollapsedCount}) ▼',
+                        style: const TextStyle(
+                          color: Color(0xFF3A5C2E),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
-                  );
-                },
-                child: NotificationCard(
-                  notification: n,
-                  type: n.type,
-                  body: n.body ?? "",
-                  createdAt: n.createdAt,
-                  profilePicture: n.profilePicture ?? "",
-                  onMarkAsRead: () => vm.markAsRead(n.id),
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      section,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Column(children: cards),
+                ],
+              );
+            })
+          else
+          // Show only Requests category
+            ...filtered.map((n) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 15),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RequestSystemScreen(),
+                      ),
+                    );
+                  },
+                  child: NotificationCard(
+                    notification: n,
+                    type: n.type,
+                    body: n.body ?? "",
+                    createdAt: n.createdAt,
+                    profilePicture: n.profilePicture ?? "",
+                    onMarkAsRead: () => vm.markAsRead(n.id),
+                  ),
                 ),
-              ))
-                  .toList(),
-            ),
-          ),
+              );
+            }),
         ],
       ),
     );
   }
+
+  Widget buildFilterButton(String category) {
+    final isSelected = selectedCategory == category;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+          isSelected ? const Color(0XFF435944) : const Color(0XFFF2EAD3),
+          foregroundColor:
+          isSelected ? Colors.white : const Color(0XFF435944),
+          elevation: 5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(40),
+          ),
+        ),
+        onPressed: () {
+          setState(() {
+            selectedCategory = category;
+          });
+        },
+        child: Text(category),
+      ),
+    );
+  }
 }
+

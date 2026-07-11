@@ -49,8 +49,6 @@ dependencies:
   flutter_dotenv: ^6.0.1
   app_settings: ^7.0.0
   path_provider: ^2.1.6
-  firebase_auth_mocks: ^0.15.2
-  fake_cloud_firestore: ^4.1.1
   firebase_storage_mocks: ^0.8.1
   firebase_storage: ^13.4.3
   intl: ^0.20.2
@@ -82,6 +80,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  fake_cloud_firestore: ^4.1.1
+  firebase_auth_mocks: ^0.15.2
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
