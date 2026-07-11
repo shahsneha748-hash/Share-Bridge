@@ -19,6 +19,14 @@ class DonatedItemsScreen extends StatelessWidget {
         iconTheme: const IconThemeData(
           color: Color(0xFFF5F0E8), // cream
         ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFFF5F0E8),
+            size: 20,
+          ),
+        ),
         title: const Text(
           "Delivery Tracking",
           style: TextStyle(

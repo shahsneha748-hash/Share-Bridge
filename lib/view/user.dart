@@ -15,7 +15,6 @@ import 'user_report_screen.dart';
 class UserProfileScreen extends StatefulWidget {
   final String uid;
   const UserProfileScreen({super.key, required this.uid});
-
   @override
   State<UserProfileScreen> createState() => _UserProfileScreenState();
 }
@@ -33,15 +32,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final vm = context.watch<OtherProfileViewModel>();
     final profile = vm.profile;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
-    value: const SystemUiOverlayStyle(
-    statusBarColor: AppColors.darkGreen,
-    statusBarIconBrightness: Brightness.light,
-    ),
-    child: Scaffold(
-    backgroundColor: AppColors.background,
-    body: (vm.loading && profile == null)
+      value: const SystemUiOverlayStyle(
+        statusBarColor: AppColors.darkGreen,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: (vm.loading && profile == null)
             ? const Center(
             child: CircularProgressIndicator(color: AppColors.primary))
             : (vm.error != null && profile == null)
@@ -56,22 +54,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 bottom: false,
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: AppColors.darkGreen,
-                          size: 20,
-                        ),
+                    // ---------- UPDATED BACK BUTTON (no circle) ----------
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.cream,
+                        size: 20,
                       ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
+                    // -------------------------------------------------------
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -96,7 +90,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
               ),
             ),
-
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () => context
@@ -170,7 +163,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   void _showMoreOptionsSheet(BuildContext context) {
     final vm = context.read<OtherProfileViewModel>();
     final isBlocked = vm.isBlocked;
-
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.white,
@@ -233,11 +225,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ],
       ),
     );
-
     if (confirmed != true || !mounted) return;
-
     final blockVM = context.read<BlockViewModel>();
-
     final success = isBlocked
         ? await blockVM.unblockUser(
       FirebaseAuth.instance.currentUser!.uid,
@@ -250,7 +239,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       profilePicture: context.read<OtherProfileViewModel>().profile?.profilePicture,
     );
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -303,7 +291,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // PROFILE HEADER — plain background, single accent color, no green block
   Widget _buildProfileHeader(profile) {
     final name =
     (profile?.fullName.isNotEmpty ?? false) ? profile!.fullName : 'User';
@@ -315,7 +302,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final isVerified = profile?.isVerified ?? false;
     final memberSinceYear = profile?.memberSinceYear ?? DateTime.now().year;
     final rating = (profile?.rating ?? 0) as num;
-
     return Column(
       children: [
         GestureDetector(
@@ -412,7 +398,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // BLOCKED BANNER — shown instead of the Message button once blocked
   Widget _buildBlockedBanner(OtherProfileViewModel vm) {
     return Container(
       width: double.infinity,
@@ -444,7 +429,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // CONTACT BAR
   Widget _buildContactBar(profile) {
     return SizedBox(
       width: double.infinity,
@@ -452,14 +436,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         onPressed: () {
           final currentUserId =
               FirebaseAuth.instance.currentUser!.uid;
-
           final otherUserId = widget.uid;
-
-          // Create same chat id for both users
           final chatId = currentUserId.compareTo(otherUserId) < 0
               ? '${currentUserId}_$otherUserId'
               : '${otherUserId}_$currentUserId';
-
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -530,7 +510,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // IMPACT CARD — light card, accent used only as a highlight, not a solid block
   Widget _buildImpactCard(profile) {
     final totalDonations = profile?.totalDonations ?? 0;
     const goal = 100;
@@ -585,8 +564,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // MENU — Donations & Reviews rows, no section header, reuses
-  // MyDonationsScreen/MyReviewsScreen with the *viewed* uid
   Widget _buildMenuSection(profile, {required bool isBlocked}) {
     final totalDonations = profile?.totalDonations ?? 0;
     final rating = profile?.rating ?? 0;
@@ -618,7 +595,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         },
       },
     ];
-
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBg,
@@ -683,4 +659,3 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 }
-
