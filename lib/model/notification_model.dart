@@ -1,6 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum NotificationType { request, pickup, alert, normal_alert, volunteer_request, request_accepted, request_rejected }
+enum NotificationType { request, pickup, alert, normal_alert, volunteer_request, request_accepted, request_rejected,
+  volunteer_accepted_delivery,
+  delivery_started,
+  delivery_confirmed,
+  volunteer_approved,
+  volunteer_rejected,
+  volunteer_suspended,
+}
 
 class NotificationModel {
   final String id;
@@ -105,6 +112,12 @@ class NotificationModel {
       case 'request_accepted': return NotificationType.request_accepted;
       case 'request_rejected': return NotificationType.request_rejected;
       case 'volunteer_request': return NotificationType.volunteer_request;
+      case 'volunteer_accepted_delivery': return NotificationType.volunteer_accepted_delivery;
+      case 'delivery_started': return NotificationType.delivery_started;
+      case 'delivery_confirmed': return NotificationType.delivery_confirmed;
+      case 'volunteer_approved': return NotificationType.volunteer_approved;
+      case 'volunteer_rejected': return NotificationType.volunteer_rejected;
+      case 'volunteer_suspended': return NotificationType.volunteer_suspended;
       default: return NotificationType.alert;
     }
   }

@@ -283,7 +283,6 @@ class _ReportCard extends StatelessWidget {
     }
   }
 
-  // Fetch the reported user and open their profile
   Future<void> _openReportedUserProfile(BuildContext context) async {
     if (report.reportedId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

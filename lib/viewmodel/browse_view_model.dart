@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sharebridge/model/browse_model.dart';
 import 'package:sharebridge/repo/browse_repo.dart';
 import 'package:sharebridge/repo/block_repo.dart';
-import 'package:sharebridge/view/item_data.dart';
+
 
 class BrowseViewModel extends ChangeNotifier {
   final BrowseRepo _repo;
@@ -14,21 +15,37 @@ class BrowseViewModel extends ChangeNotifier {
   StreamSubscription? _subscription;
   List<String> _blockedUserIds = [];
 
+
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+
   double? _userLat;
   double? _userLng;
+
+
+  // Firestore-backed favorites
+  final Set<String> _favoriteIds = {};
+  Set<String> get favoriteIds => _favoriteIds;
+
 
   BrowseViewModel(this._repo, this._blockRepo, {String? initialCategory}) {
     _listenToBrowseData();
     _loadUserLocation();
     _loadBlockedUsers();
+
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) listenToFavorites(uid);
+
+
     if (initialCategory != null) {
       _selectedCategory = initialCategory;
     }
   }
 
+
+  // Blocked users
   Future<void> _loadBlockedUsers() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -36,8 +53,11 @@ class BrowseViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+
   Future<void> refreshBlockedUsers() => _loadBlockedUsers();
 
+
+  // Browse data
   void _listenToBrowseData() {
     _subscription = _repo.getBrowseData().listen(
           (data) {
@@ -53,10 +73,14 @@ class BrowseViewModel extends ChangeNotifier {
     );
   }
 
+
+  //  Location
   String? _locationError;
   String? get locationError => _locationError;
 
+
   bool get hasUserLocation => _userLat != null && _userLng != null;
+
 
   Future<bool> _loadUserLocation() async {
     try {
@@ -66,6 +90,7 @@ class BrowseViewModel extends ChangeNotifier {
         notifyListeners();
         return false;
       }
+
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -78,7 +103,9 @@ class BrowseViewModel extends ChangeNotifier {
         return false;
       }
 
+
       _locationError = null;
+
 
       final lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null) {
@@ -86,6 +113,7 @@ class BrowseViewModel extends ChangeNotifier {
         _userLng = lastKnown.longitude;
         notifyListeners();
       }
+
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
@@ -96,7 +124,7 @@ class BrowseViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } on TimeoutException {
-      debugPrint('Browse location: fresh GPS fix timed out, kept last-known.');
+      debugPrint('Browse location: GPS timed out, kept last-known.');
       return hasUserLocation;
     } catch (e) {
       debugPrint('Browse location error: $e');
@@ -104,10 +132,12 @@ class BrowseViewModel extends ChangeNotifier {
     }
   }
 
+
   Future<bool> ensureLocationForNearest() async {
     if (hasUserLocation) return true;
     return _loadUserLocation();
   }
+
 
   double? _distanceKmTo(Map<String, dynamic> item) {
     if (_userLat == null || _userLng == null) return null;
@@ -115,25 +145,31 @@ class BrowseViewModel extends ChangeNotifier {
     final itemLng = (item['mapLng'] as num?)?.toDouble();
     if (itemLat == null || itemLng == null) return null;
 
+
     final meters =
     Geolocator.distanceBetween(_userLat!, _userLng!, itemLat, itemLng);
     return meters / 1000;
   }
 
+
+  // Filters
   String _selectedCategory = 'All';
   String _sortBy = 'Newest';
   String _distanceFilter = 'Anywhere';
   String _searchQuery = '';
+
 
   String get selectedCategory => _selectedCategory;
   String get sortBy => _sortBy;
   String get distanceFilter => _distanceFilter;
   String get searchQuery => _searchQuery;
 
+
   void setCategory(String category) {
     _selectedCategory = category;
     notifyListeners();
   }
+
 
   void updateInitialCategory(String? category) {
     if (category != null && category != _selectedCategory) {
@@ -142,22 +178,18 @@ class BrowseViewModel extends ChangeNotifier {
     }
   }
 
+
   void setSortBy(String sort) {
     _sortBy = sort;
     notifyListeners();
   }
+
 
   void setSearchQuery(String query) {
     _searchQuery = query;
     notifyListeners();
   }
 
-  void toggleFavorite(String title) {
-    Favorites.toggle(title);
-    notifyListeners();
-  }
-
-  bool isFavorite(String title) => Favorites.isFavorite(title);
 
   void applyFilters({
     required String category,
@@ -170,6 +202,7 @@ class BrowseViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+
   void resetFilters() {
     _selectedCategory = 'All';
     _distanceFilter = 'Anywhere';
@@ -177,6 +210,58 @@ class BrowseViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  //  Favorites (Firestore-backed)
+  void listenToFavorites(String uid) {
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("saved_items")
+        .snapshots()
+        .listen((snapshot) {
+      _favoriteIds
+        ..clear()
+        ..addAll(snapshot.docs.map((doc) => doc.id));
+      notifyListeners();
+    });
+  }
+
+
+  bool isFavorite(String id) => _favoriteIds.contains(id);
+
+
+  Future<void> toggleFavorite(Map<String, dynamic> item) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final id = item["id"] ?? item["title"];
+
+
+    if (!_favoriteIds.contains(id)) {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("saved_items")
+          .doc(id)
+          .set({
+        "id": id,
+        "title": item["title"] ?? "",
+        "image": item["image"] ?? "",
+        "category": item["category"] ?? "Others",
+        "miles": item["miles"] ?? "",
+        "addedTime": item["addedTime"] ?? "",
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+    } else {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .collection("saved_items")
+          .doc(id)
+          .delete();
+    }
+  }
+
+
+  // Filtering items
   double? _maxKmFor(String distanceLabel) {
     switch (distanceLabel) {
       case '1 km':
@@ -188,11 +273,13 @@ class BrowseViewModel extends ChangeNotifier {
     }
   }
 
+
   bool _isToday(DateTime? d) {
     if (d == null) return false;
     final today = DateTime.now();
     return d.year == today.year && d.month == today.month && d.day == today.day;
   }
+
 
   List<Map<String, dynamic>> get filteredItems {
     var list = List<Map<String, dynamic>>.from(_model.allItems)
@@ -200,11 +287,11 @@ class BrowseViewModel extends ChangeNotifier {
         .where((e) => !_blockedUserIds.contains(e['donorId']))
         .toList();
 
+
     if (_selectedCategory != 'All') {
-      list = list
-          .where((i) => i['category'] == _selectedCategory)
-          .toList();
+      list = list.where((i) => i['category'] == _selectedCategory).toList();
     }
+
 
     if (_searchQuery.isNotEmpty) {
       list = list.where((i) {
@@ -215,6 +302,7 @@ class BrowseViewModel extends ChangeNotifier {
       }).toList();
     }
 
+
     final maxKm = _maxKmFor(_distanceFilter);
     if (maxKm != null) {
       list = list.where((i) {
@@ -223,6 +311,7 @@ class BrowseViewModel extends ChangeNotifier {
         return d <= maxKm;
       }).toList();
     }
+
 
     if (_sortBy == 'Nearest') {
       list.sort((a, b) {
@@ -234,18 +323,7 @@ class BrowseViewModel extends ChangeNotifier {
         return aD.compareTo(bD);
       });
     } else if (_sortBy == 'Today') {
-      list = list
-          .where((i) => _isToday(i['createdAt'] as DateTime?))
-          .toList();
-      list.sort((a, b) {
-        final aDate = a['createdAt'] as DateTime?;
-        final bDate = b['createdAt'] as DateTime?;
-        if (aDate == null && bDate == null) return 0;
-        if (aDate == null) return 1;
-        if (bDate == null) return -1;
-        return bDate.compareTo(aDate);
-      });
-    } else {
+      list = list.where((i) => _isToday(i['createdAt'] as DateTime?)).toList();
       list.sort((a, b) {
         final aDate = a['createdAt'] as DateTime?;
         final bDate = b['createdAt'] as DateTime?;
@@ -256,8 +334,10 @@ class BrowseViewModel extends ChangeNotifier {
       });
     }
 
+
     return list;
   }
+
 
   int previewCount({
     required String category,
@@ -269,9 +349,11 @@ class BrowseViewModel extends ChangeNotifier {
         .where((e) => !_blockedUserIds.contains(e['donorId']))
         .toList();
 
+
     if (category != 'All') {
       list = list.where((i) => i['category'] == category).toList();
     }
+
 
     final maxKm = _maxKmFor(distance);
     if (maxKm != null) {
@@ -282,20 +364,22 @@ class BrowseViewModel extends ChangeNotifier {
       }).toList();
     }
 
+
     if (sort == 'Today') {
-      list = list
-          .where((i) => _isToday(i['createdAt'] as DateTime?))
-          .toList();
+      list = list.where((i) => _isToday(i['createdAt'] as DateTime?)).toList();
     }
+
 
     return list.length;
   }
+
 
   Future<void> refresh() async {
     await _loadBlockedUsers();
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 300));
   }
+
 
   @override
   void dispose() {

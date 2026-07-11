@@ -4,9 +4,7 @@ import '../constants/colors.dart';
 import '../viewmodel/admin_dashboard_viewmodel.dart';
 import 'stats_admin_screen.dart';
 
-/// Admin Dashboard — real Firestore data.
-/// [onNavigateToTab] lets overview cards switch the bottom-nav tab
-/// instead of pushing new screens (keeps swipe navigation working).
+
 class AdminDashboardScreen extends StatelessWidget {
   final void Function(int index)? onNavigateToTab;
 
@@ -30,6 +28,14 @@ class _DashboardBody extends StatelessWidget {
     if (onNavigateToTab != null) {
       onNavigateToTab!(index);
     }
+  }
+
+  // Time-based greeting
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning 👋';
+    if (hour < 17) return 'Good afternoon ☀️';
+    return 'Good evening 🌙';
   }
 
   @override
@@ -79,7 +85,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── TOP BAR ─────────────────────────────────────────────────────────────
+  // TOP BAR
 
   Widget _buildTopBar(BuildContext context) {
     return Container(
@@ -90,18 +96,19 @@ class _DashboardBody extends StatelessWidget {
         right: 16,
         bottom: 14,
       ),
-      child: const Row(
+      child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Good morning 👋',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  _greeting(),
+                  style:
+                  const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
-                SizedBox(height: 2),
-                Text(
+                const SizedBox(height: 2),
+                const Text(
                   'Admin Dashboard',
                   style: TextStyle(
                     color: Colors.white,
@@ -132,7 +139,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── OVERVIEW STAT GRID ───────────────────────────────────────────────────
+  // OVERVIEW STAT GRID
 
   Widget _buildStatGrid(
       BuildContext context, AdminDashboardViewModel vm) {
@@ -148,7 +155,7 @@ class _DashboardBody extends StatelessWidget {
               label: 'Total donations',
               sub: '+${vm.donationsToday} today',
               subColor: AppColors.successText,
-              onTap: () => _goToTab(context, 2), // Donations tab
+              onTap: () => _goToTab(context, 2),
             ),
             const SizedBox(width: 10),
             _statCard(
@@ -159,7 +166,7 @@ class _DashboardBody extends StatelessWidget {
               label: 'Active users',
               sub: '+${vm.newUsersToday} new',
               subColor: AppColors.successText,
-              onTap: () => _goToTab(context, 1), // Users tab
+              onTap: () => _goToTab(context, 1),
             ),
           ],
         ),
@@ -174,7 +181,7 @@ class _DashboardBody extends StatelessWidget {
               label: 'Available items',
               sub: 'live now',
               subColor: AppColors.textMuted,
-              onTap: () => _goToTab(context, 2), // Donations tab
+              onTap: () => _goToTab(context, 2),
             ),
             const SizedBox(width: 10),
             _statCard(
@@ -187,7 +194,7 @@ class _DashboardBody extends StatelessWidget {
               subColor: vm.pendingReports > 0
                   ? AppColors.dangerText
                   : AppColors.successText,
-              onTap: () => _goToTab(context, 3), // Reports tab
+              onTap: () => _goToTab(context, 3),
             ),
           ],
         ),
@@ -253,7 +260,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── QUICK ACTIONS ────────────────────────────────────────────────────────
+  // QUICK ACTIONS
 
   Widget _buildQuickActions(BuildContext context) {
     return Row(
@@ -318,7 +325,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── FLAGGED CONTENT (real pending reports) ───────────────────────────────
+  //  FLAGGED CONTENT (real pending reports)
 
   Widget _buildFlaggedSection(
       BuildContext context, AdminDashboardViewModel vm) {
@@ -374,9 +381,7 @@ class _DashboardBody extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    context
-                        .read<AdminDashboardViewModel>()
-                        .relativeTime(f.createdAt),
+                    vm.relativeTime(f.createdAt),
                     style: const TextStyle(
                         fontSize: 10, color: AppColors.textMuted),
                   ),
@@ -411,7 +416,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── CATEGORY CHART (real percentages) ────────────────────────────────────
+  //  CATEGORY CHART (real percentages)
 
   Widget _buildCategoryChart(AdminDashboardViewModel vm) {
     if (vm.categoryPercents.isEmpty) {
@@ -470,7 +475,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── TOP DONORS (real, aggregated) ────────────────────────────────────────
+  // TOP DONORS (real, aggregated)
 
   Widget _buildDonorLeaderboard(AdminDashboardViewModel vm) {
     if (vm.topDonors.isEmpty) {
@@ -532,7 +537,7 @@ class _DashboardBody extends StatelessWidget {
     );
   }
 
-  // ── RECENT ACTIVITY (real events) ────────────────────────────────────────
+  // RECENT ACTIVITY (real events)
 
   Widget _buildActivityFeed(AdminDashboardViewModel vm) {
     if (vm.activity.isEmpty) {
@@ -565,7 +570,7 @@ class _DashboardBody extends StatelessWidget {
                 style: const TextStyle(
                     fontSize: 12.5, color: AppColors.textDark)),
             subtitle: Text(
-                vm.relativeTime(a.time),
+              vm.relativeTime(a.time),
               style: const TextStyle(
                   fontSize: 10.5, color: AppColors.textMuted),
             ),

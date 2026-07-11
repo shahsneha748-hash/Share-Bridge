@@ -15,10 +15,10 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
 
-  // ── Form Key ─────────────────────────────────────────────────
+  // Form Key
   final _formKey = GlobalKey<FormState>();
 
-  // ── Controllers (start empty, filled once real data loads) ───
+  //  Controllers (start empty, filled once real data loads)
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -38,7 +38,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _loadProfile();
   }
 
-  // ── Load real data from Firestore, same doc profile screen uses ──
+  //Load real data from Firestore, same doc profile screen uses
   Future<void> _loadProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
@@ -77,7 +77,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // ── Dispose Controllers ──────────────────────────────────────
+  //  Dispose Controllers
   @override
   void dispose() {
     _nameController.dispose();
@@ -88,7 +88,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // ── Save Profile (writes straight to Firestore) ───────────────
+  // Save Profile (writes straight to Firestore)
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     if (_uid == null) return;
@@ -126,7 +126,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // ── Image picker: camera/gallery bottom sheet ─────────────────
+  //  Image picker: camera/gallery bottom sheet
   Future<void> _showImageSourceSheet() async {
     await showModalBottomSheet(
       context: context,
@@ -208,7 +208,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: AppColors.backgroundGreen,
       resizeToAvoidBottomInset: true,
 
-      // ── App Bar ───────────────────────────────────────────────
+      //  App Bar
       appBar: AppBar(
         backgroundColor: AppColors.darkGreen,
         elevation: 0,
@@ -234,7 +234,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
 
-      // ── Body ──────────────────────────────────────────────────
+      //  Body
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -242,7 +242,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             children: [
 
-              // ── Profile Card ────────────────────────────────
+              //Profile Card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(

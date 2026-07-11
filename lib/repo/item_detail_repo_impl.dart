@@ -32,11 +32,32 @@ class ItemDetailRepoImpl implements ItemDetailRepo {
     final donorId = item['donorId'] ?? '';
     final donorProfilePicture = await getDonorProfilePicture(donorId);
 
+    // Fetch the requester's own profile so we can save their name/address/phone
+    // onto the request — AssignVolunteerScreen and the tracking screens depend on these.
+    String receiverName = currentUser.displayName ?? '';
+    String receiverAddress = '';
+    String receiverPhone = '';
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUser.uid).get();
+      final userData = userDoc.data();
+      if (userData != null) {
+        receiverName = userData['fullName'] ?? userData['name'] ?? receiverName;
+        receiverAddress = userData['address'] ?? '';
+        receiverPhone = userData['phone'] ?? userData['phoneNumber'] ?? '';
+      }
+    } catch (_) {
+      // fall back to whatever defaults we already have
+    }
+
     await _firestore.collection('requests').add({
       'donorId': donorId,
       'donorName': item['donorName'] ?? '',
       'donorProfilePicture': donorProfilePicture ?? '',
       'userId': currentUser.uid,
+      'receiverId': currentUser.uid,   // 👈 ADDED — this is the field everything downstream reads
+      'receiverName': receiverName,    // 👈 ADDED
+      'receiverAddress': receiverAddress, // 👈 ADDED
+      'receiverPhone': receiverPhone,  // 👈 ADDED
       'donationId': item['id'] ?? '',
       'itemName': item['itemName'] ?? item['title'] ?? '',
       'category': item['category'] ?? '',

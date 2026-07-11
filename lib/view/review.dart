@@ -1,138 +1,99 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../model/review_model.dart';
 import '../viewmodel/other_profile_view_model.dart';
 import '../viewmodel/review_view_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 class RatingsReviewsPage extends StatefulWidget {
   final String donationId;
   final String targetUserId; // donor/volunteer id
   final String reviewType;
-
   const RatingsReviewsPage({
     super.key,
     required this.donationId,
     required this.targetUserId,
     required this.reviewType,
   });
-
   @override
   State<RatingsReviewsPage> createState() => _RatingsReviewsPageState();
 }
-
 class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
   int selectedFilter = 0;
   int selectedRating = 0;
-
   final TextEditingController reviewController = TextEditingController();
-
+  bool get _isVolunteer => widget.reviewType == 'volunteer';
+  String get _targetLabel => _isVolunteer ? 'volunteer' : 'donor';
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       if (!mounted) return;
-      context
-          .read<ReviewViewModel>()
-          .getReviewsForUser(widget.targetUserId);
-      context
-          .read<OtherProfileViewModel>()
-          .fetchProfile(widget.targetUserId);
-
+      context.read<ReviewViewModel>().getReviewsForUser(widget.targetUserId);
+      context.read<OtherProfileViewModel>().fetchProfile(widget.targetUserId);
     });
   }
-
   @override
   void dispose() {
     reviewController.dispose();
     super.dispose();
   }
-
   void submitReview(ReviewViewModel vm) async {
     final user = FirebaseAuth.instance.currentUser!;
-
     if (selectedRating == 0 || reviewController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please add rating and review")),
       );
       return;
     }
-
-    // Get current user's profile
-    final userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .get();
-
+    final userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
     final userData = userDoc.data();
-
     final userName = userData?['fullName'] ?? "User";
-
-
     final model = ReviewModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-
       donationId: widget.donationId,
       targetUserId: widget.targetUserId,
       reviewType: widget.reviewType,
-
       reviewerId: user.uid,
       reviewerName: userName,
-      reviewerInitials: userName.isNotEmpty
-          ? userName[0].toUpperCase()
-          : "U",
-
+      reviewerInitials: userName.isNotEmpty ? userName[0].toUpperCase() : "U",
       rating: selectedRating.toDouble(),
       review: reviewController.text,
-
       createdAt: DateTime.now(),
-
       likes: 0,
       liked: false,
     );
-
     await vm.addReview(model);
-
     if (!mounted) return;
-
-    setState(() {
-      selectedRating = 0;
-      reviewController.clear();
-    });
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Review submitted successfully")),
     );
+    await Future.delayed(const Duration(milliseconds: 700));
+    if (mounted) Navigator.pop(context);
   }
-
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ReviewViewModel>();
     final profileVM = context.watch<OtherProfileViewModel>();
-
     final profile = profileVM.profile;
-
     final filteredReviews = selectedFilter == 0
         ? vm.reviews
-        : vm.reviews
-        .where((r) => r.rating.toInt() == selectedFilter)
-        .toList();
-
+        : vm.reviews.where((r) => r.rating.toInt() == selectedFilter).toList();
     return Scaffold(
       backgroundColor: const Color(0xfff1f4ee),
       appBar: AppBar(
         backgroundColor: const Color(0xFF3A5C2E),
         elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // Standard back indicator
           onPressed: () => Navigator.pop(context),
         ),
-        centerTitle: true,
-        title: const Text(
-          "Ratings & Reviews",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        centerTitle: false,               // Preserves normal left edge alignments next to the arrow
+        title: Text(
+          _isVolunteer ? "Rate Volunteer" : "Rate Donor",
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -179,24 +140,46 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                     )
                         : null,
                   ),
-
                   const SizedBox(width: 15),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          profile?.fullName ?? "User",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade900,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                profile?.fullName ?? "User",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade900,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _isVolunteer ? Colors.blue.shade50 : Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _isVolunteer ? Colors.blue.shade200 : Colors.orange.shade200,
+                                ),
+                              ),
+                              child: Text(
+                                _isVolunteer ? 'Volunteer' : 'Donor',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isVolunteer ? Colors.blue.shade700 : Colors.orange.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-
                         const SizedBox(height: 6),
-
                         Text(
                           profile?.address ?? "Location not set",
                           style: TextStyle(
@@ -204,12 +187,10 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                             fontSize: 14,
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.volunteer_activism_outlined,
                               size: 16,
                               color: Colors.green,
@@ -230,11 +211,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 15),
-
-            const SizedBox(height: 15),
-
             // ── RATING SUMMARY ─────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(20),
@@ -290,9 +267,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
             // ── FILTER CHIPS ───────────────────────────────────────────
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -307,9 +282,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -319,25 +292,17 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 ),
                 Text(
                   "${filteredReviews.length}",
-                  style: const TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-
             const SizedBox(height: 15),
-
             vm.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
-              // ✅ Fixed: passes both review and vm
-              children: filteredReviews
-                  .map((review) => reviewCard(review, vm))
-                  .toList(),
+              children: filteredReviews.map((review) => reviewCard(review, vm)).toList(),
             ),
-
             const SizedBox(height: 25),
-
             // ── WRITE REVIEW ───────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
@@ -351,30 +316,25 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 children: [
                   const Text(
                     "Write a Review",
-                    style:
-                    TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   const SizedBox(height: 5),
-                  const Text(
-                    "Share your experience with this donor",
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    "Share your experience with this $_targetLabel",
+                    style: const TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
                       return GestureDetector(
-                        onTap: () =>
-                            setState(() => selectedRating = index + 1),
+                        onTap: () => setState(() => selectedRating = index + 1),
                         child: Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
                           child: Icon(
                             Icons.star,
                             size: 34,
-                            color: index < selectedRating
-                                ? Colors.orange
-                                : Colors.grey.shade300,
+                            color: index < selectedRating ? Colors.orange : Colors.grey.shade300,
                           ),
                         ),
                       );
@@ -385,7 +345,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                     controller: reviewController,
                     maxLines: 5,
                     decoration: InputDecoration(
-                      hintText: "Share your experience with this donor...",
+                      hintText: "Share your experience with this $_targetLabel...",
                       filled: true,
                       fillColor: const Color(0xfff3f5f2),
                       border: OutlineInputBorder(
@@ -399,7 +359,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () => submitReview(vm), // ✅ correct call
+                      onPressed: () => submitReview(vm),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(
@@ -408,8 +368,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                       ),
                       child: const Text(
                         "Submit Review",
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -421,13 +380,10 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
       ),
     );
   }
-
-  // Dynamic bar from real data
   Widget _buildRatingBar(ReviewViewModel vm, int star, Color color) {
     final total = vm.reviews.length;
     final count = vm.reviews.where((r) => r.rating.toInt() == star).length;
     final ratio = total == 0 ? 0.0 : count / total;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -451,7 +407,6 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
       ),
     );
   }
-
   Widget filterChip(String text, int value) {
     final selected = selectedFilter == value;
     return Padding(
@@ -460,8 +415,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
         onTap: () => setState(() => selectedFilter = value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: selected ? Colors.green : Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -478,7 +432,6 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
       ),
     );
   }
-
   Widget reviewCard(ReviewModel review, ReviewViewModel vm) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -497,12 +450,10 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 backgroundColor: Colors.green.shade100,
                 child: Text(
                   review.reviewerInitials,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                 ),
               ),
               const SizedBox(width: 10),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,7 +469,6 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   ],
                 ),
               ),
-
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -527,30 +477,23 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                 ),
                 child: Text(
                   "+${review.rating.toInt()}",
-                  style: const TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           Row(
             children: List.generate(
               5,
                   (index) => Icon(
                 Icons.star,
                 size: 16,
-                color: index < review.rating
-                    ? Colors.orange
-                    : Colors.grey.shade300,
+                color: index < review.rating ? Colors.orange : Colors.grey.shade300,
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -559,9 +502,7 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
             ),
             child: Text(review.review, style: const TextStyle(height: 1.5)),
           ),
-
           const SizedBox(height: 12),
-
           GestureDetector(
             onTap: () {
               vm.updateReview(
@@ -570,18 +511,12 @@ class _RatingsReviewsPageState extends State<RatingsReviewsPage> {
                   donationId: review.donationId,
                   targetUserId: review.targetUserId,
                   reviewType: review.reviewType,
-
-
-
                   reviewerId: review.reviewerId,
                   reviewerName: review.reviewerName,
                   reviewerInitials: review.reviewerInitials,
-
                   rating: review.rating,
                   review: review.review,
-
                   createdAt: review.createdAt,
-
                   likes: review.liked ? review.likes - 1 : review.likes + 1,
                   liked: !review.liked,
                 ),

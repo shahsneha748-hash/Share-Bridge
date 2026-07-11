@@ -60,7 +60,7 @@ class DonationChatScreen extends StatelessWidget {
     );
   }
 
-  // ── CALL ──────────────────────────────────────────────
+  // CALL
   Future<void> _makeCall(BuildContext context, String? phone) async {
     if (phone == null || phone.isEmpty) {
       _showSnackbar(context, "Phone number not available");
@@ -98,15 +98,18 @@ class DonationChatScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: const Color(0xFF7AB648),
-                        child: Text(
-                          otherUserName.isNotEmpty
-                              ? otherUserName[0].toUpperCase()
-                              : '?',
+                        backgroundImage: (vm.otherUserProfilePicture != null && vm.otherUserProfilePicture!.isNotEmpty)
+                            ? NetworkImage(vm.otherUserProfilePicture!)
+                            : null,
+                        child: (vm.otherUserProfilePicture == null || vm.otherUserProfilePicture!.isEmpty)
+                            ? Text(
+                          otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : '?',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
+                        )
+                            : null,
                       ),
                       const SizedBox(width: 10),
                       Expanded(

@@ -9,6 +9,21 @@ class CreateDonationRepoImpl implements CreateDonationRepository {
 
   CreateDonationRepoImpl(this.firestore);
 
+  @override
+  Future<bool> updateDonation(String donationId, CreateDonationModel model) async {
+    try {
+      await firestore.collection("donations").doc(donationId).update({
+        ...model.toMap(),
+        // donorId/donorName/userId/createdAt/status intentionally left untouched —
+        // editing a donation shouldn't change who posted it or when.
+      });
+      return true;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
 
   @override
   Future<bool> submitDonation(CreateDonationModel model) async {

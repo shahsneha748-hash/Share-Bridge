@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sharebridge/constants/colors.dart'; // adjust path to match your project
 import 'package:sharebridge/viewmodel/other_profile_view_model.dart';
 import '../components/app_header.dart';
+import '../components/volunteer_badge_section.dart';
 import '../viewmodel/block_view_model.dart';
 import 'donation_chat_screen.dart';
 import 'my_donation_screen.dart';
@@ -119,6 +120,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       const SizedBox(height: 12),
                       _buildImpactCard(profile),
                       const SizedBox(height: 12),
+                      if (!vm.isBlocked) ...[
+                        VolunteerBadgesSection(uid: widget.uid),
+                        const SizedBox(height: 12),
+                      ],
                       _buildMenuSection(profile, isBlocked: vm.isBlocked),
                     ],
                   ),
@@ -241,6 +246,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         : await blockVM.blockUser(
       FirebaseAuth.instance.currentUser!.uid,
       widget.uid,
+      fullName: context.read<OtherProfileViewModel>().profile?.fullName,
+      profilePicture: context.read<OtherProfileViewModel>().profile?.profilePicture,
     );
     if (!mounted) return;
 

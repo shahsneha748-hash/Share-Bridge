@@ -26,8 +26,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   @override
   void initState() {
     super.initState();
-    // Do NOT call _getCurrentLocation() here — map controller isn't
-    // attached yet. We wait for onMapReady instead.
+
   }
 
   @override
@@ -36,13 +35,13 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     super.dispose();
   }
 
-  // ── Called once FlutterMap has finished initializing ──
+  // Called once FlutterMap has finished initializing
   void _onMapReady() {
     _mapReady = true;
     _getCurrentLocation();
   }
 
-  // ── Get current GPS location ──
+  // Get current GPS location
   Future<void> _getCurrentLocation() async {
     if (!_mapReady) return;
 
@@ -90,14 +89,14 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     }
   }
 
-  // ── Move map camera ──
+  // Move map camera
   void _moveCamera(LatLng latLng) {
     if (!_mapReady) return;
     _mapController.move(latLng, 16);
     setState(() => _pickedLocation = latLng);
   }
 
-  // ── Reverse geocode: LatLng → address ──
+  //  Reverse geocode: LatLng → address
   Future<void> _getAddressFromLatLng(LatLng latLng) async {
     setState(() => _isFetchingAddress = true);
     try {
@@ -222,7 +221,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             ],
           ),
 
-          // ── Center Pin (fixed, map moves under it) ──
+          //  Center Pin (fixed, map moves under it)
           const Center(
             child: Padding(
               padding: EdgeInsets.only(bottom: 40),
@@ -230,7 +229,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             ),
           ),
 
-          // ── Search Bar ──
+          //  Search Bar
           Positioned(
             top: 12,
             left: 12,
@@ -264,7 +263,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             ),
           ),
 
-          // ── My Location Button ──
+          //  My Location Button
           Positioned(
             right: 12,
             bottom: 220, // raised higher so it can't overlap the card
@@ -279,7 +278,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             ),
           ),
 
-          // ── Loading overlay ──
+          //  Loading overlay
           if (_isLoading)
             Container(
               color: Colors.black.withValues(alpha: 0.2),

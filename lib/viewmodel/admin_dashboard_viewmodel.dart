@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-/// One activity feed entry
+// One activity feed entry
 class ActivityItem {
   final IconData icon;
   final String text;
@@ -10,7 +10,7 @@ class ActivityItem {
   ActivityItem({required this.icon, required this.text, required this.time});
 }
 
-/// One top donor entry
+// One top donor entry
 class TopDonor {
   final String name;
   final int items;
@@ -18,7 +18,7 @@ class TopDonor {
   TopDonor({required this.name, required this.items});
 }
 
-/// One flagged report entry
+// One flagged report entry
 class FlaggedItem {
   final String id;
   final String reason;
@@ -68,7 +68,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
 
-      // ── Donations ──
+      // Donations
       final donationsSnap =
       await _firestore.collection('donations').get();
       totalDonations = donationsSnap.docs.length;
@@ -131,7 +131,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
         ..sort((a, b) => b.items.compareTo(a.items));
       topDonors = donorList.take(3).toList();
 
-      // ── Users ──
+      // Users
       final usersSnap = await _firestore.collection('users').get();
       activeUsers = usersSnap.docs
           .where((d) => d.data()['status'] != 'banned')
@@ -153,7 +153,7 @@ class AdminDashboardViewModel extends ChangeNotifier {
         }
       }
 
-      // ── Reports ──
+      // Reports
       final reportsSnap = await _firestore.collection('reports').get();
       pendingReports = 0;
       flagged = [];

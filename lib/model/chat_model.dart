@@ -11,10 +11,12 @@ class ChatRoom {
   final bool isOnline;
   final List<String> mutedBy;
 
+
   // Computed for current user
   final String otherUserId;
   final String otherUserName;
   final String otherUserInitial;
+  final String otherUserProfilePicture;
 
   ChatRoom({
     required this.chatId,
@@ -29,20 +31,20 @@ class ChatRoom {
     required this.otherUserName,
     required this.otherUserInitial,
     required this.mutedBy,
+    this.otherUserProfilePicture = '',
   });
 
-  factory ChatRoom.fromMap(
-      Map<String, dynamic> map, String id, String currentUserId) {
+  factory ChatRoom.fromMap(Map<String, dynamic> map, String id, String currentUserId) {
     final participants = List<String>.from(map['participants'] ?? []);
-    final participantNames =
-    Map<String, String>.from(map['participantNames'] ?? {});
+    final participantNames = Map<String, String>.from(map['participantNames'] ?? {});
+    final participantPictures = Map<String, dynamic>.from(map['participantProfilePictures'] ?? {});  // 👈 ADD
 
-    // The other user = whoever in participants is NOT me
     final otherId = participants.firstWhere(
           (uid) => uid != currentUserId,
       orElse: () => '',
     );
     final otherName = participantNames[otherId] ?? 'Unknown';
+    final otherPicture = participantPictures[otherId]?.toString() ?? '';
 
     return ChatRoom(
       chatId: id,
@@ -59,6 +61,7 @@ class ChatRoom {
       otherUserName: otherName,
       otherUserInitial:
       otherName.isNotEmpty ? otherName[0].toUpperCase() : '?',
+      otherUserProfilePicture: otherPicture,
     );
   }
   bool isMutedBy(String userId) => mutedBy.contains(userId);

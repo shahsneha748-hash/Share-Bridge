@@ -61,34 +61,26 @@ class AdminVolunteerViewModel extends ChangeNotifier {
   /// notification structure (NotificationModel format).
   Future<void> _sendStatusNotification(
       String volunteerId, String status) async {
-    // Only notify for decisions, not other status changes
     String body;
     String type;
-
     switch (status) {
       case 'Approved':
-        body =
-        'Congratulations! Your volunteer application has been approved. You can now start volunteering.';
-        type = 'accepted';
+        body = 'Congratulations! Your volunteer application has been approved. You can now start volunteering.';
+        type = 'volunteer_approved';
         break;
       case 'Rejected':
-        body =
-        'Your volunteer application was not approved. Please review your details and re-apply.';
-        type = 'rejected';
+        body = 'Your volunteer application was not approved. Please review your details and re-apply.';
+        type = 'volunteer_rejected';
         break;
       case 'Suspended':
-        body =
-        'Your volunteer access has been suspended. Contact support for details.';
-        type = 'rejected';
+        body = 'Your volunteer access has been suspended. Contact support for details.';
+        type = 'volunteer_suspended';
         break;
       default:
-        return; // no notification for other statuses
+        return;
     }
-
     try {
-      final docRef =
-      FirebaseFirestore.instance.collection('notifications').doc();
-
+      final docRef = FirebaseFirestore.instance.collection('notifications').doc();
       await docRef.set({
         'id': docRef.id,
         'senderId': 'admin',
@@ -113,4 +105,5 @@ class AdminVolunteerViewModel extends ChangeNotifier {
       debugPrint('Error sending notification: $e');
     }
   }
+
 }

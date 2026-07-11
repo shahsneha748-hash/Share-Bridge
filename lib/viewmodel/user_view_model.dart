@@ -168,4 +168,3 @@ class UserViewModel extends ChangeNotifier {
 }
 
 
-// Note: Sabai get ma bool data type ani aru ma bool datatype use garnu parcha.

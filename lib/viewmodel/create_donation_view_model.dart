@@ -10,10 +10,22 @@ class CreateDonationViewModel extends ChangeNotifier {
   final CreateDonationRepository _repo;
   final ImageRepo _imageRepo;
 
+  String? _editingDonationId; // null = creating new, non-null = editing existing
+  bool get isEditing => _editingDonationId != null;
+
   CreateDonationViewModel(this._repo, this._imageRepo) {
     model.userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     model.donorId = FirebaseAuth.instance.currentUser?.uid ?? '';
   }
+
+  /// Call this right after construction to switch into edit mode,
+  /// pre-filling the form with an existing donation's data.
+  void loadForEdit(String donationId, Map<String, dynamic> existingData) {
+    _editingDonationId = donationId;
+    model = CreateDonationModel.fromMap(existingData);
+    notifyListeners();
+  }
+
 
   CreateDonationModel model = CreateDonationModel();
 
@@ -227,20 +239,21 @@ class CreateDonationViewModel extends ChangeNotifier {
   Future<bool> submit() async {
     loading = true;
     notifyListeners();
-
     bool success = false;
-
     try {
-      await _ensureDonorInfo(); // guarantees donor info is resolved before writing
-      success = await _repo.submitDonation(model);
+      if (isEditing) {
+        // Editing: keep original donor info, just save the edited fields.
+        success = await _repo.updateDonation(_editingDonationId!, model);
+      } else {
+        await _ensureDonorInfo();
+        success = await _repo.submitDonation(model);
+      }
     } catch (e) {
       debugPrint("Submit error: $e");
       success = false;
     }
-
     loading = false;
     notifyListeners();
-
     return success;
   }
 }

@@ -126,7 +126,7 @@ class _VolunteerVerificationScreenState
 
                   const SizedBox(height: 20),
 
-                  // ---------------- IDENTITY CARD ----------------
+                  // IDENTITY CARD
                   buildCard(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +216,7 @@ class _VolunteerVerificationScreenState
                     ),
                   ),
 
-                  // ---------------- DELIVERY CARD ----------------
+                  //  DELIVERY CARD
                   buildCard(
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +276,7 @@ class _VolunteerVerificationScreenState
                     ),
                   ),
 
-                  // ---------------- ADMIN NOTE ----------------
+                  //  ADMIN NOTE
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -298,7 +298,7 @@ class _VolunteerVerificationScreenState
 
                   const SizedBox(height: 10),
 
-                  // ---------------- CHECKBOX ----------------
+                  //  CHECKBOX
                   Row(
                     children: [
                       Checkbox(
@@ -319,7 +319,7 @@ class _VolunteerVerificationScreenState
 
                   const SizedBox(height: 10),
 
-                  // ---------------- SUBMIT ----------------
+                  //  SUBMIT
 
                   if (error != null)
                     Container(
@@ -391,12 +391,12 @@ class _VolunteerVerificationScreenState
                       ),
                     ),
                   ),
-                ], // closes inner Column's children
-              ), // closes inner Column
-            ), // closes SingleChildScrollView
-          ), // closes Expanded
-        ], // closes outer Column's children
-      ), // closes outer Column
-    ); // closes Scaffold
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -104,7 +104,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── SUMMARY ROW ────────────────────────────────────────────────────────────
+  // SUMMARY ROW
 
   Widget _buildSummaryRow(UserAdminViewModel controller) {
     return Padding(
@@ -146,7 +146,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── SEARCH BAR ─────────────────────────────────────────────────────────────
+  // SEARCH BAR
 
   Widget _buildSearchBar(
       BuildContext context, UserAdminViewModel controller) {
@@ -174,7 +174,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── FILTER ROW ─────────────────────────────────────────────────────────────
+  // FILTER ROW
 
   Widget _buildFilterRow(UserAdminViewModel controller) {
     final roleFilters = <String, UserRole?>{
@@ -298,7 +298,7 @@ class _UserCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          // ── Avatar ───────────────────────────────────────────
+          // Avatar
           Stack(
             children: [
               CircleAvatar(
@@ -406,7 +406,7 @@ class _UserCard extends StatelessWidget {
             ),
           ),
 
-          // ── Ban/Unban Button ──────────────────────────────────
+          // Ban/Unban Button
           const SizedBox(width: 8),
           Material(
             color: isBanned
@@ -452,7 +452,7 @@ class _UserCard extends StatelessWidget {
     );
   }
 
-  // ── CONFIRMATION DIALOG ───────────────────────────────────────────────────
+  // CONFIRMATION DIALOG
 
   void _confirmAction(BuildContext context,
       UserAdminViewModel controller, bool isBanned) {
@@ -525,7 +525,7 @@ class _UserCard extends StatelessWidget {
   }
 }
 
-// ── FILTER CHIP ───────────────────────────────────────────────────────────────
+// FILTER CHIP
 
 class _FilterChip extends StatelessWidget {
   final String label;

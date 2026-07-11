@@ -4,10 +4,7 @@ import 'package:sharebridge/model/profile_display_data.dart';
 import 'package:sharebridge/repo/block_repo.dart';
 import 'package:sharebridge/repo/profile_repo.dart';
 
-/// View-model for viewing *another* user's profile (read-only).
-/// Mirrors MyProfileViewModel but has no upload/edit capabilities,
-/// fetches by an explicit [uid] instead of the current user, and
-/// additionally tracks whether the current user has this profile blocked.
+
 class OtherProfileViewModel extends ChangeNotifier {
   final ProfileRepo _profileRepo;
   final BlockRepo _blockRepo;

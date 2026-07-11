@@ -8,6 +8,8 @@ import 'package:sharebridge/repo/block_repo_impl.dart';
 import 'package:sharebridge/repo/create_donation_repo.dart';
 import 'package:sharebridge/repo/create_donation_repo_impl.dart';
 import 'package:sharebridge/repo/create_donation_repo_impl.dart';
+import 'package:sharebridge/repo/donated_item_repo.dart';
+import 'package:sharebridge/repo/donated_tems_repo_impl.dart';
 import 'package:sharebridge/repo/image_repo.dart';
 import 'package:sharebridge/repo/image_repo_impl.dart';
 import 'package:sharebridge/repo/my_donation_repo_impl.dart';
@@ -15,6 +17,8 @@ import 'package:sharebridge/repo/notification_repo.dart';
 import 'package:sharebridge/repo/notification_repo_impl.dart';
 import 'package:sharebridge/repo/profile_repo.dart';
 import 'package:sharebridge/repo/profile_repo_impl.dart';
+import 'package:sharebridge/repo/received_item_repo.dart';
+import 'package:sharebridge/repo/received_item_repo_impl.dart';
 import 'package:sharebridge/repo/request_system_repo.dart';
 import 'package:sharebridge/repo/request_system_repo_impl.dart';
 import 'package:sharebridge/repo/review_repo_impl.dart';
@@ -29,6 +33,7 @@ import 'package:sharebridge/repo/volunteer_task_repo.dart';
 import 'package:sharebridge/repo/volunteer_task_repo_impl.dart';
 import 'package:sharebridge/service/notification_service.dart';
 import 'package:sharebridge/view/admin_navigation_screen.dart';
+import 'package:sharebridge/view/assign_volunteer_screen.dart';
 import 'package:sharebridge/view/chat_list_screen.dart';
 import 'package:sharebridge/view/confirmation_screen.dart';
 import 'package:sharebridge/view/create_donation_screen.dart';
@@ -38,18 +43,21 @@ import 'package:sharebridge/view/request_system_screen.dart';
 import 'package:sharebridge/view/splash_screen.dart';
 import 'package:sharebridge/view/user.dart';
 import 'package:sharebridge/view/user_profile.dart';
+import 'package:sharebridge/view/volunteer_home_screen.dart';
 import 'package:sharebridge/view/volunteer_intro_screen.dart';
+import 'package:sharebridge/view/volunteer_navigation_screen.dart';
 import 'package:sharebridge/view/volunteer_verification_screen.dart';
-import 'package:sharebridge/viewmodel/admin_dashboard_viewmodel.dart';
 import 'package:sharebridge/viewmodel/block_view_model.dart';
 import 'package:sharebridge/viewmodel/create_donation_view_model.dart';
 import 'package:sharebridge/view/login_screen.dart';
 import 'package:sharebridge/view/notification_screen.dart';
 import 'package:sharebridge/view/signup_screen.dart';
+import 'package:sharebridge/viewmodel/donated_items_viewmodel.dart';
 import 'package:sharebridge/viewmodel/my_donation_view_model.dart';
 import 'package:sharebridge/viewmodel/my_profile_viewmodel.dart';
 import 'package:sharebridge/viewmodel/notification_view_model.dart';
 import 'package:sharebridge/viewmodel/other_profile_view_model.dart';
+import 'package:sharebridge/viewmodel/received_items_viewmodel.dart';
 import 'package:sharebridge/viewmodel/request_system_view_model.dart';
 import 'package:sharebridge/viewmodel/review_view_model.dart';
 import 'package:sharebridge/viewmodel/saved_items_view_model.dart';
@@ -58,27 +66,25 @@ import 'package:sharebridge/viewmodel/volunteer_request_viewmodel.dart';
 import 'package:sharebridge/viewmodel/volunteer_task_viewmodel.dart';
 import 'package:sharebridge/viewmodel/volunteer_view_model.dart';
 import 'firebase_options.dart';
-import 'package:timezone/data/latest.dart' as tz;
-
-
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  tz.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.initialize(navigatorKey);
 
   runApp(
     MultiProvider(
       providers: [
+        // Register repos first
         Provider<UserRepo>(create: (_) => UserRepoImpl()),
         Provider<NotificationRepo>(create: (_) => NotificationRepoImpl()),
         Provider<SavedItemRepo>(create: (_) => SavedItemRepoImpl(firestore: FirebaseFirestore.instance)),
         Provider<ProfileRepo>(create: (_) => ProfileRepoImpl()),
         Provider<BlockRepo>(create: (_) => BlockRepoImpl()),
 
+        // Create Donation repos
         Provider<FirebaseFirestore>(create: (_) => FirebaseFirestore.instance),
         Provider<CreateDonationRepository>(
           create: (context) =>
@@ -86,10 +92,12 @@ Future<void> main() async {
         ),
         Provider<ImageRepo>(create: (_) => ImageRepoImpl()),
 
+        // Request System repo
         Provider<RequestSystemRepo>(
           create: (_) => RequestSystemRepoImpl(),
         ),
 
+        // ViewModels depend on repos
         ChangeNotifierProvider(
           create: (context) => UserViewModel(
             userRepo: context.read<UserRepo>(),
@@ -109,6 +117,7 @@ Future<void> main() async {
           ),
         ),
 
+        // Create Donation ViewModel
         ChangeNotifierProvider(
           create: (context) => CreateDonationViewModel(
             context.read<CreateDonationRepository>(),
@@ -116,6 +125,7 @@ Future<void> main() async {
           ),
         ),
 
+        // Request System ViewModel
         ChangeNotifierProvider(
           create: (context) => RequestSystemViewModel(
             repository: context.read<RequestSystemRepo>(),
@@ -126,6 +136,19 @@ Future<void> main() async {
           create: (_) => VolunteerRepoImpl(),
         ),
 
+        Provider<VolunteerTaskRepo>(
+          create: (_) => VolunteerTaskRepoImpl(
+            firestore: FirebaseFirestore.instance,
+            notificationRepo: NotificationRepoImpl(),
+          ),
+        ),
+
+
+        ChangeNotifierProvider(
+          create: (context) => VolunteerTaskViewModel(
+            repo: context.read<VolunteerTaskRepo>(),
+          ),
+        ),
 
         ChangeNotifierProvider(
           create: (_) => VolunteerViewModel(
@@ -153,11 +176,8 @@ Future<void> main() async {
           create: (context) => OtherProfileViewModel(
             profileRepo: context.read<ProfileRepo>(),
             blockRepo: context.read<BlockRepo>(),
-          ),
-        ),
 
-        ChangeNotifierProvider(
-          create: (_) => AdminDashboardViewModel(),
+          ),
         ),
 
         ChangeNotifierProvider(
@@ -168,11 +188,29 @@ Future<void> main() async {
 
         ChangeNotifierProvider(
           create: (_) => VolunteerRequestViewModel(
-            VolunteerRequestRepoImpl(),
+            VolunteerRequestRepoImpl(
+              notificationRepo: NotificationRepoImpl(),
+            ),
           ),
         ),
 
+        Provider<ReceivedItemsRepo>(
+          create: (_) => ReceivedItemsRepoImpl(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => ReceivedItemsViewModel(
+            repo: context.read<ReceivedItemsRepo>(),
+          ),
+        ),
 
+        Provider<DonatedItemsRepo>(
+          create: (_) => DonatedItemsRepoImpl(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => DonatedItemsViewModel(
+            repo: context.read<DonatedItemsRepo>(),
+          ),
+        ),
       ],
       child: const MyHomePage(),
     ),
@@ -185,16 +223,14 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey,
       title: "Share-Bridge",
       debugShowCheckedModeBanner: false,
+
       routes: {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const AdminNavigationScreen(),
       },
-      home: LoginScreen(),
-
+      home: SplashScreen(),
     );
-
   }
 }
