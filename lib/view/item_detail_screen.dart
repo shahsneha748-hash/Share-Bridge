@@ -462,18 +462,12 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                       horizontal: 16, vertical: 14),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
-                            color: AppColors.cream,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.arrow_back,
-                              color: AppColors.darkGreen, size: 20),
-                        ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: AppColors.cream, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                       const SizedBox(width: 14),
                       const Expanded(
@@ -481,7 +475,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                           'Item Detail',
                           style: TextStyle(
                               color: AppColors.cream,
-                              fontSize: 20,
+                              fontSize: 25,
                               fontWeight: FontWeight.bold),
                         ),
                       ),

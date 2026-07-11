@@ -80,7 +80,7 @@ class _VolunteerVerificationScreenState
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.arrow_back,
+                        Icons.arrow_back_ios_new_rounded,
                         color: Color(0xFF3A5C2E),
                         size: 20,
                       ),

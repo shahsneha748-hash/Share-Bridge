@@ -110,6 +110,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
         iconTheme: const IconThemeData(
           color: AppColors.cream,
         ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.cream,
+            size: 20,
+          ),
+        ),
         title: const Text(
           "Notifications",
           style: TextStyle(

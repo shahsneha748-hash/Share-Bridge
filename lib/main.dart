@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sharebridge/repo/block_repo.dart';
 import 'package:sharebridge/repo/block_repo_impl.dart';
@@ -71,6 +72,15 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+
+  // 👇 ADD THESE 6 LINES RIGHT HERE, BEFORE Firebase.initializeApp
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.initialize(navigatorKey);
 
@@ -228,7 +238,7 @@ class MyHomePage extends StatelessWidget {
 
       routes: {
         '/login': (_) => const LoginScreen(),
-        '/home': (_) => const AdminNavigationScreen(),
+        '/home': (_) => const NavigationScreen(),
       },
       home: SplashScreen(),
     );

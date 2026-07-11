@@ -78,7 +78,7 @@ class _TopBar extends StatelessWidget {
                 color: AppColors.cream,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back, color: AppColors.darkGreen, size: 20),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.darkGreen, size: 20),
             ),
           ),
           const SizedBox(width: 14),
