@@ -109,6 +109,8 @@ class UserReportViewModel extends ChangeNotifier {
       usersList = snapshot.docs
           .map((doc) {
         final data = doc.data();
+        data['id'] = doc.id;
+        data['uid'] = doc.id;
         data['profilePicture'] = data['profilePicture'] ?? '';
         data['phone'] = data['phone'] ?? '';
         data['address'] = data['address'] ?? '';

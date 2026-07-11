@@ -25,6 +25,8 @@ class ChatViewModel extends ChangeNotifier {
   bool isTyping = false;
   String? _cachedUserName;
   String? otherUserPhone;
+  String? otherUserProfilePicture;
+  String? myProfilePicture;
   bool isMuted = false;
 
   final List<String> quickReplies = [
@@ -65,6 +67,13 @@ class ChatViewModel extends ChangeNotifier {
           .doc(otherUserId)
           .get();
       otherUserPhone = doc.data()?['phone'];
+      otherUserProfilePicture = doc.data()?['profilePicture'];
+      final myDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .get();
+
+      myProfilePicture = myDoc.data()?['profilePicture'];
       notifyListeners();
     } catch (_) {
       otherUserPhone = null;
@@ -130,6 +139,12 @@ class ChatViewModel extends ChangeNotifier {
         currentUserId: myName,
         otherUserId: otherUserName,
       },
+
+      'participantProfilePictures': {
+        currentUserId: myProfilePicture ?? '',
+        otherUserId: otherUserProfilePicture ?? '',
+      },
+
       'donationTitle': donationTitle,
       'lastMessage': trimmed,
       'lastMessageTime': FieldValue.serverTimestamp(),

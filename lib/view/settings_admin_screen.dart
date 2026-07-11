@@ -39,7 +39,7 @@ class _SettingsBody extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProfileCard(vm),
+                  _buildProfileCard(context, vm),
                   const SizedBox(height: 20),
                   _sectionLabel('Account'),
                   _buildAccountSection(context, vm),
@@ -102,7 +102,7 @@ class _SettingsBody extends StatelessWidget {
 
   // ── PROFILE CARD ───────────────────────────────────────────────────────────
 
-  Widget _buildProfileCard(SettingsAdminViewModel vm) {
+  Widget _buildProfileCard(BuildContext context, SettingsAdminViewModel vm) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -112,15 +112,37 @@ class _SettingsBody extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: AppColors.primary,
-            child: Text(vm.profile!.initials,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                )),
+          GestureDetector(
+            onTap: () => _showEditProfile(context, vm),
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.primary,
+                  child: Text(vm.profile!.initials,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      )),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.edit,
+                        size: 11, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

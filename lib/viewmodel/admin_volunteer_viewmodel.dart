@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../model/admin_volunteer_model.dart';
 import '../repo/admin_volunteer_repo.dart';
@@ -46,9 +47,63 @@ class AdminVolunteerViewModel extends ChangeNotifier {
   Future<void> updateStatus(String volunteerId, String status) async {
     try {
       await _repo.updateVolunteerStatus(volunteerId, status);
+
+      // Send notification to the volunteer about the decision
+      await _sendStatusNotification(volunteerId, status);
+
       await loadVolunteers();
     } catch (e) {
       debugPrint('Error updating status: $e');
     }
   }
+
+  /// Writes a notification to the volunteer using the app's
+  /// notification structure (NotificationModel format).
+  Future<void> _sendStatusNotification(
+      String volunteerId, String status) async {
+    String body;
+    String type;
+    switch (status) {
+      case 'Approved':
+        body = 'Congratulations! Your volunteer application has been approved. You can now start volunteering.';
+        type = 'volunteer_approved';
+        break;
+      case 'Rejected':
+        body = 'Your volunteer application was not approved. Please review your details and re-apply.';
+        type = 'volunteer_rejected';
+        break;
+      case 'Suspended':
+        body = 'Your volunteer access has been suspended. Contact support for details.';
+        type = 'volunteer_suspended';
+        break;
+      default:
+        return;
+    }
+    try {
+      final docRef = FirebaseFirestore.instance.collection('notifications').doc();
+      await docRef.set({
+        'id': docRef.id,
+        'senderId': 'admin',
+        'senderName': 'ShareBridge Team',
+        'receiverId': volunteerId,
+        'receiverName': '',
+        'type': type,
+        'body': body,
+        'profilePicture': null,
+        'targetId': volunteerId,
+        'targetRole': 'volunteer',
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'data': {},
+        'pickupNumber': null,
+        'assetImage': null,
+        'filePath': null,
+        'imageUrl': null,
+        'postId': '',
+      });
+    } catch (e) {
+      debugPrint('Error sending notification: $e');
+    }
+  }
+
 }

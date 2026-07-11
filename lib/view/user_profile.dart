@@ -2,13 +2,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:sharebridge/constants/colors.dart'; // adjust path to match your project
+import 'package:sharebridge/constants/colors.dart';
+import 'package:sharebridge/view/received_items_screen.dart';
 import 'package:sharebridge/viewmodel/my_profile_viewmodel.dart';
-import 'package:sharebridge/components/app_header.dart'; // adjust path to match your project
-import '../constants/colors.dart';
+import 'package:sharebridge/components/app_header.dart';
+import '../components/volunteer_badge_section.dart';
+import '../viewmodel/received_items_viewmodel.dart';
 import 'my_donation_screen.dart';
 import 'my_review_screen.dart';
 import 'user_setting_screen.dart';
+import 'donated_items_screen.dart';
+import '../viewmodel/donated_items_viewmodel.dart';
+
+
 
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
@@ -22,6 +28,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MyProfileViewModel>().fetchProfile();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        context.read<DonatedItemsViewModel>().listenFor(uid);
+        context.read<ReceivedItemsViewModel>().listenFor(uid);
+      }
     });
   }
 
@@ -72,6 +83,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       _buildStatsRow(profile),
                       const SizedBox(height: 16),
                       _buildImpactCard(profile),
+                      const SizedBox(height: 16),
+                      if (FirebaseAuth.instance.currentUser?.uid != null)
+                        VolunteerBadgesSection(uid: FirebaseAuth.instance.currentUser!.uid),
                       const SizedBox(height: 16),
                       _buildMenuSection(profile),
                     ],
@@ -375,47 +389,67 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   // STATS ROW
   Widget _buildStatsRow(profile) {
-    final totalDonations = profile?.totalDonations ?? 0;
+    final donatedCount = context.watch<DonatedItemsViewModel>().items.length;
+    final receivedCount = context.watch<ReceivedItemsViewModel>().items.length;
+
     final stats = [
-      {'label': 'Items Shared', 'value': '$totalDonations', 'icon': Icons.volunteer_activism},
-      {'label': 'Received', 'value': '0', 'icon': Icons.card_giftcard},
-      {'label': 'Wishlist', 'value': '0', 'icon': Icons.favorite_outline},
+      {
+        'label': 'Deliveries',
+        'value': '$donatedCount',
+        'icon': Icons.local_shipping_outlined,
+        'onTap': () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DonatedItemsScreen()),
+        ),
+      },
+      {
+        'label': 'Received',
+        'value': '$receivedCount',
+        'icon': Icons.card_giftcard,
+        'onTap': () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ReceivedItemsScreen()),
+        ),
+      },
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: stats.map((s) {
           return Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(color: AppColors.cardShadow, blurRadius: 8, offset: const Offset(0, 2)),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(color: AppColors.profilePrimary.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(s['icon'] as IconData, color: AppColors.profilePrimary, size: 18),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    s['value'] as String,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.profileTextDark),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    s['label'] as String,
-                    style: const TextStyle(fontSize: 11, color: AppColors.profileTextGrey),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            child: GestureDetector(
+              onTap: s['onTap'] as void Function()?,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.cardShadow, blurRadius: 8, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(color: AppColors.profilePrimary.withOpacity(0.1), shape: BoxShape.circle),
+                      child: Icon(s['icon'] as IconData, color: AppColors.profilePrimary, size: 18),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      s['value'] as String,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.profileTextDark),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      s['label'] as String,
+                      style: const TextStyle(fontSize: 11, color: AppColors.profileTextGrey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -489,7 +523,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           {
             'icon': Icons.history,
             'label': 'My Donations',
-            'subtitle': '$totalDonations items shared',
+            'subtitle': '$totalDonations items posted',
             'onTap': () {
               final uid = FirebaseAuth.instance.currentUser?.uid;
               if (uid != null) {
@@ -497,16 +531,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               }
             },
           },
-          {
-            'icon': Icons.favorite_outline,
-            'label': 'Wishlist',
-            'subtitle': '0 saved',
-            'onTap': () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Saved Items — coming soon')),
-              );
-            },
-          },
+
           {
             'icon': Icons.star_outline,
             'label': 'Reviews',

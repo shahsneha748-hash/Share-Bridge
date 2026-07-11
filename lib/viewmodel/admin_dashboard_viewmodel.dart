@@ -1,149 +1,208 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../model/admin_model.dart';
+
+// One activity feed entry
+class ActivityItem {
+  final IconData icon;
+  final String text;
+  final DateTime time;
+
+  ActivityItem({required this.icon, required this.text, required this.time});
+}
+
+// One top donor entry
+class TopDonor {
+  final String name;
+  final int items;
+
+  TopDonor({required this.name, required this.items});
+}
+
+// One flagged report entry
+class FlaggedItem {
+  final String id;
+  final String reason;
+  final String details;
+  final String reportType;
+  final DateTime createdAt;
+
+  FlaggedItem({
+    required this.id,
+    required this.reason,
+    required this.details,
+    required this.reportType,
+    required this.createdAt,
+  });
+}
 
 class AdminDashboardViewModel extends ChangeNotifier {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  DashboardStats? _stats;
-  List<FlaggedPost> _flaggedPosts = [];
-  List<ActivityItem> _activityFeed = [];
-  List<TopDonor> _topDonors = [];
-  List<CategoryStat> _categories = [];
-  bool _isLoading = true;
+  bool isLoading = false;
 
-  DashboardStats? get stats => _stats;
-  List<FlaggedPost> get flaggedPosts => _flaggedPosts;
-  List<ActivityItem> get activityFeed => _activityFeed;
-  List<TopDonor> get topDonors => _topDonors;
-  List<CategoryStat> get categories => _categories;
-  bool get isLoading => _isLoading;
+  // Overview counts
+  int totalDonations = 0;
+  int donationsToday = 0;
+  int activeUsers = 0;
+  int newUsersToday = 0;
+  int pendingReports = 0;
+  int availableDonations = 0;
 
-  Future<void> loadDashboard() async {
-    _isLoading = true;
+  // Category distribution: label -> percent (0-100)
+  Map<String, int> categoryPercents = {};
+
+  // Top donors
+  List<TopDonor> topDonors = [];
+
+  // Flagged (pending reports)
+  List<FlaggedItem> flagged = [];
+
+  // Recent activity
+  List<ActivityItem> activity = [];
+
+  Future<void> fetchDashboard() async {
+    isLoading = true;
     notifyListeners();
 
     try {
-      // Real data from Firestore
-      final usersSnapshot = await _db.collection('users').get();
-      final totalUsers = usersSnapshot.docs.length;
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
 
-      final reportsSnapshot = await _db
-          .collection('reports')
-          .where('status', isEqualTo: 'pending')
-          .get();
-      final flaggedCount = reportsSnapshot.docs.length;
+      // Donations
+      final donationsSnap =
+      await _firestore.collection('donations').get();
+      totalDonations = donationsSnap.docs.length;
+      donationsToday = 0;
+      availableDonations = 0;
 
-      _stats = DashboardStats(
-        totalDonations: 0, // ⏳ teammates' data
-        activeUsers: totalUsers,
-        pendingRequests: 0, // ⏳ teammates' data
-        flaggedPosts: flaggedCount,
-      );
+      final Map<String, int> categoryCounts = {};
+      final Map<String, int> donorCounts = {};
+      final List<ActivityItem> feed = [];
 
-      // Flagged posts from reports collection
-      _flaggedPosts = reportsSnapshot.docs.map((doc) {
+      for (final doc in donationsSnap.docs) {
         final data = doc.data();
-        final name = data['reportedName'] as String? ?? 'Unknown';
-        return FlaggedPost(
-          id: doc.id,
-          initials: name.isNotEmpty ? name[0].toUpperCase() : '?',
-          title: name,
-          reason: data['reason'] as String? ?? '',
-          postedBy: data['isAnonymous'] == true
-              ? 'Anonymous'
-              : data['reporterName'] as String? ?? 'Unknown',
-          reportCount: 1,
-          timeAgo: _timeAgo(data['createdAt']),
-        );
-      }).toList();
 
+        if (data['isDonated'] != true) availableDonations++;
+
+        final created = (data['createdAt'] as Timestamp?)?.toDate();
+        if (created != null && created.isAfter(todayStart)) {
+          donationsToday++;
+        }
+
+        // Category counts
+        final cat = (data['category'] ?? 'others')
+            .toString()
+            .toLowerCase();
+        categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+
+        // Donor counts (skip unknown/empty)
+        final donorName = (data['donorName'] ?? '').toString();
+        if (donorName.isNotEmpty && donorName != 'Unknown') {
+          donorCounts[donorName] = (donorCounts[donorName] ?? 0) + 1;
+        }
+
+        // Activity: recent donations
+        if (created != null) {
+          final title = data['title'] ?? data['itemName'] ?? 'an item';
+          feed.add(ActivityItem(
+            icon: Icons.card_giftcard,
+            text:
+            'New donation "$title"${donorName.isNotEmpty && donorName != 'Unknown' ? ' by $donorName' : ''}',
+            time: created,
+          ));
+        }
+      }
+
+      // Category percentages
+      categoryPercents = {};
+      if (totalDonations > 0) {
+        categoryCounts.forEach((cat, count) {
+          final label =
+              cat[0].toUpperCase() + cat.substring(1); // Food, Clothes...
+          categoryPercents[label] =
+              ((count / totalDonations) * 100).round();
+        });
+      }
+
+      // Top donors (sorted, top 3)
+      final donorList = donorCounts.entries
+          .map((e) => TopDonor(name: e.key, items: e.value))
+          .toList()
+        ..sort((a, b) => b.items.compareTo(a.items));
+      topDonors = donorList.take(3).toList();
+
+      // Users
+      final usersSnap = await _firestore.collection('users').get();
+      activeUsers = usersSnap.docs
+          .where((d) => d.data()['status'] != 'banned')
+          .length;
+      newUsersToday = 0;
+      for (final doc in usersSnap.docs) {
+        final data = doc.data();
+        final created = (data['createdAt'] as Timestamp?)?.toDate();
+        if (created != null && created.isAfter(todayStart)) {
+          newUsersToday++;
+        }
+        if (created != null) {
+          final name = data['fullName'] ?? 'A user';
+          feed.add(ActivityItem(
+            icon: Icons.person_add_alt,
+            text: 'New user registered · $name',
+            time: created,
+          ));
+        }
+      }
+
+      // Reports
+      final reportsSnap = await _firestore.collection('reports').get();
+      pendingReports = 0;
+      flagged = [];
+
+      for (final doc in reportsSnap.docs) {
+        final data = doc.data();
+        final status =
+        (data['status'] ?? 'pending').toString().toLowerCase();
+        final created =
+            (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+
+        if (status == 'pending') {
+          pendingReports++;
+          flagged.add(FlaggedItem(
+            id: doc.id,
+            reason: data['reason'] ?? 'Reported',
+            details: data['details'] ?? '',
+            reportType: data['reportType'] ?? '',
+            createdAt: created,
+          ));
+        }
+
+        feed.add(ActivityItem(
+          icon: Icons.flag_outlined,
+          text: 'Report submitted · ${data['reason'] ?? ''}',
+          time: created,
+        ));
+      }
+
+      // Flagged: newest first, keep top 2
+      flagged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      if (flagged.length > 2) flagged = flagged.take(2).toList();
+
+      // Activity: newest first, keep top 6
+      feed.sort((a, b) => b.time.compareTo(a.time));
+      activity = feed.take(6).toList();
     } catch (e) {
-      debugPrint('Error loading dashboard: $e');
-
-      // Fallback dummy data if Firestore fails
-      _stats = DashboardStats(
-        totalDonations: 0,
-        activeUsers: 0,
-        pendingRequests: 0,
-        flaggedPosts: 0,
-      );
+      debugPrint('Dashboard fetch error: $e');
     }
 
-    // Keep dummy data for things we can't get yet
-    _activityFeed = [
-      ActivityItem(
-        description: 'New food donation posted by Sita Poudel',
-        timeAgo: '2 min ago',
-        type: ActivityType.donation,
-      ),
-      ActivityItem(
-        description: 'New user registered · Ram Thapa',
-        timeAgo: '11 min ago',
-        type: ActivityType.newUser,
-      ),
-      ActivityItem(
-        description: 'Request pending for 2hrs · Blankets post',
-        timeAgo: '34 min ago',
-        type: ActivityType.pending,
-      ),
-      ActivityItem(
-        description: 'Post flagged for misuse · reported ×2',
-        timeAgo: '1 hr ago',
-        type: ActivityType.flagged,
-      ),
-      ActivityItem(
-        description: 'Donation confirmed received · Books lot',
-        timeAgo: '2 hr ago',
-        type: ActivityType.confirmed,
-      ),
-    ];
-
-    _topDonors = [
-      TopDonor(initials: 'SP', name: 'Sita Poudel', itemCount: 24, rank: 1),
-      TopDonor(initials: 'MR', name: 'Mohan Rai',   itemCount: 19, rank: 2),
-      TopDonor(initials: 'BK', name: 'Bina KC',     itemCount: 15, rank: 3),
-    ];
-
-    _categories = [
-      CategoryStat(label: 'Food',    percentage: 0.72),
-      CategoryStat(label: 'Clothes', percentage: 0.18),
-      CategoryStat(label: 'Books',   percentage: 0.10),
-    ];
-
-    _isLoading = false;
+    isLoading = false;
     notifyListeners();
   }
 
-  String _timeAgo(dynamic createdAt) {
-    if (createdAt == null) return '';
-    DateTime dt;
-    if (createdAt is Timestamp) {
-      dt = createdAt.toDate();
-    } else {
-      return '';
-    }
-    final diff = DateTime.now().difference(dt);
+  String relativeTime(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 1) return 'just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
     if (diff.inHours < 24) return '${diff.inHours} hr ago';
-    return '${diff.inDays} day ago';
-  }
-
-  void removePost(String postId) {
-    _flaggedPosts.removeWhere((post) => post.id == postId);
-    if (_stats != null) {
-      _stats = DashboardStats(
-        totalDonations: _stats!.totalDonations,
-        activeUsers: _stats!.activeUsers,
-        pendingRequests: _stats!.pendingRequests,
-        flaggedPosts: _stats!.flaggedPosts - 1,
-      );
-    }
-    notifyListeners();
-  }
-
-  void keepPost(String postId) {
-    _flaggedPosts.removeWhere((post) => post.id == postId);
-    notifyListeners();
+    return '${diff.inDays} d ago';
   }
 }

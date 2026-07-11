@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 class DefaultAvatar extends StatelessWidget {
   final double size;
   final bool isOnline;
+  final String? imageUrl;
+
 
   const DefaultAvatar({
     super.key,
     this.size = 50,
     this.isOnline = false,
+    this.imageUrl,
+
   });
 
   @override
@@ -19,14 +23,22 @@ class DefaultAvatar extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
             shape: BoxShape.circle,
+            color: Colors.grey.shade300,
+            image: imageUrl != null && imageUrl!.isNotEmpty
+                ? DecorationImage(
+              image: NetworkImage(imageUrl!),
+              fit: BoxFit.cover,
+            )
+                : null,
           ),
-          child: Icon(
+          child: imageUrl == null || imageUrl!.isEmpty
+              ? Icon(
             Icons.person,
             color: Colors.grey.shade600,
             size: size * 0.62,
-          ),
+          )
+              : null,
         ),
         if (isOnline)
           Positioned(

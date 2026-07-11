@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'admin_dashboard_view.dart';
+import 'package:provider/provider.dart';
 import '../viewmodel/admin_report_viewmodel.dart';
+import '../viewmodel/user_admin_viewmodel.dart';
+import '../model/user_admin_model.dart';
 import '../constants/colors.dart';
+import 'admin_user_detail_screen.dart';
 
 class AdminReportScreen extends StatefulWidget {
   const AdminReportScreen({super.key});
@@ -48,6 +52,8 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
                   report: _vm.filteredReports[i],
                   onStatusChanged: (reportId, newStatus) =>
                       _vm.updateStatus(reportId, newStatus),
+                  onBanUser: (report) =>
+                      _vm.banUserFromReport(report),
                 ),
               ),
             ),
@@ -62,7 +68,9 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
       color: AppColors.primary,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 10,
-        left: 20, right: 16, bottom: 14,
+        left: 20,
+        right: 16,
+        bottom: 14,
       ),
       child: Row(
         children: [
@@ -75,8 +83,8 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
           ),
           if (_vm.pendingCount > 0)
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 5),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(20),
@@ -94,15 +102,15 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
 
   Widget _buildSummaryRow() {
     final counts = {
-      'Total':    _vm.totalReports,
-      'Pending':  _vm.pendingCount,
+      'Total': _vm.totalReports,
+      'Pending': _vm.pendingCount,
       'Reviewed': _vm.reviewedCount,
       'Resolved': _vm.resolvedCount,
     };
 
     final colors = {
-      'Total':    AppColors.primary,
-      'Pending':  AppColors.dangerText,
+      'Total': AppColors.primary,
+      'Pending': AppColors.dangerText,
       'Reviewed': AppColors.amberText,
       'Resolved': AppColors.successText,
     };
@@ -115,7 +123,8 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
           return Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+              padding:
+              const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -143,11 +152,11 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
 
   Widget _buildFilterRow() {
     final filters = <String, ReportStatus?>{
-      'All':          null,
-      'Pending':      ReportStatus.pending,
-      'Reviewed':     ReportStatus.reviewed,
+      'All': null,
+      'Pending': ReportStatus.pending,
+      'Reviewed': ReportStatus.reviewed,
       'Action taken': ReportStatus.actionTaken,
-      'Dismissed':    ReportStatus.dismissed,
+      'Dismissed': ReportStatus.dismissed,
     };
 
     return Container(
@@ -166,18 +175,15 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.primary
-                      : AppColors.light2,
+                  color: isActive ? AppColors.primary : AppColors.light2,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(e.key,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: isActive
-                          ? Colors.white
-                          : AppColors.successText,
+                      color:
+                      isActive ? Colors.white : AppColors.successText,
                     )),
               ),
             );
@@ -209,57 +215,138 @@ class _AdminReportScreenState extends State<AdminReportScreen> {
                   color: AppColors.textDark)),
           const SizedBox(height: 6),
           const Text('All clear in this category!',
-              style: TextStyle(
-                  fontSize: 13, color: AppColors.textMuted)),
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       ),
     );
   }
 }
 
-// ── REPORT CARD ───────────────────────────────────────────────────────────────
-
 class _ReportCard extends StatelessWidget {
   final AdminReport report;
   final Function(String, ReportStatus) onStatusChanged;
+  final Function(AdminReport) onBanUser;
 
   const _ReportCard({
     required this.report,
     required this.onStatusChanged,
+    required this.onBanUser,
   });
 
   Color get _statusColor {
     switch (report.status) {
-      case ReportStatus.pending:     return AppColors.dangerText;
-      case ReportStatus.reviewed:    return AppColors.amberText;
-      case ReportStatus.actionTaken: return AppColors.successText;
-      case ReportStatus.dismissed:   return AppColors.textMuted;
+      case ReportStatus.pending:
+        return AppColors.dangerText;
+      case ReportStatus.reviewed:
+        return AppColors.amberText;
+      case ReportStatus.actionTaken:
+        return AppColors.successText;
+      case ReportStatus.dismissed:
+        return AppColors.textMuted;
     }
   }
 
   Color get _statusBg {
     switch (report.status) {
-      case ReportStatus.pending:     return AppColors.dangerBg;
-      case ReportStatus.reviewed:    return AppColors.amberBg;
-      case ReportStatus.actionTaken: return AppColors.successBg;
-      case ReportStatus.dismissed:   return const Color(0xFFF1EFE8);
+      case ReportStatus.pending:
+        return AppColors.dangerBg;
+      case ReportStatus.reviewed:
+        return AppColors.amberBg;
+      case ReportStatus.actionTaken:
+        return AppColors.successBg;
+      case ReportStatus.dismissed:
+        return const Color(0xFFF1EFE8);
     }
   }
 
   String get _statusLabel {
     switch (report.status) {
-      case ReportStatus.pending:     return 'Pending';
-      case ReportStatus.reviewed:    return 'Reviewed';
-      case ReportStatus.actionTaken: return 'Action taken';
-      case ReportStatus.dismissed:   return 'Dismissed';
+      case ReportStatus.pending:
+        return 'Pending';
+      case ReportStatus.reviewed:
+        return 'Reviewed';
+      case ReportStatus.actionTaken:
+        return 'Action taken';
+      case ReportStatus.dismissed:
+        return 'Dismissed';
     }
   }
 
   IconData get _categoryIcon {
     switch (report.category) {
-      case ReportCategory.user:         return Icons.person_outline;
-      case ReportCategory.donationPost: return Icons.list_alt_outlined;
-      case ReportCategory.volunteer:    return Icons.volunteer_activism_outlined;
+      case ReportCategory.user:
+        return Icons.person_outline;
+      case ReportCategory.donationPost:
+        return Icons.list_alt_outlined;
+      case ReportCategory.volunteer:
+        return Icons.volunteer_activism_outlined;
+    }
+  }
+
+  Future<void> _openReportedUserProfile(BuildContext context) async {
+    if (report.reportedId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No user linked to this report')),
+      );
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(report.reportedId)
+          .get();
+
+      if (!doc.exists) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User not found')),
+          );
+        }
+        return;
+      }
+
+      final data = doc.data()!;
+      final isBanned = data['isBanned'] as bool? ?? false;
+
+      // Format join date from createdAt
+      String joinDate = '—';
+      final raw = data['createdAt'];
+      if (raw is Timestamp) {
+        final dt = raw.toDate();
+        const months = ['Jan','Feb','Mar','Apr','May','Jun',
+          'Jul','Aug','Sep','Oct','Nov','Dec'];
+        joinDate = '${months[dt.month - 1]} ${dt.year}';
+      }
+
+      final user = AppUser(
+        id: doc.id,
+        name: data['fullName'] ?? 'Unknown',
+        email: data['email'] ?? '',
+        role: UserRole.user,
+        status: isBanned ? UserStatus.banned : UserStatus.active,
+        joinDate: joinDate,
+        totalDonations: data['totalDonations'] ?? 0,
+        totalRequests: data['totalRequests'] ?? 0,
+      );
+
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChangeNotifierProvider(
+              create: (_) => UserAdminViewModel()..loadUsers(),
+              child: AdminUserDetailScreen(user: user),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
@@ -274,72 +361,75 @@ class _ReportCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.light1,
-                  child: Text(report.reportedInitial,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.successText,
-                      )),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(report.reportedName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textDark,
-                          )),
-                      Row(
-                        children: [
-                          Icon(_categoryIcon,
-                              size: 12, color: AppColors.textMuted),
-                          const SizedBox(width: 3),
-                          Text(report.categoryLabel,
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textMuted)),
-                          const SizedBox(width: 6),
-                          const Text('·',
-                              style: TextStyle(
-                                  color: AppColors.textMuted)),
-                          const SizedBox(width: 6),
-                          Text(report.timeAgo,
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textMuted)),
-                        ],
-                      ),
-                    ],
+          // Tappable header → opens reported user's profile
+          GestureDetector(
+            onTap: () => _openReportedUserProfile(context),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.light1,
+                    child: Text(report.reportedInitial,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.successText,
+                        )),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _statusBg,
-                    borderRadius: BorderRadius.circular(20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(report.reportedName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textDark,
+                            )),
+                        Row(
+                          children: [
+                            Icon(_categoryIcon,
+                                size: 12, color: AppColors.textMuted),
+                            const SizedBox(width: 3),
+                            Text(report.categoryLabel,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted)),
+                            const SizedBox(width: 6),
+                            const Text('·',
+                                style:
+                                TextStyle(color: AppColors.textMuted)),
+                            const SizedBox(width: 6),
+                            Text(report.timeAgo,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(_statusLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: _statusColor,
-                      )),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _statusBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(_statusLabel,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _statusColor,
+                        )),
+                  ),
+                ],
+              ),
             ),
           ),
-
           const SizedBox(height: 10),
           const Divider(height: 1, color: Color(0xFFEDF2E7)),
           const SizedBox(height: 10),
@@ -358,8 +448,7 @@ class _ReportCard extends StatelessWidget {
                         color: AppColors.dangerBg,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: AppColors.dangerBorder,
-                            width: 0.5),
+                            color: AppColors.dangerBorder, width: 0.5),
                       ),
                       child: Text(report.reason,
                           style: const TextStyle(
@@ -462,7 +551,8 @@ class _ReportCard extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(2),
@@ -485,11 +575,16 @@ class _ReportCard extends StatelessWidget {
                 iconBg: AppColors.dangerBg,
                 iconColor: AppColors.dangerText,
                 title: 'Ban user',
-                subtitle: 'Permanently restrict this account',
-                onTap: () {
+                subtitle: report.reportedId.isEmpty
+                    ? 'No user linked to this report'
+                    : 'Permanently restrict this account',
+                onTap: report.reportedId.isEmpty
+                    ? () {}
+                    : () {
                   Navigator.pop(ctx);
-                  onStatusChanged(report.id, ReportStatus.actionTaken);
-                  _showConfirmation(context, 'User banned successfully');
+                  onBanUser(report);
+                  _showConfirmation(context,
+                      '${report.reportedName} banned successfully');
                 },
               ),
               const SizedBox(height: 10),
@@ -531,16 +626,15 @@ class _ReportCard extends StatelessWidget {
       SnackBar(
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         content: Row(
           children: [
             const Icon(Icons.check_circle_outline,
                 color: Colors.white, size: 18),
             const SizedBox(width: 8),
             Text(message,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 13)),
+                style: const TextStyle(color: Colors.white, fontSize: 13)),
           ],
         ),
       ),
@@ -557,8 +651,10 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ActionButton({
-    required this.label, required this.icon,
-    required this.bg,    required this.fg,
+    required this.label,
+    required this.icon,
+    required this.bg,
+    required this.fg,
     required this.onTap,
   });
 
@@ -596,9 +692,12 @@ class _DialogAction extends StatelessWidget {
   final VoidCallback onTap;
 
   const _DialogAction({
-    required this.icon,      required this.iconBg,
-    required this.iconColor, required this.title,
-    required this.subtitle,  required this.onTap,
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
   });
 
   @override
@@ -618,7 +717,8 @@ class _DialogAction extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: iconBg,
                   borderRadius: BorderRadius.circular(8),
@@ -638,8 +738,7 @@ class _DialogAction extends StatelessWidget {
                         )),
                     Text(subtitle,
                         style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textMuted)),
+                            fontSize: 11, color: AppColors.textMuted)),
                   ],
                 ),
               ),

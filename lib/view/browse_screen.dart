@@ -14,10 +14,13 @@ import 'package:sharebridge/view/item_detail_screen.dart';
 import 'package:sharebridge/view/saved_items.dart';
 import 'package:sharebridge/viewmodel/browse_view_model.dart';
 
+
 class BrowseScreen extends StatelessWidget {
   final String? initialCategory;
 
+
   const BrowseScreen({super.key, this.initialCategory});
+
 
   @override
   Widget build(BuildContext context) {
@@ -32,16 +35,20 @@ class BrowseScreen extends StatelessWidget {
   }
 }
 
+
 class _BrowseView extends StatefulWidget {
   final String? initialCategory;
   const _BrowseView({this.initialCategory});
+
 
   @override
   State<_BrowseView> createState() => _BrowseViewState();
 }
 
+
 class _BrowseViewState extends State<_BrowseView> {
   final TextEditingController _searchController = TextEditingController();
+
 
   @override
   void didUpdateWidget(covariant _BrowseView oldWidget) {
@@ -51,11 +58,13 @@ class _BrowseViewState extends State<_BrowseView> {
     }
   }
 
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
+
 
   void _snack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -66,6 +75,7 @@ class _BrowseViewState extends State<_BrowseView> {
       ),
     );
   }
+
 
   Future<void> _handleNearestTap(BuildContext context) async {
     final vm = context.read<BrowseViewModel>();
@@ -81,6 +91,7 @@ class _BrowseViewState extends State<_BrowseView> {
     vm.setSortBy('Nearest');
   }
 
+
   Widget _heartIcon(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -91,6 +102,7 @@ class _BrowseViewState extends State<_BrowseView> {
             duration: Duration(seconds: 1),
           ),
         );
+
 
         Navigator.push(
           context,
@@ -113,6 +125,7 @@ class _BrowseViewState extends State<_BrowseView> {
     );
   }
 
+
   void _openItemDetail(BuildContext context, Map<String, dynamic> item) {
     final vm = context.read<BrowseViewModel>();
     Navigator.push(
@@ -121,14 +134,18 @@ class _BrowseViewState extends State<_BrowseView> {
     ).then((_) => vm.refresh());
   }
 
+
   void _toggleFavorite(BuildContext context, Map<String, dynamic> item) async {
     final vm = context.read<BrowseViewModel>();
     final title = item["title"].toString();
     final wasSaved = vm.isFavorite(title);
 
-    vm.toggleFavorite(title);
+
+    vm.toggleFavorite(item);
+
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
+
 
     if (!wasSaved) {
       await FirebaseFirestore.instance
@@ -146,6 +163,7 @@ class _BrowseViewState extends State<_BrowseView> {
         "createdAt": FieldValue.serverTimestamp(),
       });
 
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Added to wishlist'),
@@ -161,6 +179,7 @@ class _BrowseViewState extends State<_BrowseView> {
           .doc(item["id"] ?? title)
           .delete();
 
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Removed from wishlist'),
@@ -171,11 +190,13 @@ class _BrowseViewState extends State<_BrowseView> {
     }
   }
 
+
   void _openFilterSheet(BuildContext context) {
     final vm = context.read<BrowseViewModel>();
     String tempCategory = vm.selectedCategory;
     String tempDistance = vm.distanceFilter;
     String tempSort = vm.sortBy;
+
 
     showModalBottomSheet(
       context: context,
@@ -208,6 +229,7 @@ class _BrowseViewState extends State<_BrowseView> {
                 ),
               );
             }
+
 
             return Padding(
               padding:
@@ -383,10 +405,12 @@ class _BrowseViewState extends State<_BrowseView> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<BrowseViewModel>();
     final items = vm.filteredItems;
+
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -405,6 +429,7 @@ class _BrowseViewState extends State<_BrowseView> {
                   child: Column(
                     children: [
                       const SizedBox(height: 18),
+
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -450,7 +475,9 @@ class _BrowseViewState extends State<_BrowseView> {
                         ),
                       ),
 
+
                       const SizedBox(height: 18),
+
 
                       SizedBox(
                         height: 38,
@@ -486,7 +513,9 @@ class _BrowseViewState extends State<_BrowseView> {
                         ),
                       ),
 
+
                       const SizedBox(height: 12),
+
 
                       SizedBox(
                         height: 38,
@@ -512,7 +541,9 @@ class _BrowseViewState extends State<_BrowseView> {
                         ),
                       ),
 
+
                       const SizedBox(height: 14),
+
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -546,7 +577,9 @@ class _BrowseViewState extends State<_BrowseView> {
                         ),
                       ),
 
+
                       const SizedBox(height: 12),
+
 
                       Expanded(
                         child: RefreshIndicator(
@@ -595,11 +628,9 @@ class _BrowseViewState extends State<_BrowseView> {
                                 final title = item['title'].toString();
                                 return BrowseItemCard(
                                   item: item,
-                                  isSaved: vm.isFavorite(title),
-                                  onTap: () =>
-                                      _openItemDetail(context, item),
-                                  onFavoriteTap: () =>
-                                      _toggleFavorite(context, item),
+                                  isSaved: vm.isFavorite(item['id'] ?? item['title']),
+                                  onTap: () => _openItemDetail(context, item),
+                                  onFavoriteTap: () => vm.toggleFavorite(item),
                                 );
                               },
                             ),

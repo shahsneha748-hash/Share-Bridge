@@ -14,5 +14,13 @@ abstract class VolunteerTaskRepo {
       String status
       );
 
+  Future<void> updateTaskLocation(
+      String taskId,
+      double latitude,
+      double longitude,
+      );
+
+  Future<void> unacceptTask(String taskId);
+
 
 }

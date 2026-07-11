@@ -24,4 +24,17 @@ class AdminReportRepoImpl implements AdminReportRepo {
         .doc(reportId)
         .update({'status': status});
   }
+
+  @override
+  Future<void> banReportedUser(String reportedId, String reportId) async {
+    // Ban the reported user (if we have their id)
+    if (reportedId.isNotEmpty) {
+      await _firestore
+          .collection('users')
+          .doc(reportedId)
+          .update({'status': 'banned'});
+    }
+    // Mark the report as action taken
+    await updateReportStatus(reportId, 'actionTaken');
+  }
 }

@@ -18,8 +18,6 @@ class VolunteerRepoImpl implements VolunteerRepo {
     final doc =
     await firestore.collection("volunteers").doc(userId).get();
     if (!doc.exists) return "none";
-    // trim() guards against stray whitespace like "Approved " breaking
-    // exact-match checks elsewhere in the app.
     return (doc.data()?['status'] as String? ?? "none").trim();
   }
 
@@ -32,7 +30,6 @@ class VolunteerRepoImpl implements VolunteerRepo {
         .map((doc) => (doc.data()?["status"] as String? ?? "none").trim());
   }
 
-  // --- new: donor-side assignment ---
 
   @override
   Stream<List<VolunteerModel>> watchAvailableApprovedVolunteers() {

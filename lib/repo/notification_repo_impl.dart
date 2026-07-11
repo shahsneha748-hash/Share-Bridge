@@ -87,23 +87,18 @@ class NotificationRepoImpl implements NotificationRepo {
   @override
   Future<bool> addNotification(NotificationModel model) async {
     try {
-      await firestore.collection("notifications").doc(model.id).set({
-        "id": model.id,
-        "receiverId": model.receiverId,
-        "senderId": model.senderId,
-        "senderName": model.senderName,
-        "type": model.type.toString().split('.').last,
-        "body": model.body,
-        "createdAt": model.createdAt,
-        "isRead": model.isRead,
-        "profilePicture": model.profilePicture,
-      });
+      await firestore
+          .collection("notifications")
+          .doc(model.id)
+          .set(model.toMap());
+
       return true;
     } catch (e) {
+      print("Error adding notification: $e");
       return false;
     }
   }
-
+  //
 
   @override
   Future<List<NotificationModel>> getNotificationsByType(String type) async {

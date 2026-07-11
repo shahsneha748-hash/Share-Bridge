@@ -5,7 +5,7 @@ import 'review_repo.dart';
 class ReviewRepoImpl implements ReviewRepo {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // 🔥 COLLECTION NAME
+  // COLLECTION NAME
   final String collection = "reviews";
 
   @override

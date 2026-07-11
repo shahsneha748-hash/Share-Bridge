@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodel/user_admin_viewmodel.dart';
 import '../model/user_admin_model.dart';
 import '../constants/colors.dart';
+import '../view/admin_user_detail_screen.dart';
 
 class UsersAdminScreen extends StatelessWidget {
   const UsersAdminScreen({super.key});
@@ -44,9 +45,23 @@ class _UsersBody extends StatelessWidget {
               itemCount: controller.filteredUsers.length,
               separatorBuilder: (_, __) =>
               const SizedBox(height: 10),
-              itemBuilder: (_, i) => _UserCard(
-                user: controller.filteredUsers[i],
-              ),
+              itemBuilder: (_, i) {
+                final user = controller.filteredUsers[i];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: controller,
+                          child: AdminUserDetailScreen(user: user),
+                        ),
+                      ),
+                    );
+                  },
+                  child: _UserCard(user: user),
+                );
+              },
             ),
           ),
         ],
@@ -54,7 +69,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── TOP BAR ────────────────────────────────────────────────────────────────
+  // Top bar
 
   Widget _buildTopBar(
       BuildContext context, UserAdminViewModel controller) {
@@ -89,7 +104,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── SUMMARY ROW ────────────────────────────────────────────────────────────
+  // SUMMARY ROW
 
   Widget _buildSummaryRow(UserAdminViewModel controller) {
     return Padding(
@@ -131,7 +146,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── SEARCH BAR ─────────────────────────────────────────────────────────────
+  // SEARCH BAR
 
   Widget _buildSearchBar(
       BuildContext context, UserAdminViewModel controller) {
@@ -159,7 +174,7 @@ class _UsersBody extends StatelessWidget {
     );
   }
 
-  // ── FILTER ROW ─────────────────────────────────────────────────────────────
+  // FILTER ROW
 
   Widget _buildFilterRow(UserAdminViewModel controller) {
     final roleFilters = <String, UserRole?>{
@@ -283,7 +298,7 @@ class _UserCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          // ── Avatar ───────────────────────────────────────────
+          // Avatar
           Stack(
             children: [
               CircleAvatar(
@@ -319,7 +334,8 @@ class _UserCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ── Info ─────────────────────────────────────────────
+          // Info
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +406,7 @@ class _UserCard extends StatelessWidget {
             ),
           ),
 
-          // ── Ban/Unban Button ──────────────────────────────────
+          // Ban/Unban Button
           const SizedBox(width: 8),
           Material(
             color: isBanned
@@ -436,7 +452,7 @@ class _UserCard extends StatelessWidget {
     );
   }
 
-  // ── CONFIRMATION DIALOG ───────────────────────────────────────────────────
+  // CONFIRMATION DIALOG
 
   void _confirmAction(BuildContext context,
       UserAdminViewModel controller, bool isBanned) {
@@ -509,7 +525,7 @@ class _UserCard extends StatelessWidget {
   }
 }
 
-// ── FILTER CHIP ───────────────────────────────────────────────────────────────
+// FILTER CHIP
 
 class _FilterChip extends StatelessWidget {
   final String label;

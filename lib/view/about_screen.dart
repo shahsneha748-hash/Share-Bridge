@@ -34,38 +34,44 @@ class AboutScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // ── App identity card ─────────────────────────────
+          // ── App identity card ─────────────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 28),
             decoration: BoxDecoration(
-              color: kPrimary,
+              color: Color(0xFFD4E8C2),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    shape: BoxShape.circle,
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Image.asset(
+                    'assets/images/SHAREBRIDGE.png', // <-- Change this to your logo path
+                    fit: BoxFit.contain,
                   ),
-                  child: const Icon(Icons.volunteer_activism, color: Colors.white, size: 40),
                 ),
                 const SizedBox(height: 14),
                 const Text(
                   "Share Bridge",
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: Color(0xFF1A2E0A),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "Version $_appVersion",
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: const TextStyle(
+                    color: Color(0xFF3A5C2E),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 16),
 
           // ── Mission blurb ─────────────────────────────────

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:sharebridge/constants/colors.dart';
 import 'package:sharebridge/components/app_header.dart';
 import 'package:sharebridge/model/review_model.dart';
@@ -9,7 +8,6 @@ import 'package:sharebridge/viewmodel/review_view_model.dart';
 class MyReviewsScreen extends StatefulWidget {
   final String uid;
   const MyReviewsScreen({super.key, required this.uid});
-
   @override
   State<MyReviewsScreen> createState() => _ReviewsScreenState();
 }
@@ -26,17 +24,21 @@ class _ReviewsScreenState extends State<MyReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ReviewViewModel>();
-
     return Scaffold(
       backgroundColor: AppColors.backgroundGreen,
       body: SafeArea(
         child: Column(
           children: [
-            AppHeader(
-              title: 'Reviews',
-              trailing: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: AppColors.cream),
+            Container(
+              color: AppColors.darkGreen,
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.cream),
+                  ),
+                  const Expanded(child: AppHeader(title: 'Reviews')),
+                ],
               ),
             ),
             Expanded(
@@ -67,29 +69,112 @@ class _ReviewsScreenState extends State<MyReviewsScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            vm.averageRating.toStringAsFixed(1),
-            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.darkText),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: List.generate(5, (i) => Icon(
-                    i < vm.averageRating.round() ? Icons.star : Icons.star_border,
+          Column(
+            children: [
+              Text(
+                vm.averageRating.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: List.generate(
+                  5,
+                      (i) => Icon(
+                    i < vm.averageRating.round()
+                        ? Icons.star
+                        : Icons.star_border,
                     size: 16,
                     color: AppColors.ratingStar,
-                  )),
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text('${vm.reviews.length} reviews', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "${vm.reviews.length} reviews",
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              children: [
+                _buildRatingBar(vm, 5, Colors.green),
+                _buildRatingBar(vm, 4, Colors.lightGreen),
+                _buildRatingBar(vm, 3, Colors.orange),
+                _buildRatingBar(vm, 2, Colors.deepOrange),
+                _buildRatingBar(vm, 1, Colors.red),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingBar(
+      ReviewViewModel vm,
+      int star,
+      Color color,
+      ) {
+    final total = vm.reviews.length;
+    final count =
+        vm.reviews.where((r) => r.rating.round() == star).length;
+    final ratio = total == 0 ? 0.0 : count / total;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16,
+            child: Text(
+              "$star",
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: ratio,
+                minHeight: 7,
+                backgroundColor: AppColors.backgroundGreen,
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 20,
+            child: Text(
+              "$count",
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
             ),
           ),
         ],
@@ -122,10 +207,9 @@ class _ReviewsScreenState extends State<MyReviewsScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                    review.reviewerName.isNotEmpty
-                        ? review.reviewerName
-                        : "User",
-
+                  review.reviewerName.isNotEmpty
+                      ? review.reviewerName
+                      : "User",
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.darkText),
                 ),
               ),
