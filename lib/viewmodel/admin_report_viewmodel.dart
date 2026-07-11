@@ -156,7 +156,6 @@ class AdminReportViewModel extends ChangeNotifier {
     }
   }
 
-  /// Ban the reported user directly from the report, then mark actionTaken
   Future<void> banUserFromReport(AdminReport report) async {
     try {
       await _repo.banReportedUser(report.reportedId, report.id);

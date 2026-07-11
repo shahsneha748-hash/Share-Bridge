@@ -17,7 +17,7 @@ class VolunteerViewModel extends ChangeNotifier {
     return status == "Approved";
   }
 
-  // ---------------- DONOR-SIDE ASSIGNMENT SUPPORT ----------------
+  //DONOR-SIDE ASSIGNMENT SUPPORT
   Stream<VolunteerModel> watchProfile(String userId) {
     return repo.watchProfile(userId);
   }
@@ -78,7 +78,7 @@ class VolunteerViewModel extends ChangeNotifier {
   }
 
 
-  // ---------------- SELFIE (CAMERA ONLY) ----------------
+  // SELFIE (CAMERA ONLY)
   Future<void> takeSelfie() async {
     final img = await picker.pickImage(
       source: ImageSource.camera,
@@ -89,7 +89,7 @@ class VolunteerViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-  // ---------------- SETTERS ----------------
+  // SETTERS
   void setVehicle(String value) {
     vehicle = value;
     notifyListeners();
@@ -98,7 +98,7 @@ class VolunteerViewModel extends ChangeNotifier {
     availability = value;
     notifyListeners();
   }
-  // ---------------- SUBMIT ----------------
+  // SUBMIT
   Future<void> submit({
     required String userId,
     required String citizenshipNumber,

@@ -101,7 +101,7 @@ class AdminUserDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Contact info (fetched live from Firestore)
+            // Contact info
             _sectionCard(
               title: 'Contact Information',
               icon: Icons.person,

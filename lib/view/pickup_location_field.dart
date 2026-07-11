@@ -7,8 +7,7 @@ import 'map_location_picker.dart';
 class PickupLocationField extends StatefulWidget {
   final String value;
   final ValueChanged<String> onChanged;
-  /// Optional: called whenever we have real coordinates for the location
-  /// (from GPS or the map picker), so the caller can store mapLat/mapLng.
+
   final void Function(double lat, double lng)? onCoordinatesPicked;
 
   const PickupLocationField({

@@ -75,7 +75,7 @@ class _ChatListView extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // ── HEADER (self-contained SafeArea — never cuts off) ────────
+          //  HEADER
           Container(
             width: double.infinity,
             color: _green,
@@ -128,7 +128,7 @@ class _ChatListView extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ── SEARCH BAR ────────────────────────────────────────────
+          // SEARCH BAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
@@ -163,7 +163,7 @@ class _ChatListView extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // ── FILTER CHIPS ──────────────────────────────────────────
+          // FILTER CHIPS
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -177,7 +177,7 @@ class _ChatListView extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ── CHAT LIST ─────────────────────────────────────────────
+          //  CHAT LIST
           Expanded(
             child: vm.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -228,7 +228,10 @@ class _ChatListView extends StatelessWidget {
                         horizontal: 20, vertical: 12),
                     child: Row(
                       children: [
-                        DefaultAvatar(isOnline: room.isOnline),
+                        DefaultAvatar(
+                          isOnline: room.isOnline,
+                          imageUrl: room.otherUserProfilePicture,
+                        ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(

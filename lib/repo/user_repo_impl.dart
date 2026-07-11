@@ -5,15 +5,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../service/notification_service.dart';
 
 class UserRepoImpl implements UserRepo {
-  final auth = FirebaseAuth.instance;
-  final firestore = FirebaseFirestore.instance;
+  final FirebaseAuth auth;
+  final FirebaseFirestore firestore;
+  final NotificationService notificationService;
+
+  UserRepoImpl({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    NotificationService? notificationService,
+  })  : auth = auth ?? FirebaseAuth.instance,
+        firestore = firestore ?? FirebaseFirestore.instance,
+        notificationService = notificationService ?? NotificationService();
 
   @override
   Future<void> addUser(UserModel userModel) {
-    return firestore
-        .collection("users")
-        .doc(userModel.uid)
-        .set(userModel.toMap());
+    return firestore.collection("users").doc(userModel.uid).set(userModel.toMap());
   }
 
   @override
@@ -34,22 +40,14 @@ class UserRepoImpl implements UserRepo {
   @override
   Future<List<UserModel>> getAllUsers() async {
     final users = await firestore.collection("users").get();
-    List<UserModel> data = [];
-
-    for (int i = 0; i < users.docs.length; i++) {
-      data.add(UserModel.fromMap(users.docs[i].data()));
-    }
-    return data;
+    return users.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
   }
 
   @override
   Future<UserModel> getUserById(String id) async {
-    final users = await firestore.collection("users").doc(id).get();
-    final data = users.data();
-
-    if (data == null) {
-      throw Exception("Unable to fetch data");
-    }
+    final doc = await firestore.collection("users").doc(id).get();
+    final data = doc.data();
+    if (data == null) throw Exception("Unable to fetch data");
     return UserModel.fromMap(data);
   }
 
@@ -57,10 +55,7 @@ class UserRepoImpl implements UserRepo {
   Future<String> login(String email, String password) async {
     final user = await auth.signInWithEmailAndPassword(email: email, password: password);
     final userId = user.user?.uid;
-
-    if (userId == null) {
-      throw Exception("Login failed");
-    }
+    if (userId == null) throw Exception("Login failed");
 
     final doc = await firestore.collection("users").doc(userId).get();
     final asked = doc.data()?["notificationsAsked"] ?? false;
@@ -76,18 +71,13 @@ class UserRepoImpl implements UserRepo {
   }
 
   @override
-  Future<void> logout() {
-    return auth.signOut();
-  }
+  Future<void> logout() => auth.signOut();
 
   @override
   Future<String> signup(String email, String password) async {
     final user = await auth.createUserWithEmailAndPassword(email: email, password: password);
     final userId = user.user?.uid;
-
-    if (userId == null) {
-      throw Exception("Registration failed");
-    }
+    if (userId == null) throw Exception("Registration failed");
 
     await firestore.collection("users").doc(userId).set({
       "email": email,
@@ -106,17 +96,7 @@ class UserRepoImpl implements UserRepo {
 
   @override
   Future<String?> getProfilePicture(String senderId) async {
-    try {
-      final doc = await firestore.collection("users").doc(senderId).get();
-      if (doc.exists) {
-        return doc.data()?["profilePicture"] as String?;
-      }
-      return null;
-    } catch (e) {
-      print("Error fetching profile picture: $e");
-      return null;
-    }
+    final doc = await firestore.collection("users").doc(senderId).get();
+    return doc.data()?["profilePicture"] as String?;
   }
-
 }
-

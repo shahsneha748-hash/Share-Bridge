@@ -10,6 +10,7 @@ import '../constants/colors.dart';
 import '../model/request_system_model.dart';
 import '../utils/chat_helper.dart';
 import '../viewmodel/request_system_view_model.dart';
+import 'assign_volunteer_screen.dart';
 import 'donation_chat_screen.dart';
 
 class RequestSystemScreen extends StatelessWidget {
@@ -253,7 +254,7 @@ class _RequestCard extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) => UserProfileScreen(
-                        uid: request.donorId,
+                        uid: request.userId,
                       ),
                     ),
                   );
@@ -464,7 +465,12 @@ class _RequestCard extends StatelessWidget {
                       label: 'Assign',
                       icon: Icons.person_add,
                       onTap: () {
-                        // Assign action later
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AssignVolunteerScreen(request: request),
+                          ),
+                        );
                       },
                       color: AppColors.darkGreen,
                       bgColor: AppColors.paleGreen,

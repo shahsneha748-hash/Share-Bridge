@@ -16,15 +16,28 @@ import 'navigation_screen.dart';
 import 'pickup_location_field.dart';
 
 class CreateDonationScreen extends StatelessWidget {
-  const CreateDonationScreen({super.key});
+  final String? editingDonationId;
+  final Map<String, dynamic>? existingData;
+
+  const CreateDonationScreen({
+    super.key,
+    this.editingDonationId,
+    this.existingData,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => CreateDonationViewModel(
-        context.read<CreateDonationRepository>(),
-        context.read<ImageRepo>(),
-      ),
+      create: (context) {
+        final vm = CreateDonationViewModel(
+          context.read<CreateDonationRepository>(),
+          context.read<ImageRepo>(),
+        );
+        if (editingDonationId != null && existingData != null) {
+          vm.loadForEdit(editingDonationId!, existingData!);
+        }
+        return vm;
+      },
       child: const _CreateDonationView(),
     );
   }
@@ -86,15 +99,14 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
         backgroundColor: AppColors.darkGreen,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          "Create Donation",
-          style: TextStyle(
+        title: Text(
+          vm.isEditing ? "Edit Donation" : "Create Donation",
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
           ),
         ),
       ),
-
       body: vm.loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -305,9 +317,9 @@ class _CreateDonationViewState extends State<_CreateDonationView> {
                   }
                 }
                     : null,
-                child: const Text(
-                  "Post Donation",
-                  style: TextStyle(color: Colors.white),
+                child: Text(
+                  vm.isEditing ? "Save Changes" : "Post Donation",
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ),

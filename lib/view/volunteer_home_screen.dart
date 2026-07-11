@@ -1,231 +1,194 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-
+import 'package:sharebridge/view/volunteer_request_detail_screen.dart';
+import '../components/break_toggle_bar.dart';
+import '../model/volunteer_request_model.dart';
 import '../model/volunteer_model.dart';
-import '../viewmodel/volunteer_task_viewmodel.dart';
-import '../viewmodel/volunteer_view_model.dart';
+import '../repo/volunteer_repo.dart';
+import '../viewmodel/volunteer_request_viewmodel.dart';
 
-const _brandGreen = Color(0xFF3A5C2E);
 
-class VolunteerHomeScreen extends StatelessWidget {
+class VolunteerHomeScreen extends StatefulWidget {
   const VolunteerHomeScreen({super.key});
 
   @override
+  State<VolunteerHomeScreen> createState() => _VolunteerHomeScreenState();
+}
+
+class _VolunteerHomeScreenState extends State<VolunteerHomeScreen> {
+  @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      return const Scaffold(
-        body: Center(child: Text('Please log in to continue.')),
-      );
-    }
-
-    final volunteerVm = context.read<VolunteerViewModel>();
-    final taskVm = context.watch<VolunteerTaskViewModel>();
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: StreamBuilder<VolunteerModel>(
-          stream: volunteerVm.watchProfile(uid),
-          builder: (context, snapshot) {
-            final profile = snapshot.data;
-
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _GreetingBar(profile: profile, uid: uid, vm: volunteerVm),
-                const SizedBox(height: 20),
-                if (taskVm.pendingTasks.isNotEmpty)
-                  _AlertCard(
-                    icon: Icons.notifications_active,
-                    color: Colors.orange,
-                    title:
-                    '${taskVm.pendingTasks.length} new delivery request${taskVm.pendingTasks.length > 1 ? 's' : ''}',
-                    subtitle: 'Waiting for your response',
-                  )
-                else if (taskVm.activeTasks.isNotEmpty)
-                  _AlertCard(
-                    icon: Icons.directions_bike,
-                    color: _brandGreen,
-                    title: 'Delivery in progress',
-                    subtitle:
-                    '${taskVm.activeTasks.first.pickupAddress} → ${taskVm.activeTasks.first.dropAddress}',
-                  )
-                else
-                  const _EmptyHomeCard(),
-                const SizedBox(height: 20),
-                if (profile != null) _StatsRow(profile: profile),
-              ],
-            );
-          },
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF3A5C2E),
+        iconTheme: const IconThemeData(
+          color: Color(0xFFF5F0E8),
         ),
-      ),
-    );
-  }
-}
-
-class _GreetingBar extends StatelessWidget {
-  final VolunteerModel? profile;
-  final String uid;
-  final VolunteerViewModel vm;
-
-  const _GreetingBar({required this.profile, required this.uid, required this.vm});
-
-  @override
-  Widget build(BuildContext context) {
-    final name = (profile?.fullName.isNotEmpty ?? false)
-        ? profile!.fullName
-        : 'Volunteer';
-    final isAccepting = profile?.isAcceptingTasks ?? true;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hi, $name',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                isAccepting ? 'You are accepting tasks' : 'You are paused',
-                style: TextStyle(
-                  color: isAccepting ? _brandGreen : Colors.grey,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+        title: const Text(
+          "Available Requests",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        Switch(
-          value: isAccepting,
-          activeColor: _brandGreen,
-          onChanged: (value) => vm.setAcceptingTasks(uid, value),
-        ),
-      ],
+        actions: [
+          if (uid != null) BreakToggleChip(uid: uid),
+        ],
+      ),
+      body: uid == null
+          ? const SizedBox.shrink()
+          : StreamBuilder<VolunteerModel>(
+        stream: context.read<VolunteerRepo>().watchProfile(uid),
+        builder: (context, profileSnapshot) {
+          final isAccepting = profileSnapshot.data?.isAcceptingTasks ?? true;
+          final vm = context.read<VolunteerRequestViewModel>();
+
+          // React to break status changes: stop/start the live stream.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (isAccepting) {
+              vm.listenRequests(volunteerId: uid);
+            } else {
+              vm.stopListening();
+            }
+          });
+
+          return Consumer<VolunteerRequestViewModel>(
+            builder: (context, vm, _) {
+              if (vm.requests.isEmpty) {
+                return const Center(
+                  child: Text(
+                    "No pending requests right now.",
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                );
+              }
+
+              final list = ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: vm.requests.length,
+                itemBuilder: (context, index) {
+                  final request = vm.requests[index];
+                  return _RequestCard(request: request);
+                },
+              );
+
+              if (!isAccepting) {
+                return Stack(
+                  children: [
+                    ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                      child: AbsorbPointer(child: list),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.15),
+                        alignment: Alignment.center,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 32),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 16),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.pause_circle_outline, size: 40, color: Color(0xFF3A5C2E)),
+                              const SizedBox(height: 10),
+                              const Text(
+                                "You're on a break",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "New requests are paused. Go back online to resume.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              const SizedBox(height: 14),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    context.read<VolunteerRepo>().setAcceptingTasks(uid, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3A5C2E),
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text("Go Online"),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return list;
+            },
+          );
+        },
+      ),
     );
   }
 }
 
-class _AlertCard extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-
-  const _AlertCard({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-  });
+class _RequestCard extends StatelessWidget {
+  final VolunteerRequestModel request;
+  const _RequestCard({required this.request});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.grey)),
-              ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RequestDetailScreen(request: request),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F8F1),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              request.itemName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyHomeCard extends StatelessWidget {
-  const _EmptyHomeCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F8F1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.check_circle_outline, color: _brandGreen, size: 32),
-          SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              "You're all caught up. New tasks will show up here.",
-              style: TextStyle(color: Colors.black87),
+            const SizedBox(height: 6),
+            Text("From: ${request.donorName}"),
+            Text("To: ${request.receiverName}"),
+            const SizedBox(height: 4),
+            Text("Pickup: ${request.pickupLocation}",
+                style: const TextStyle(color: Colors.grey)),
+            Text("Deliver to: ${request.deliveryLocation}",
+                style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 8),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                "Tap for details →",
+                style: TextStyle(color: Color(0xFF3A5C2E), fontSize: 12, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  final VolunteerModel profile;
-  const _StatsRow({required this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatBox(
-            label: 'Completed',
-            value: '${profile.completedTasksCount}',
-          ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatBox(
-            label: 'Rating',
-            value: profile.rating.toStringAsFixed(1),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatBox extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatBox({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD4E8C2)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          Text(value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _brandGreen)),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.grey)),
-        ],
       ),
     );
   }

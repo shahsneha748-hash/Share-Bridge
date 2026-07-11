@@ -5,7 +5,6 @@ import 'package:sharebridge/view/volunteer_navigation_screen.dart';
 import '../viewmodel/volunteer_view_model.dart';
 import 'volunteer_verification_screen.dart';
 import 'volunteer_pending screen.dart';
-// import 'volunteer_dashboard_screen.dart'; // if you have an "approved" screen
 
 class VolunteerIntroScreen extends StatelessWidget {
   const VolunteerIntroScreen({super.key});

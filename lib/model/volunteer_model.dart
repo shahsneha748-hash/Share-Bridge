@@ -9,7 +9,6 @@ class VolunteerModel {
   final DateTime submittedAt;
 
 
-  // --- new fields, all backward-compatible with old docs ---
   final String fullName;
   final bool isAcceptingTasks; // the "pause / go offline" toggle
   final double rating;

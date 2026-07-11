@@ -43,7 +43,6 @@ class UserSettingsScreen extends StatelessWidget {
     if (confirm == true) {
       await FirebaseAuth.instance.signOut();
       if (context.mounted) {
-        // Adjust '/login' to match your actual login route name.
         Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     }
@@ -73,9 +72,7 @@ class UserSettingsScreen extends StatelessWidget {
     if (user == null) return;
 
     try {
-      // 1. Remove Firestore profile document.
       await FirebaseFirestore.instance.collection("users").doc(user.uid).delete();
-      // 2. Remove the Firebase Auth account itself.
       await user.delete();
 
       if (context.mounted) {
